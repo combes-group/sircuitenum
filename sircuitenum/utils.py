@@ -190,6 +190,17 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     return c_dict
 
 
+def max_node(edges: list):
+    """Returns the maximum node present in the edgelist
+
+    Args:
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+    """
+
+    return np.max(np.array(edges))
+
+
 def convert_circuit_to_graph(circuit: list, edges: list):
     """
     Encodes a circuit as a simple, undirected nx graph

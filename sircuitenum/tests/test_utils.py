@@ -149,6 +149,12 @@ def test_circuit_in_set():
 
     return
 
+def test_max_node():
+
+    assert(utils.max_node([(0,1),(0,2),(1,2),(1,3)]) == 3)
+    assert(utils.max_node([(0,1),(45,2),(1,2),(1,3)]) == 45)
+
+
 
 def test_convert_circuit_to_graph():
     G = nx.MultiGraph()

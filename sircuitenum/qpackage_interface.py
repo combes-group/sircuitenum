@@ -9,13 +9,16 @@ __all__ = ['get_circuit', 'get_edges', 'get_circuit_data', 'plot_circuit']
 # Import Statements
 # -------------------------------------------------------------------
 
+import numpy as np
+import networkx as nx
 
 import qucat as qc
 import SQcircuit as sq
 import circuitq as cq
 import scqubits as scq
 from ast import literal_eval
-from sircuitenum.utils import *
+
+import sircuitenum.utils as utils
 
 # -------------------------------------------------------------------
 # defaults
@@ -45,66 +48,108 @@ SQCIRCUIT_DEFAULT_PARAMS = {
 
 
 def single_edge_loop_kiting(circuit, edges):
-    """ expands edges which contain loops by splitting components and
+    """ expands edges which contain loops by splitting inductors and
     adding nodes. Done since networkx doesn't calcuate loops for multigraphs
 
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
 
     Returns:
-        circuit (list): a list of element labels for the desired circuit
-        edges (list): a list of edge connections for the desired circuit
+        copies of circuit/edges where every edge that contained both a J
+        and an L have been expanded into two L's with an intermediate node
     """
-    max_node = 0
-    for edge in edges:
-        if(edge[0] > max_node):
-            max_node = edge[0]
-        if(edge[1] > max_node):
-            max_node = edge[1]
-    idx = 0
-    for element in circuit:
-        if(element == '5'):
-            max_node = max_node + 1
-            circuit.pop(idx)
-            initial_edge = edges.pop(idx)
-            circuit.extend(['2', '2', '1'])
-            edges.extend([(initial_edge[0], max_node),
-                         (initial_edge[1], max_node), initial_edge])
-        elif(element == '6'):
-            max_node = max_node + 1
-            circuit.pop(idx)
-            initial_edge = edges.pop(idx)
-            circuit.extend(['0', '0', '2', '2', '1'])
-            edges.extend([(initial_edge[0], max_node),
-                         (initial_edge[1],
-                          max_node), (initial_edge[0], max_node + 1),
-                         (initial_edge[1], max_node + 1), initial_edge])
-            max_node = max_node + 1
-        idx = idx + 1
 
-    return circuit, edges
+    # Make copies
+    circuit_out = []
+    edges_out = []
+
+    # Highest index node present
+    max_node = utils.max_node(edges)
+
+    for element, edge in zip(circuit, edges):
+        
+        # If we have a junction and an inductor, then there's a loop
+        # Make it understandable by loop finding
+        # By streching the inductor into two, adding an extra node
+        if "J" in element and "L" in element:
+
+            # Put in the edge without inductors
+            circuit_out.append(tuple([x for x in element if x != "L"]))
+            edges_out.append(edge)
+
+            # Make the inductors off to the side
+            circuit_out.append(("L",))
+            edges_out.append((edge[0],max_node+1))
+            circuit_out.append(("L",))
+            edges_out.append((max_node+1,edge[1]))
+
+            # Keep track of how many nodes you've added
+            max_node += 1
+        
+        # If there's not both a junction and inductor
+        # then keep the edge the same
+        else:
+            circuit_out.append(element)
+            edges_out.append(edge)
+
+    return circuit_out, edges_out
 
 
-def loop_finding(circuit, edges):
-    """ modifies circuit to expand singe edge loops, then provides a list of loops
+def find_loops(circuit, edges, ind_elem = ["J", "L"]):
+    """ Provides a list of loops
 
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        ind_elem (list): symbols that define inductive elements. 
+                        Default is ind_elem = ["J", "L"]
 
     Returns:
         loop_lst (list): a list of loops in the circuit
         circuit (list): a list of element labels for the desired circuit
         edges (list): a list of edge connections for the desired circuit
     """
-    circuit, edges = single_edge_loop_kiting(circuit, edges)
 
-    circuit_temp = [COMBINATION_DICT[e] for e in circuit]
-    circuit_networkx = convert_circuit_to_graph(circuit_temp, edges)
-    loop_lst = [sorted(c) for c in nx.cycle_basis(
-        nx.Graph(circuit_networkx))]
-    return loop_lst, circuit, edges
+    # Expand single edge loops
+    n_nodes_og = utils.max_node(edges)
+    circuit_temp, edges_temp = single_edge_loop_kiting(circuit, edges)
+
+    # Make a graph that represents only inductive edges
+    ind_edges = inductive_subgraph(circuit_temp, edges_temp, ind_elem)
+    G = nx.from_edgelist(ind_edges)
+
+    # Find loops in the inductive subgraph
+    # And filter out any edges that we added
+    loop_lst = [sorted([x for x in c if x <= n_nodes_og]) for c in nx.cycle_basis(nx.Graph(G))]
+
+    return loop_lst
+
+def inductive_subgraph(circuit, edges, ind_elem = ["J", "L"]):
+    """Returns a list of edges that contain an inductive element
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        ind_elem (list): symbols that define inductive elements. 
+                        Default is ind_elem = ["J", "L"]
+    """
+
+    return [edges[i] for i in range(len(edges)) if np.any(np.in1d(circuit[i], ind_elem))]
+
+
+
+
+
+
+
+
 
 
 def convert_to_network_dict(circuit: list, edges: list, loop_lst: list, loop_defs: list,  params=SQCIRCUIT_DEFAULT_PARAMS):
