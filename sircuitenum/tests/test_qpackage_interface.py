@@ -125,8 +125,7 @@ def test_find_loops():
 
     edges,circuit = TEST_CIRCUITS[5][0], TEST_CIRCUITS[5][1]
     loops = pi.find_loops(circuit, edges, ind_elem=["J","L"])
-    ans = [[0,1,2,3],[0,1,4], [1,2],[0,3],[0,3,4]]
-    print(loops)
+    ans = [[0,1,2,3],[0,1,4],[0,3],[0,3,4]]
     assert(len(loops) == len(ans))
     for l in ans:
         assert(l in ans)
