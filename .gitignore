@@ -1,3 +1,6 @@
+# Temporary DB
+*cache=shared
+
 # Plots
 *.pdf
 *.png

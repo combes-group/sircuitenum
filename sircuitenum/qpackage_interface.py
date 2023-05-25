@@ -20,27 +20,6 @@ from ast import literal_eval
 
 import sircuitenum.utils as utils
 
-# -------------------------------------------------------------------
-# defaults
-# -------------------------------------------------------------------
-
-EC_DEFAULT = [1]*100
-EJ_DEFAULT = [1]*100
-EL_DEFAULT = [1]*100
-ECJ_DEFAULT = [1]*100
-PHI_DEFAULT = [1]*100
-NG_DEFAULT = [1]*100
-NOISE_DEFAULT = [0]*100
-
-SQCIRCUIT_DEFAULT_PARAMS = {
-    'ec_lst': EC_DEFAULT,
-    'ej_lst': EJ_DEFAULT,
-    'el_lst': EL_DEFAULT,
-    'ecj_lst': ECJ_DEFAULT,
-    'phi_lst': PHI_DEFAULT,
-    'ng_lst': NG_DEFAULT,
-    'noise_lst': NOISE_DEFAULT,
-}
 
 # -------------------------------------------------------------------
 # Functions
@@ -125,7 +104,7 @@ def find_loops(circuit, edges, ind_elem = ["J", "L"]):
 
     # Find loops in the inductive subgraph
     # And filter out any edges that we added
-    loop_lst = [sorted([x for x in c if x <= n_nodes_og]) for c in nx.cycle_basis(nx.Graph(G))]
+    loop_lst = [tuple(sorted([x for x in c if x <= n_nodes_og])) for c in nx.cycle_basis(nx.Graph(G))]
 
     return loop_lst
 
@@ -143,126 +122,113 @@ def inductive_subgraph(circuit, edges, ind_elem = ["J", "L"]):
 
     return [edges[i] for i in range(len(edges)) if np.any(np.in1d(circuit[i], ind_elem))]
 
+def gen_param_dict(circuit, edges, params=utils.ELEM_DICT):
+    """_summary_
 
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        params (_type_, optional): _description_. Defaults to SQCIRCUIT_DEFAULT_PARAMS.
+    """
+    
+    counts = utils.count_elems_mapped(circuit)
 
-
-
-
-
-
-
-
-def convert_to_network_dict(circuit: list, edges: list, loop_lst: list, loop_defs: list,  params=SQCIRCUIT_DEFAULT_PARAMS):
-    num_c = 0
-    num_l = 0
-    num_j = 0
-    network_dict = {}
-    i = 0
-    for element in circuit:
-        edge = edges[i]
-        loops = []
-        idx = 0
-        for loop in loop_lst:
-            if(loop.count(edge[0]) > 0 and loop.count(edge[1]) > 0):
-                loops.append(loop_defs[idx])
-            idx = idx + 1
-        #print(element)
-        #print(loops)
-        if(element == '0'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Capacitor(params['ec_lst'][num_c], 'GHz', id_str=("C_" + str(num_c)))]})
-            num_c = num_c + 1
-        elif(element == '1'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Junction(params['ej_lst'][num_j], 'GHz', id_str=("J_" + str(num_j)), loops=loops), sq.Capacitor(params['ecj_lst'][num_j], 'GHz', id_str=("CJ_" + str(num_j)))]})
-            num_j = num_j + 1
-        elif(element == '2'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Inductor(params['el_lst'][num_l], 'GHz', id_str=("L_" + str(num_l)), loops=loops)]})
-            num_l = num_l + 1
-        elif(element == '3'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Capacitor(params['ec_lst'][num_c], 'GHz', id_str=("C_" + str(num_c))), sq.Capacitor(params['ecj_lst'][num_j], 'GHz', id_str=("CJ_" + str(num_j))), sq.Junction(params['ej_lst'][num_j], 'GHz', id_str=("J_" + str(num_j)), loops=loops)]})
-            num_c = num_c + 1
-            num_j = num_j + 1
-        elif(element == '4'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Capacitor(params['ec_lst'][num_c], 'GHz', id_str=("C_" + str(num_c))), sq.Inductor(params['el_lst'][num_l], 'GHz', id_str=("L_" + str(num_l)), loops=loops)]})
-            num_c = num_c + 1
-            num_l = num_l + 1
-        elif(element == '5'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Inductor(params['el_lst'][num_l], 'GHz', id_str=("L_" + str(num_l)), loops=loops), sq.Capacitor(params['ecj_lst'][num_j], 'GHz', id_str=("CJ_" + str(num_j))), sq.Junction(params['ej_lst'][num_j], 'GHz', id_str=("J_" + str(num_j)), loops=loops)]})
-            num_l = num_l + 1
-            num_j = num_j + 1
-        elif(element == '6'):
-            network_dict.update(
-                {(edge[0], edge[1]): [sq.Capacitor(params['ec_lst'][num_c], 'GHz', id_str=("C_" + str(num_c))), sq.Inductor(params['el_lst'][num_l], 'GHz', id_str=("L_" + str(num_l)), loops=loops), sq.Capacitor(params['ecj_lst'][num_j], 'GHz', id_str=("CJ_" + str(num_j))), sq.Junction(params['ej_lst'][num_j], 'GHz', id_str=("J_" + str(num_j)), loops=loops)]})
-            num_c = num_c + 1
-            num_l = num_l + 1
-            num_j = num_j + 1
-        else:
-            print("Unrecognized component: " + str(element))
-        i = i + 1
-    return network_dict, num_c, num_j, num_l
-
-
-def convert_circuit_to_SQcircuit(circuit: list, edges: list, params=SQCIRCUIT_DEFAULT_PARAMS, trunc_num: int = 10):
+    param_dict = {}
+    # Capacitors
+    param_dict['c_list'] = [params['C']['default_value']]*counts["C"]
+    param_dict['c_units'] = params['C']['default_unit']
+    # Inductors
+    param_dict['l_list'] = [params['L']['default_value']]*counts["L"]
+    param_dict['l_units'] = params['L']['default_unit']
+    # Junctions
+    param_dict['j_list'] = [params['J']['default_value']]*counts["J"]
+    param_dict['j_units'] = params['J']['default_unit']
+    # Junction Capacitances
+    param_dict['cj_list'] = [params['CJ']['default_value']]*counts["J"]
+    param_dict['cj_units'] = params['CJ']['default_unit']
+    
+    return param_dict
+    
+def convert_circuit_to_SQcircuit(circuit: list, edges: list, trunc_num: int = 10, **kwargs):
     """Converts circuit from list of labels and edges to a
     SQcircuit formatted circuit network
 
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        trunc_num (int): 
+        params (dict): dictionary with entries c_lst, l_lst, j_lst, and cj_lst,
+                    which represent the paramaters for the circuit elements. 
+                    Additionally entries of c_units, l_units, j_units, and cj_units.
+                    Inputting nothing uses the default parameter values/units from utils.ELEM_DICT.
 
     Returns:
         converted_circuit (SQcircuit.Circuit): returns the input circuit converted
-        into a SQcircuit circuit
+        into a SQcircuit circuit.
+
+        Charge modes are where cir.omega == 0, harmonic modes are when cir.omega != 0
     """
-    circuit_k = circuit.copy()
-    edges_k = edges.copy()
-    loop_lst, circuit_k, edges_k = loop_finding(circuit_k, edges_k)
-    num_loops = len(loop_lst)
-    loop_defs = []
 
-    for j in range(num_loops):
-        loop_defs.append(sq.Loop())
+    params = kwargs.get("params", gen_param_dict(circuit, edges, utils.ELEM_DICT))
 
-    network_dict, num_c, num_j, num_l = convert_to_network_dict(
-        circuit, edges, loop_lst, loop_defs, params)
-    #print("Network dict:")
-    #print(network_dict)
-    #print(network_dict[(0, 1)][0].energy())
-    #print(network_dict[(0, 1)][1].energy())
-    #print(network_dict[(0, 1)][2].value())
-    try:
-        converted_circuit = sq.Circuit(network_dict, flux_dist='all')
-        i = 0
-        for loop in loop_defs:
-            loop.set_flux(params['phi_lst'][i])
-            i = i + 1
 
-        num_modes = converted_circuit.n
-        #print("There are " + str(num_modes) + " modes")
-        for k in range(num_modes):
-            # TODO successfully check if it is a charge mode
-            try:
-                converted_circuit.set_charge_offset(k+1, params['ng_lst'][k])
-                converted_circuit.set_charge_noise(k+1, params['noise_lst'][k])
-                #print("Mode " + str(k+1) + "is a charge mode")
-            except:
-                continue
-                #print("Mode " + str(k+1) + "is not a charge mode")
-        converted_circuit.set_trunc_nums([trunc_num]*num_modes)
+    loops = find_loops(circuit, edges)
+    loop_defs = {}
 
-        return converted_circuit
-    except Exception as e:
-        print("Generation of ")
-        print(circuit)
-        print(edges)
-        print("has failed due to")
-        print(e)
-        return False
+    # Map inductive cycle basis to loops
+    for l in loops:
+        loop_defs[l] = sq.Loop()
+
+
+    # Build sqcircuit dictionary that maps edges
+    # to a list of element objects, which have 
+    # their loops set
+    circuit_dict = {}
+    elem_counts = {"C":0, "L":0, "J":0}
+    for elems, edge in zip(circuit, edges):
+        
+        # Record all the loops for this edge
+        loops_present = []
+        for l in loops:
+            if edge[0] in l and edge[1] in l:
+                loops_present.append(loop_defs[l])
+
+        # Add all the elements
+        circuit_dict[edge] = []
+        for elem in elems:
+            if elem == "C":
+                circuit_dict[edge].append(sq.Capacitor(params['c_list'][elem_counts["C"]],
+                                 'GHz', id_str=("C_" + str(elem_counts["C"]))))
+                
+            elif elem == "L":
+                circuit_dict[edge].append(sq.Inductor(params['l_list'][elem_counts["L"]],
+                                 'GHz', id_str=("L_" + str(elem_counts["L"])),
+                                 loops=loops_present))
+            elif elem == "J":
+                if params['cj_list'][elem_counts["J"]] > 0:
+                    j_c = sq.Capacitor(params['cj_list'][elem_counts["J"]],
+                                    'GHz', id_str=("J_C_" + str(elem_counts["J"])))
+                    circuit_dict[edge].append(sq.Junction(params['j_list'][elem_counts["J"]],
+                                 'GHz', id_str=("J_" + str(elem_counts["J"])),
+                                 loops=loops_present, cap = j_c))
+                else:
+                    circuit_dict[edge].append(sq.Junction(params['j_list'][elem_counts["J"]],
+                                 'GHz', id_str=("J_" + str(elem_counts["J"])),
+                                 loops=loops_present))
+            else:
+                raise ValueError("Unknown circuit compenent present. Must be either C, J, or L")
+            elem_counts[elem] += 1
+
+    breakpoint()
+    sqC = sq.Circuit(circuit_dict, flux_dist='junctions')
+
+    return sqC
+
+
 
 def SQCircuit_parameter_space_finding(circuit : list, edges : list):
     """Finds parameter space for given circuit, and checks validity

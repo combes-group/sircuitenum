@@ -58,8 +58,10 @@ EDGE_COLOR_DICT = {
 
 ELEM_DICT = {
     'C': {'default_unit': 'GHz', 'default_value': 0.2},
-    'L': {'default_unit': 'GHz', 'default_value': 0.5},
-    'J': {'default_unit': 'GHz', 'default_value': 5.0}
+    'L': {'default_unit': 'GHz', 'default_value': 1.0},
+    'J': {'default_unit': 'GHz', 'default_value': 5.0},
+    'CJ': {'default_unit': 'GHz', 'default_value': 3.6}
+    # 'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
 }
 
 DOWNLOAD_PATH = Path(__file__).parent.parent
@@ -142,7 +144,8 @@ def get_basegraphs(n_nodes: int):
 def count_elems(circuit: list, base: int):
     """
     Counts the total number of each element
-    label in the circuit
+    label in the circuit, for use with the unmapped
+    integer labels
 
     Args:
         circuit (list of str): a list of element labels for the desired circuit
@@ -156,6 +159,29 @@ def count_elems(circuit: list, base: int):
     counts = [0]*base
     for part in circuit:
         counts[int(part)] += 1
+    return counts
+
+def count_elems_mapped(circuit: list,
+ possible_elems:list = np.unique(np.array(np.concatenate(list(COMBINATION_DICT.values()))))):
+    """
+    Counts the total number of each mapped circuit
+    element in the circuit
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+
+    Returns:
+        list of length base, where each entry is the number of that element present
+    """
+    counts = {}
+    for elem in possible_elems:
+        counts[elem] = 0
+    
+    for elems in circuit:
+        for elem in elems:
+            counts[elem] += 1
+
     return counts
 
 

@@ -112,7 +112,6 @@ def test_circuit_to_components():
 
 def test_count_elems():
 
-    # TODO: unsure about this function
     assert(utils.count_elems(['0', '2', '5', '1'], 7)
            == [1, 1, 1, 0, 0, 1, 0])
 
@@ -123,6 +122,23 @@ def test_count_elems():
 
     return
 
+def test_count_elems_mapped():
+
+    circuit = [("C",)]
+    counts = utils.count_elems_mapped(circuit)
+
+    assert(len(counts) == 3)
+    assert(counts["C"] == 1)
+    assert(counts["J"] == 0)
+    assert(counts["L"] == 0)
+
+    circuit = [("C",),("C","J"),("C","L"), ("C","J","L"), ("C","L"), ("C",)]
+    counts = utils.count_elems_mapped(circuit)
+
+    assert(len(counts) == 3)
+    assert(counts["C"] == 6)
+    assert(counts["J"] == 2)
+    assert(counts["L"] == 3)
 
 def test_get_num_nodes():
     assert(utils.get_num_nodes([(0, 1)]) == 2)
@@ -148,6 +164,7 @@ def test_circuit_in_set():
         [("L",), ("C",), ("L",)], NON_ISOMORPHIC_3) == False)
 
     return
+
 
 def test_max_node():
 

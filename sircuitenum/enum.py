@@ -153,24 +153,22 @@ def generate_graphs_nodes(base: int, n_nodes: int,
         return_vals (bool): return the values in a dataframe or not
     """
 
+    # If the file is there, then delete previous tables
+    # and initialize a fresh one
     if not file is None:
-        try: connection_obj = sqlite3.connect(file)
-        except: print("Connection Failure")
+        connection_obj = sqlite3.connect(file)
         cursor_obj = connection_obj.cursor()
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
         cursor_obj.execute(
                 "DROP TABLE IF EXISTS {table}".format(table=table_name))
-        try: 
-            cursor_obj.execute(
-            "CREATE TABLE {table} (circuit, graph_index int, edge_counts, unique_key, n_nodes int, base int)".format(table=table_name))
-            print("Table Created for " + str(n_nodes))
-        except: print("Table creation failed.")
+        cursor_obj.execute(
+        "CREATE TABLE {table} (circuit, graph_index int, edge_counts, unique_key, n_nodes int, base int)".format(table=table_name))
+        print("Table Created for " + str(n_nodes))
         
 
     else:
         cursor_obj = None
-        print("ERROR: No file")
-        exit()
+        print("No db file provided for generate_graph_nodes")
 
     all_graphs = utils.get_basegraphs(n_nodes)
     print("Generating circuits for", n_nodes, "nodes, base:", base)
