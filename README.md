@@ -1,7 +1,9 @@
+|build-status|
 
 Superconducting cIRCUIT-ENUMeration
 ======================================
 
+https://sircuitenum.readthedocs.io/en/latest/
 
 
 A library for enumerating superconducting circuits.
