@@ -216,17 +216,6 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     return c_dict
 
 
-def max_node(edges: list):
-    """Returns the maximum node present in the edgelist
-
-    Args:
-        edges (list): a list of edge connections for the desired circuit
-                        e.g. [(0,1), (0,2), (1,2)]
-    """
-
-    return np.max(np.array(edges))
-
-
 def convert_circuit_to_graph(circuit: list, edges: list):
     """
     Encodes a circuit as a simple, undirected nx graph
@@ -246,7 +235,7 @@ def convert_circuit_to_graph(circuit: list, edges: list):
     return circuit_graph
 
 
-def circuit_node_representation(circuit, edges):
+def circuit_node_representation(circuit: list, edges: list):
     """
     Converts a circuit into its "node representation"
     that shows how many of each component are connected
@@ -270,7 +259,7 @@ def circuit_node_representation(circuit, edges):
     # how many of that component connect to a given node
     # i.e. 'J': [0,0,1,2,0]
     component_counts = {}
-    for component in ELEM_DICT:
+    for component in np.unique(np.concatenate(list(COMBINATION_DICT.values()))):
         component_counts[component] = [0] * n_nodes
 
     # Go through each component code in the circuit

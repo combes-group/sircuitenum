@@ -3,6 +3,7 @@ import pytest
 import os
 import itertools
 import networkx as nx
+import SQcircuit as sq
 
 from sircuitenum import qpackage_interface as pi
 from sircuitenum import utils
@@ -161,13 +162,18 @@ def test_gen_param_dict():
 
 
 def test_convert_circuit_to_SQcircuit():
-    for i in range(TEST_CIRCUITS):
+    for i in range(len(TEST_CIRCUITS)):
         assert(True)
 
 
       
 if __name__ == "__main__":
-    edges,circuit = TEST_CIRCUITS[4][0], TEST_CIRCUITS[4][1]
+    # edges,circuit = TEST_CIRCUITS[4][0], TEST_CIRCUITS[4][1]
+    edges, circuit = [[(0,1), (1,2), (2,3), (2,4), (3,4), (4,0)],
+    [("C","J"),("C","J"),("C","L"), ("C","J","L"), ("C","L"), ("C","J")]]
+
+    # edges, circuit = [[(0,1), (1,2), (2,3), (3,0)],
+    # [("C","J"),("C","J"), ("C","J"), ("C","J")]]
     # edges, circuit = [(0,1)],[("C","J")]
     c2, e2 = pi.single_edge_loop_kiting(circuit, edges)
 
@@ -176,6 +182,7 @@ if __name__ == "__main__":
     cb = nx.cycle_basis(nx.Graph(G))
 
     # cir = pi.convert_circuit_to_SQcircuit(circuit, edges)
+    cir = pi.convert_circuit_to_CircuitQ(circuit, edges)
 
     # test_single_edge_loop_knitting()
     # test_inductive_subgraph()
@@ -185,3 +192,14 @@ if __name__ == "__main__":
     # And filter out any edges that we added
     # loop_lst = [sorted(c) for c in nx.cycle_basis(nx.Graph(G))]
     # loops = pi.find_loops()
+
+    # define the circuit elements
+    # C = sq.Capacitor(0.5, 'GHz')
+    # JJ = sq.Junction(5.0,'GHz')
+
+    # # define the circuit
+    # elements = {
+    #     (0, 1): [C, JJ]
+    # }
+
+    # cr = sq.Circuit(elements)

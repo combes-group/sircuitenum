@@ -25,40 +25,35 @@ from sircuitenum import reduction as red
 # Functions
 # -------------------------------------------------------------------
 
-def num_possible_circuits(n_elem: int, n_nodes: int, quiet: bool = True):
-    """ Calculates the number of possible circuits for unique graphs with 
-    n_nodes. Given the list of all graphs with n_nodes we enumerate all 
-    combinations of graphs with `n_elem` number of edge types, may overestimate.
-    
-    For a single graph with K edeges and T edge types the number of circuits 
-    is $T^K$.
-    
+def num_possible_circuits(base: int, n_nodes: int, quiet: bool = True):
+    """ Calculates the number of possible circuits for a given number
+    # of edges and vertices, may overestimate.
+
     Args:
-        n_elem (int): The number of possible elments. By default this is 7:
+        base (int): The number of possible edges. By default this is 7:
                         (i.e., J, C, I, JI, CI, JC, JCI)
         n_nodes (int): the number of vertices in a graph.
         quiet (bool): print the number of circuits or not
 
     Returns:
-        n_circuits (int): number of possible circuits
+        n_circuits (int): a list of networkx graphs
     """
-    
     all_graphs = utils.get_basegraphs(n_nodes)
     n_circuits = 0
     for graph in all_graphs:
-        n_circuits += n_elem**len(graph.edges)
+        n_circuits += base**len(graph.edges)
     if not quiet:
-        print("With " + str(n_elem) + " elements and " + str(n_nodes) +
+        print("With " + str(base) + " elements and " + str(n_nodes) +
             " nodes there are " + str(n_circuits) + " possible circuits")
     return n_circuits
 
 
-def total_num_possible(max_n_elem: int, n_nodes: int, quiet: bool = True):
+def total_num_possible(max_base: int, n_nodes: int, quiet: bool = True):
     """ Calculates the number of possible circuits for a given number
-        of possible edges kinds, assuming a specific number of nodes.
+        of possible edges, assuming a specific number of nodes.
 
     Args:
-        max_n_elem (int): maximum number of possible elements to loop until
+        max_base (int): maximum number of possible edges to loop until
         n_nodes (int): the number of vertices in a graph.
         quiet (bool): whether to print the number possible or not
 
@@ -69,7 +64,7 @@ def total_num_possible(max_n_elem: int, n_nodes: int, quiet: bool = True):
     total = 0
     counts = {}
     # Iterate over all possible number of edges
-    for i in range(max_n_elem+1):
+    for i in range(max_base+1):
         counts[str(i)] = num_possible_circuits(i, n_nodes, quiet=quiet)
         total += counts[str(i)]
     if not quiet:
@@ -81,8 +76,7 @@ def total_num_possible(max_n_elem: int, n_nodes: int, quiet: bool = True):
 def generate_for_specific_graph(base: int, graph: nx.Graph,
                                 graph_index: int,
                                 cursor_obj = None,
-                                return_vals: bool = False,
-                                cache_size: int = 10000):
+                                return_vals: bool = False):
     """Generates all circuits derived from a given graph
 
     Args:
@@ -94,7 +88,6 @@ def generate_for_specific_graph(base: int, graph: nx.Graph,
         n_nodes (int): Number of nodes in circuit
         cursor_obj: sqllite cursor object pointing to the desired database.
         return_vals (bool): return the circuits as a dataframe
-        cache_size (int): number of rows to generate before writing to file
     """
 
     n_nodes = len(graph.nodes)
@@ -106,18 +99,15 @@ def generate_for_specific_graph(base: int, graph: nx.Graph,
     n_edges = len(edges)
     if return_vals:
         data = []
-    for i in tqdm(range(np.power(base, n_edges))):
+    num_configs = np.power(base, n_edges)
+    for i in tqdm(range(num_configs)):
         circuit = list(np.base_repr(i, base).zfill(n_edges))
         c_dict = utils.circuit_entry_dict(circuit, graph_index, n_nodes, i, base)
+        # Commit for the last one in the set
         if not cursor_obj is None:
-            utils.write_circuit(cursor_obj, c_dict, i%cache_size==0 and i>0)
+            utils.write_circuit(cursor_obj, c_dict, to_commit = i==(num_configs-1))
         if return_vals:
             data.append(c_dict)
-
-    
-    # Commit entries
-    if not cursor_obj is None:
-        cursor_obj.connection.commit()
     
     if return_vals:
         return pd.DataFrame(data)
@@ -139,6 +129,7 @@ def delete_table(file: str, n_nodes: int):
     return
 
 
+
 def generate_graphs_nodes(base: int, n_nodes: int,
                           file: str = None, return_vals = False):
     """ Generates circuits for all graphs for a given number of nodes
@@ -153,8 +144,6 @@ def generate_graphs_nodes(base: int, n_nodes: int,
         return_vals (bool): return the values in a dataframe or not
     """
 
-    # If the file is there, then delete previous tables
-    # and initialize a fresh one
     if not file is None:
         connection_obj = sqlite3.connect(file)
         cursor_obj = connection_obj.cursor()
@@ -162,28 +151,25 @@ def generate_graphs_nodes(base: int, n_nodes: int,
         cursor_obj.execute(
                 "DROP TABLE IF EXISTS {table}".format(table=table_name))
         cursor_obj.execute(
-        "CREATE TABLE {table} (circuit, graph_index int, edge_counts, unique_key, n_nodes int, base int)".format(table=table_name))
-        print("Table Created for " + str(n_nodes))
-        
-
+           "CREATE TABLE {table} (circuit, graph_index int, edge_counts, unique_key, n_nodes int, base int)".format(table=table_name))
+        connection_obj.commit()
     else:
         cursor_obj = None
-        print("No db file provided for generate_graph_nodes")
 
     all_graphs = utils.get_basegraphs(n_nodes)
     print("Generating circuits for", n_nodes, "nodes, base:", base)
     data = []
     for graph_index, G in tqdm(enumerate(all_graphs)):
-        print("Generating for graph: " + str(G) + str(G.edges))
-        out = generate_for_specific_graph(base, G, graph_index, cursor_obj, return_vals)
-        if return_vals: data.append(out)
+        data.append(generate_for_specific_graph(base, G,
+                                 graph_index, cursor_obj, return_vals))
 
-    if not file is None:
-        connection_obj.commit()
+    if not cursor_obj is None:
         connection_obj.close()
+
 
     if return_vals:
         return pd.concat(data)
+
     
 
 
@@ -202,17 +188,6 @@ def trim_graph_node(in_file: str, out_file: str, n_nodes: int,
                         (i.e., J, C, I, JI, CI, JC, JCI)
     """
 
-    if not (out_file == in_file):
-        connection_obj = sqlite3.connect(file)
-        cursor_obj = connection_obj.cursor()
-        table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-        cursor_obj.execute(
-                "DROP TABLE IF EXISTS {table}".format(table=table_name))
-        cursor_obj.execute(
-           "CREATE TABLE {table} (circuit, graph_index int, edge_counts, unique_key, n_nodes int, base int)".format(table=table_name))
-        connection_obj.commit()
-        connection_obj.close()
-
     # Get the max number of edges
     # from fully connected graph
     all_graphs = utils.get_basegraphs(n_nodes)
@@ -224,6 +199,7 @@ def trim_graph_node(in_file: str, out_file: str, n_nodes: int,
     # Sets within these slices
     print("Trimming graphs with no jj's, linear elements in series",
           "and reducing isomorphic graphs...")
+    is_first_write = True
     n_set = set(n_edges_in_graph)
     counts_to_consider = [x for x in itertools.product(range(max_edges+1), repeat = base) if sum(x) in n_set]
     for edge_counts in tqdm(counts_to_consider):
@@ -253,7 +229,8 @@ def trim_graph_node(in_file: str, out_file: str, n_nodes: int,
             if not reduced.empty:
 
                 # Overwrite the table on the first instance
-                utils.write_df(out_file, reduced, n_nodes, overwrite=True)
+                utils.write_df(out_file, reduced, n_nodes, overwrite=is_first_write)
+                is_first_write = False
 
 
 def generate_and_trim(n_nodes: int, file_untrimmed: str = "circuits.db",
@@ -270,31 +247,18 @@ def generate_and_trim(n_nodes: int, file_untrimmed: str = "circuits.db",
                         (i.e., J, C, I, JI, CI, JC, JCI)
     """
     print('Starting generating ' + str(n_nodes) + ' node circuits.')
-    try: generate_graphs_nodes(base, n_nodes, file_untrimmed)
-    except: 
-        print(f"Generating {n_nodes} failed")
-        return False
+    generate_graphs_nodes(base, n_nodes, file_untrimmed)
     print("Circuits Generated for " +
           str(n_nodes) + " node circuits.")
     print("Now Trimming.")
-    try: trim_graph_node(in_file=file_untrimmed, out_file=file_trimmed, n_nodes=n_nodes)
-    except: 
-        print(f"Trimming {n_nodes} failed")
-        return False
+    trim_graph_node(in_file=file_untrimmed, out_file=file_trimmed, n_nodes=n_nodes)
     print("Finished trimming " + str(n_nodes) + " node circuits.")
     return True
 
 
-
-def generate_two_node(file_untrimmed: str = "circuits.db",
-                        file_trimmed: str = "circuits_trimmed.db",
-                        base: int = len(utils.COMBINATION_DICT)):
-    # TODO
-    return
-
 def generate_all_graphs(file_untrimmed: str = "circuits.db",
                         file_trimmed: str = "circuits_trimmed.db",
-                        n_nodes_start: int = 2, 
+                        n_nodes_start: int = 3, 
                         n_nodes_stop: int = 4,
                         base: int = len(utils.COMBINATION_DICT)):
     """ Generates all circuits with numbers of nodes between 
@@ -312,30 +276,19 @@ def generate_all_graphs(file_untrimmed: str = "circuits.db",
         stop (int) : The number of nodes to stop generating circuits at.
                         generates without ending if stop < start
     """
-    if(n_nodes_stop < n_nodes_start):
-        print("ERROR: stop needs to be greater than start value")
-        return
-    if(n_nodes_stop < 2):
-        print("ERROR: stop value must be above 2")
-        return
-    if(n_nodes_start < 1): 
-        print("WARNING: cannot generate any circuits for below 2 graphs. Starting at 2")
-        n_nodes_start = 2
-    
-    if(n_nodes_start == 2):
-        generate_two_node(file_untrimmed, file_trimmed, base)
-        n_nodes_start = 3
-    
-    for current_n_nodes in range(n_nodes_start, n_nodes_stop + 1, 1):
-        if (generate_and_trim(current_n_nodes, file_untrimmed=file_untrimmed,
-                            file_trimmed=file_trimmed, base=base) == False):
-            print("Software gave up.")
-            print("Deleting unfinished section.")
-            delete_table(file_trimmed, current_n_nodes)
-            delete_table(file_untrimmed, current_n_nodes)
+
+    current_n_nodes = n_nodes_start
+    while generate_and_trim(current_n_nodes, file_untrimmed=file_untrimmed,
+                            file_trimmed=file_trimmed, base=base):
+        current_n_nodes = current_n_nodes + 1
+        if current_n_nodes == n_nodes_stop:
+            print(f"Software finished creating up until {n_nodes_stop} Nodes.")
             print("Goodbye.")
             return
-    print(f"Software finished creating from {n_nodes_start} up until {n_nodes_stop} Nodes.")
+    print("Software gave up.")
+    print("Deleting unfinished section.")
+    delete_table(file_trimmed, current_n_nodes)
+    delete_table(file_untrimmed, current_n_nodes)
     print("Goodbye.")
     return
 

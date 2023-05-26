@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import os
 import itertools
+import io
 
 from sircuitenum import enum, utils
 from sircuitenum import reduction as red
@@ -159,10 +160,10 @@ def test_generate_all_graphs():
     utils.convert_loaded_df(df_untrimmed_good, n_nodes = 3)
     df_trimmed_good = red.full_reduction(df_untrimmed_good)
 
-    df_untrimmed = df_untrimmed.sort_values(by='unique_key')
-    df_untrimmed_good = df_untrimmed_good.sort_values(by='unique_key')
-    df_trimmed = df_trimmed.sort_values(by='unique_key')
-    df_trimmed_good = df_trimmed_good.sort_values(by='unique_key')
+    df_untrimmed = df_untrimmed.sort_index()
+    df_untrimmed_good = df_untrimmed_good.sort_values(by="unique_key")
+    df_trimmed = df_trimmed.sort_index()
+    df_trimmed_good = df_trimmed_good.sort_values(by="unique_key")
 
     df_equality_check(df_untrimmed, df_untrimmed_good)
     df_equality_check(df_trimmed, df_trimmed_good)

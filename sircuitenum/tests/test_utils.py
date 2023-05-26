@@ -147,6 +147,9 @@ def test_get_num_nodes():
 
     assert(utils.get_num_nodes([(0, 1), (1, 2), (2, 3)]) == 4)
 
+    assert(utils.get_num_nodes([(0,1),(0,2),(1,2),(1,3)]) == 4)
+    assert(utils.get_num_nodes([(0,1),(45,2),(1,2),(1,3)]) == 46)
+
     return
 
 
@@ -164,13 +167,6 @@ def test_circuit_in_set():
         [("L",), ("C",), ("L",)], NON_ISOMORPHIC_3) == False)
 
     return
-
-
-def test_max_node():
-
-    assert(utils.max_node([(0,1),(0,2),(1,2),(1,3)]) == 3)
-    assert(utils.max_node([(0,1),(45,2),(1,2),(1,3)]) == 45)
-
 
 
 def test_convert_circuit_to_graph():
@@ -427,5 +423,4 @@ def write_test_df_in_mem(fname=MEMFNAME1, overwrite=False):
     return df
 
 if __name__ == "__main__":
-    test_delete_circuit_data()
-    test_convert_loaded_df()
+    test_circuit_node_representation()

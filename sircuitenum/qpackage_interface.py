@@ -46,7 +46,7 @@ def single_edge_loop_kiting(circuit, edges):
     edges_out = []
 
     # Highest index node present
-    max_node = utils.max_node(edges)
+    max_node = utils.get_num_nodes(edges)-1
 
     for element, edge in zip(circuit, edges):
         
@@ -95,7 +95,7 @@ def find_loops(circuit, edges, ind_elem = ["J", "L"]):
     """
 
     # Expand single edge loops
-    n_nodes_og = utils.max_node(edges)
+    max_node_og = utils.get_num_nodes(edges)-1
     circuit_temp, edges_temp = single_edge_loop_kiting(circuit, edges)
 
     # Make a graph that represents only inductive edges
@@ -104,7 +104,7 @@ def find_loops(circuit, edges, ind_elem = ["J", "L"]):
 
     # Find loops in the inductive subgraph
     # And filter out any edges that we added
-    loop_lst = [tuple(sorted([x for x in c if x <= n_nodes_og])) for c in nx.cycle_basis(nx.Graph(G))]
+    loop_lst = [tuple(sorted([x for x in c if x <= max_node_og])) for c in nx.cycle_basis(nx.Graph(G))]
 
     return loop_lst
 
@@ -305,11 +305,8 @@ def convert_circuit_to_CircuitQ(circuit: list, edges: list):
         converted_circuit (SQcircuit.Circuit): returns the input circuit converted
         into a SQcircuit circuit
     """
-    # Map the circuit elements
-    circuit = [COMBINATION_DICT[e] for e in circuit]
-    circuit_graph = convert_circuit_to_graph(circuit, edges)
-    converted_circuit = cq.CircuitQ(circuit_graph)
-    return converted_circuit
+    circuit_graph = utils.convert_circuit_to_graph(circuit, edges)
+    return cq.CircuitQ(circuit_graph)
 
 
 def convert_circuit_to_SCqubits(circuit: list, edges: list, cap_default: float, jj_default: float, inductor_default: float):
