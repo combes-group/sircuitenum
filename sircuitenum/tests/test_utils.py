@@ -97,7 +97,7 @@ def test_graph_index_to_edges():
     return
 
 
-def test_circuit_to_components():
+def test_encoding_to_components():
     components = utils.circuit_to_components("261")
     assert(components == [("L",), ("C", "J", "L"), ("J",)])
 
@@ -108,6 +108,10 @@ def test_circuit_to_components():
     assert(components == [("L",), ("C", "J"), ("C", "L"), ("J", "L")])
 
     return
+
+
+def test_components_to_encoding():
+    assert(False)
 
 
 def test_count_elems():
@@ -121,6 +125,7 @@ def test_count_elems():
     assert(utils.count_elems(['4', '4', '4'], 7) == [0, 0, 0, 0, 3, 0, 0])
 
     return
+
 
 def test_count_elems_mapped():
 

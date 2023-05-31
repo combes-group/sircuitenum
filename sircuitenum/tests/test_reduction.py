@@ -63,8 +63,10 @@ def test_convert_circuit_to_port_graph():
     assert all(x in G.nodes for x in exp_nodes)
     assert all(x in G.edges for x in exp_edges)
 
-
-def test_circuit_series_check():
+def test_find_equiv_cir_series():
+    assert(False)
+    
+def test_remove_series_elems():
 
     # Test a few obvious cases
     edges = [(0,1), (1,2), (2,0)]

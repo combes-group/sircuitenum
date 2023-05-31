@@ -88,21 +88,43 @@ def graph_index_to_edges(graph_index: int, n_nodes: int, all_graphs: list = []):
     return list(edges)
 
 
-def circuit_to_components(circuit_raw: str, elem_mapping: dict = COMBINATION_DICT):
+def encoding_to_components(circuit_raw: str,
+                           elem_mapping: dict = COMBINATION_DICT):
     """Maps the raw circuit encoding to a list of lists of elements
     e.g. 261 -> [["J"], ["C", "J", "L"], ["L"]]
 
     Args:
-        circuit_raw (str): string that represents base n number where each character  
-                                maps to a combination of circuit componenets
-        elem_mapping (dict, optional): mapping between circuit components and characters
-                                        . Defaults to COMBINATION_DICT.
+        circuit_raw (str): string that represents base n number
+                           where each character maps to a combination
+                           of circuit componenets
+        elem_mapping (dict, optional): mapping from characters to
+                                       circuit components.
+                                       Defaults to COMBINATION_TO_CHAR.
 
     Returns:
         list of lists that represent the circuit elements along an edge:
         e.g. [["J"], ["C", "J", "L"], ["L"]]
     """
     return [elem_mapping[e] for e in circuit_raw]
+
+
+def components_to_encoding(circuit: list,
+                           elem_mapping: dict = COMBINATION_TO_CHAR):
+    """Maps the list of circuit components to the database encoding
+    e.g. [["J"], ["C", "J", "L"], ["L"]] -> 261
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        elem_mapping (dict, optional): mapping from circuit
+                                       components to characters.
+                                       Defaults to COMBINATION_TO_CHAR.
+
+    Returns:
+        list of lists that represent the circuit elements along an edge:
+        e.g. [["J"], ["C", "J", "L"], ["L"]]
+    """
+    return [elem_mapping[tuple(comps)] for comps in circuit]
 
 
 def convert_loaded_df(df: pd.DataFrame, n_nodes: int, elem_mapping: dict = COMBINATION_DICT):
@@ -121,7 +143,7 @@ def convert_loaded_df(df: pd.DataFrame, n_nodes: int, elem_mapping: dict = COMBI
     df['edges'] = [graph_index_to_edges(
         int(i), n_nodes, all_graphs) for i in df.graph_index.values]
     df['circuit_encoding'] = df.circuit.values.copy()
-    df['circuit'] = [circuit_to_components(
+    df['circuit'] = [encoding_to_components(
         c, elem_mapping=elem_mapping) for c in df.circuit.values]
 
 
@@ -161,8 +183,8 @@ def count_elems(circuit: list, base: int):
         counts[int(part)] += 1
     return counts
 
-def count_elems_mapped(circuit: list,
- possible_elems:list = np.unique(np.array(np.concatenate(list(COMBINATION_DICT.values()))))):
+
+def count_elems_mapped(circuit: list, **kwargs):
     """
     Counts the total number of each mapped circuit
     element in the circuit
@@ -170,14 +192,19 @@ def count_elems_mapped(circuit: list,
     Args:
         circuit (list): a list of element labels for the desired circuit
                         e.g. [["J"],["L", "J"], ["C"]]
+        possible_elems (list): list of possible elements, default
+                               is the unique set in COMBINATION_DICT
 
     Returns:
-        list of length base, where each entry is the number of that element present
+        list of length base, where each entry is the number
+        of that element present
     """
+    default_elems = np.unique(np.concatenate(list(COMBINATION_DICT.values())))
+    possible_elems = kwargs.get("possible_elems", default_elems)
     counts = {}
     for elem in possible_elems:
         counts[elem] = 0
-    
+
     for elems in circuit:
         for elem in elems:
             counts[elem] += 1
@@ -207,7 +234,7 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     c_dict = {}
     c_dict['circuit'] = "".join(circuit)
     c_dict['graph_index'] = graph_index
-    c_dict['unique_key'] = f"g{graph_index}_c{circuit_num}"
+    c_dict['unique_key'] = f"n{n_nodes}_g{graph_index}_c{circuit_num}"
 
     counts = [str(c) for c in count_elems(circuit, base)]
     c_dict['edge_counts'] = ",".join(counts)
@@ -221,8 +248,11 @@ def convert_circuit_to_graph(circuit: list, edges: list):
     Encodes a circuit as a simple, undirected nx graph
 
     Args:
-        circuit (list of str): a list of elements for the desired circuit (i.e., [[['C'],['C'],['L'],['C','J']])
-        edges (list of tuples of ints): a list of edge connections for the desired circuit (i.e., [(0,1),(1,2),(2,3),(3,0)])
+        circuit (list of str): a list of elements for the desired circuit
+                               (i.e., [[['C'],['C'],['L'],['C','J']])
+        edges (list of tuples of ints): a list of edge connections for the
+                                        desired circuit
+                                        (i.e., [(0,1),(1,2),(2,3),(3,0)])
     """
 
     circuit_graph = nx.MultiGraph()
@@ -230,8 +260,9 @@ def convert_circuit_to_graph(circuit: list, edges: list):
         edge = edges[i]
         elements = circuit[i]
         for elem in elements:
-            circuit_graph.add_edge(edge[0], edge[1], element=elem, unit=ELEM_DICT[elem]
-                                   ['default_unit'], value=ELEM_DICT[elem]['default_value'])
+            circuit_graph.add_edge(edge[0], edge[1], element=elem,
+                                   unit=ELEM_DICT[elem]['default_unit'],
+                                   value=ELEM_DICT[elem]['default_value'])
     return circuit_graph
 
 
@@ -365,18 +396,24 @@ def delete_circuit_data(file: str, n_nodes: int, indices: Union[list,str]):
     return
 
 
-def get_circuit_data(file: str, n_nodes: int, index: str, elem_mapping: dict = COMBINATION_DICT):
+def get_circuit_data(file: str, n_nodes: int, index: str,
+                     elem_mapping: dict = COMBINATION_DICT):
     """ gets circuit data from database
 
     Args:
         n_nodes (int): The number of nodes in the circuit
-        index (str): Unique Idenitifier of the circuit within the table for the number of nodes
+        index (str): Unique Idenitifier of the circuit within the table for
+                     the number of nodes
         file (str): path to the database to get circuit from
-        elem_mapping (dict, optional): mapping from character to list of circuit elements
+        elem_mapping (dict, optional): mapping from character to list of
+                                       circuit elements
 
     Returns:
-        circuit (list) : a list of element labels for the desired circuit (i.e., ['0','2','5','1'])
-        edges (list of tuples of ints): a list of edge connections for the desired circuit (i.e., [(0,1),(1,2),(2,3),(3,0)])
+        circuit (list) : a list of element labels for the desired circuit
+                         (i.e., ['0','2','5','1'])
+        edges (list of tuples of ints): a list of edge connections for the
+                                        desired circuit
+                                        (i.e., [(0,1),(1,2),(2,3),(3,0)])
     """
 
     # Fetch entry from database
@@ -391,22 +428,26 @@ def get_circuit_data(file: str, n_nodes: int, index: str, elem_mapping: dict = C
 
     # Map the edges and circuit component info
     edges = graph_index_to_edges(int(output[1]), n_nodes)
-    circuit = circuit_to_components(output[0], elem_mapping=elem_mapping)
-
+    circuit = encoding_to_components(output[0], elem_mapping=elem_mapping)
 
     return circuit, edges
 
 
-def get_circuit_data_batch(file: str, n_nodes: int, elem_mapping: dict = COMBINATION_DICT, filter_str: str = ''):
+def get_circuit_data_batch(file: str, n_nodes: int, 
+                           elem_mapping: dict = COMBINATION_DICT,
+                           filter_str: str = ''):
     """
-    Returns all the circuits present in the database for the specified number of nodes,
-    and any other filter statements given.
+    Returns all the circuits present in the database for the specified
+    number of nodes, and any other filter statements given.
 
     Args:
         n_nodes (int): number of nodes in the circuit
-        file (str, optional): sqlite file to look in. Defaults to "circuits.db".
-        elem_mapping (dict, optional): mapping from character to list of circuit elements
-        filters (list, optional): list of SQL filter statements (i.e. WHERE circuit_index = 100) Defaults to [].
+        file (str, optional): sqlite file to look in. 
+                              Defaults to "circuits.db"
+        elem_mapping (dict, optional): mapping from character to
+                                       list of circuit elements
+        filters (str, optional): SQL filter statement
+                                (i.e. WHERE circuit_index = 100).
 
     Returns:
         pandas dataframe containing each circuit as a row
@@ -438,9 +479,10 @@ def write_circuit(cursor_obj, c_dict: dict, to_commit: bool = False):
         to_commit: commit the database (i.e., save changes)
     """
     cursor_obj.execute("INSERT INTO {table} VALUES ('{circuit}',"
-                       "'{graph_index}', '{edge_counts}', '{unique_key}', '{n_nodes}', '{base}')".format(
+                       "'{graph_index}', '{edge_counts}', '{unique_key}', \
+                        '{n_nodes}', '{base}')".format(
                            table=f"CIRCUITS_{c_dict['n_nodes']}_NODES",
-                           circuit=c_dict['circuit'], 
+                           circuit=c_dict['circuit'],
                            graph_index=c_dict['graph_index'],
                            edge_counts=c_dict['edge_counts'],
                            unique_key=c_dict['unique_key'],

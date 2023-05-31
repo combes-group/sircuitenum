@@ -9,12 +9,10 @@ __status__ = "Development"
 # Import Statements
 # -------------------------------------------------------------------
 
-import sqlite3
 
 import numpy as np
 import pandas as pd
 import networkx as nx
-from tqdm import tqdm
 
 from sircuitenum import utils
 
@@ -113,7 +111,8 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
     return G
 
 
-def isomorphic_circuit_in_set(circuit, edges, c_set, e_set=None):
+def isomorphic_circuit_in_set(circuit: list, edges: list, c_set: list,
+                              e_set=None):
     """Helper function to see if a circuit that is isomprphic
     to the given circuit
     (list/tuple of tuples) is in a set of circuits
@@ -127,23 +126,24 @@ def isomorphic_circuit_in_set(circuit, edges, c_set, e_set=None):
                         if no e_set is given)
                         e.g. [(0,1), (0,2), (1,2)]
         c_set (list of lists): list of circuit-like elements
-        e_set (list of lists): list of edges for the circuit list. If none 
-                                is given then assumes edges argument is the edge
+        e_set (list of lists): list of edges for the circuit list. If none
+                               is given then assumes edges argument is the edge
 
     Returns:
         True if circuit is present in c_set, False if it isn't
     """
     port_graph = convert_circuit_to_port_graph(circuit, edges)
-    for i,c2 in enumerate(c_set):
+    for i, c2 in enumerate(c_set):
         c2_edges = edges
-        if not e_set is None:
+        if e_set is not None:
             c2_edges = e_set[i]
         port_graph_2 = convert_circuit_to_port_graph(c2, c2_edges)
         if nx.is_isomorphic(port_graph, port_graph_2, node_match=colors_match):
             return True
     return False
 
-def non_isomorphic_set(df: pd.DataFrame):
+
+def mark_non_isomorphic_set(df: pd.DataFrame, to_consider: np.array):
     """Reduces a set of circuits to contain only those
     whose port graphs are not isomorphic to each other.
 
@@ -152,38 +152,56 @@ def non_isomorphic_set(df: pd.DataFrame):
                            specific circuit. Assumes that every
                            entry has the same number of nodes,
                            and comes from the same basegraph
+        to_consider (pd.DataFrame): logical array that marks
+                                    rows to consider. For use
+                                    when some have already been
+                                    eliminated for other reasons.
 
     Returns:
-        a new dataframe that contains only the non isomorphic set
+        Nothing, fills in the 'in_final_set' and 'equivalent_graph'
+        columns of df
     """
 
     # The first graph is always unique
-    unique_ind = [0]
+    in_final_set = df['in_final_set'].values
+    equivalent_graph = df['equivalent_graph'].values
     unique_graphs = [convert_circuit_to_port_graph(
         df.iloc[0]['circuit'], df.iloc[0]['edges'])]
 
     # Compare to each previously found unique graph
     # If it's not isomorphic to any of them
     # Then add it to the list
-    for i in range(1, df.shape[0]):
-        row = df.iloc[i]
-        g_new = convert_circuit_to_port_graph(
-            row['circuit'], row['edges'])
-        iso_flag = False
-        for g in unique_graphs:
-            if nx.is_isomorphic(g, g_new, node_match=colors_match):
-                iso_flag = True
-                break
-        if not iso_flag:
-            unique_graphs.append(g_new)
-            unique_ind.append(i)
+    # If it is, then mark which graph it is isomorphic to
+    for i in range(df.shape[0]):
+        if to_consider[i]:
+            # Compare port graph to all entries in unique set
+            row = df.iloc[i]
+            g_new = convert_circuit_to_port_graph(
+                row['circuit'], row['edges'])
+            iso_flag = False
+            for (g, uid) in unique_graphs:
+                if nx.is_isomorphic(g, g_new, node_match=colors_match):
+                    iso_flag = True
+                    equivalent_graph[i] = uid
+                    break
+            # Is unique - add to unique set
+            if not iso_flag:
+                unique_graphs.append((g_new, row['unique_key']))
+                in_final_set[i] = 1
+                equivalent_graph[i] = ""
+            # Is not unique
+            else:
+                in_final_set[i] = 0
 
-    return df.iloc[unique_ind].copy()
+    df['in_isomorphic_set'] = in_final_set
+    df['equivalent_graph'] = equivalent_graph
 
 
-def circuit_series_check(circuit, edges, to_reduce=['L', 'C']):
-    """Determines whether a given circuit can be reduced by
-    combining isolated series linear elements.
+def remove_series_elems(circuit: list, edges: list,
+                        to_reduce: list = ['L', 'C']):
+    """
+    Reduces the size of the given circuit by eliminating
+    linear components that are in series.
 
     Args:
         circuit (list): a list of element labels for the desired circuit
@@ -198,11 +216,13 @@ def circuit_series_check(circuit, edges, to_reduce=['L', 'C']):
         False if the circuit can be reduced
     """
 
-    circuit_valid = True
     num_nodes = utils.get_num_nodes(edges)
 
     node_representation = utils.circuit_node_representation(
         circuit, edges)
+
+    # List of nodes to eliminate
+    to_remove = []
 
     # Check each node to see if there are only
     # two of the same linear element connect to it
@@ -223,13 +243,69 @@ def circuit_series_check(circuit, edges, to_reduce=['L', 'C']):
                 # Reduce if both components connected to
                 # a node are the same linear element
                 if n_present[component] == 2:
-                    circuit_valid = False
-                    return False
+                    to_remove.append((node, component))
 
-    return circuit_valid
+    # Remove nodes that were marked
+    new_circuit = circuit[:]
+    new_edges = edges[:]
+    for node, component in to_remove:
+        to_connect = []
+        i_to_remove = []
+        for i in range(len(new_edges)):
+            edge = new_edges[i]
+            # Mark edge for removal
+            # and connecting node
+            if node in edge:
+                i_to_remove.append(i)
+                edge.remove(node)
+                to_connect.append(edge[0])
+        # Remove marked indices
+        # And add an edge to replace it
+        for i in i_to_remove:
+            new_circuit.pop(i)
+            new_edges.pop(i)
+        edges.append(tuple(sorted))
+        circuit.append((component,))
+
+    return new_circuit, new_edges
 
 
-def jj_present(circuit):
+def find_equiv_cir_series(db_file: str, circuit: list,
+                          edges: list, graph_index: int):
+    """
+    Searches the database for circuits that are equivalent
+    to the one given, up to a reduction of series linear
+    circuit elements
+
+    Args:
+        db_file (str): sql database file that's already been completed
+                       for the previous number of nodes.
+        circuit (list): _description_
+        edges (list): _description_
+        graph_index (int): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    n_nodes = utils.get_num_nodes(edges)
+
+    # What does it look like with series elems removed
+    c2, e2 = remove_series_elems(circuit, edges)
+    encoding = utils.components_to_encoding(c2)
+    filters = f"WHERE circuit LIKE {encoding}\
+                AND graph_index = {graph_index}"
+    equiv = utils.get_circuit_data_batch(db_file, n_nodes-1,
+                                         filter_str=filters)
+
+    # Return the equivalent circuit
+    if equiv.iloc[0]['equivalent_circuit'] == "":
+        return equiv.iloc[0]['unique_key']
+    else:
+        return equiv.iloc[0]['equivalent_circuit']
+
+
+def jj_present(circuit: list):
     """
     Simple function that returns true if there
     is at least one JJ in the circuit and false if there isn't
@@ -238,7 +314,7 @@ def jj_present(circuit):
         circuit (list): a list of element labels for the desired circuit
                         e.g. [["J"],["L", "J"], ["C"]]
     """
-  
+
     for edge in circuit:
         for device in edge:
             if device == "J":
@@ -246,7 +322,7 @@ def jj_present(circuit):
     return False
 
 
-def full_reduction(df:  pd.DataFrame):
+def full_reduction(df: pd.DataFrame):
     """Performs the full reduction procedure:
     1) Removes circuits that have isolated series linear elements
     2) Removes circuits that have no jj's
@@ -254,26 +330,33 @@ def full_reduction(df:  pd.DataFrame):
 
 
     Args:
-        df (pd.Dataframe): dataframe that contains the 
-        
+        df (pd.Dataframe): dataframe that contains the
+
     Returns:
-        dataframe with reduced circuit set
+        nothing, fills in 'no_series', 'has_jj', 'in_non_isomorphic_set',
+        and 'equivalent_circuit' columns of df.
     """
 
-    # Remove series circuits
-    no_series = df[df.apply(lambda row: circuit_series_check(row['circuit'],
-                                            row['edges']),axis=1)]
-    if no_series.empty:
-        return no_series
+    # Mark series circuits
+    eq_circuits = df.apply(lambda row: remove_series_elems(row['circuit'],
+                                                           row['edges']),
+                           axis=1)
+    no_series = np.array([utils.get_num_nodes(eq_circuits[i][1]) ==
+                          utils.get_num_nodes(df['edges'].iloc[i])
+                          for i in range(df.shape[0])])
+    df['no_series'] = no_series
 
-    # Remove no jj circuits
-    no_series_yes_jj = no_series[no_series.apply(lambda row: jj_present(row['circuit']),
-                                                axis=1)]
-    if no_series_yes_jj.empty:
-        return no_series_yes_jj
+    # Mark no jj circuits
+    has_jj = no_series.apply(lambda row: jj_present(row['circuit']), axis=1)
+    df['has_jj'] = has_jj
 
-    # Create non-isomorphic set
-    return non_isomorphic_set(no_series_yes_jj)
+    # Create non-isomorphic set of yes-jj, no-series circuits
+    mark_non_isomorphic_set(df, np.logical_and(no_series, has_jj))
+
+    # Create non-isomorphic set of no-jj, no-series circuits
+    mark_non_isomorphic_set(df, np.logical_and(no_series,
+                                               np.logical_not(has_jj)))
+
 
 def full_reduction_by_group(df: pd.DataFrame):
     """Performs the full reduction procedure,
@@ -297,5 +380,5 @@ def full_reduction_by_group(df: pd.DataFrame):
         for edge_counts in by_edge_counts.indices:
             subset2 = by_edge_counts.get_group(edge_counts)
             reduced.append(full_reduction(subset2))
-    
+
     return pd.concat(reduced)
