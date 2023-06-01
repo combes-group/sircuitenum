@@ -240,6 +240,10 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     c_dict['circuit'] = "".join(circuit)
     c_dict['graph_index'] = graph_index
     c_dict['unique_key'] = f"n{n_nodes}_g{graph_index}_c{circuit_num}"
+    c_dict['in_non_iso_set'] = False
+    c_dict['no_series'] = False
+    c_dict['has_jj'] = False
+    c_dict['equiv_circuit'] = ""
 
     counts = [str(c) for c in count_elems(circuit, base)]
     c_dict['edge_counts'] = ",".join(counts)

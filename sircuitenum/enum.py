@@ -164,8 +164,8 @@ def generate_graphs_nodes(base: int, n_nodes: int,
         cursor_obj.execute(
            "CREATE TABLE {table} (circuit, graph_index int, edge_counts, \
             unique_key, n_nodes int, base int, no_series int, \
-            has_jj int, in_non_isomorphic_set int, \
-            equivalent_circuit)".format(table=table_name))
+            has_jj int, in_non_iso_set int, \
+            equiv_circuit)".format(table=table_name))
         connection_obj.commit()
     else:
         cursor_obj = None

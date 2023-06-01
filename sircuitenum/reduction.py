@@ -143,7 +143,7 @@ def isomorphic_circuit_in_set(circuit: list, edges: list, c_set: list,
     return False
 
 
-def mark_non_isomorphic_set(df: pd.DataFrame, to_consider: np.array):
+def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):
     """Reduces a set of circuits to contain only those
     whose port graphs are not isomorphic to each other.
 
@@ -152,27 +152,40 @@ def mark_non_isomorphic_set(df: pd.DataFrame, to_consider: np.array):
                            specific circuit. Assumes that every
                            entry has the same number of nodes,
                            and comes from the same basegraph
-        to_consider (pd.DataFrame): logical array that marks
-                                    rows to consider. For use
-                                    when some have already been
-                                    eliminated for other reasons.
+        to_consider (np.array, optional): logical array that marks
+                                rows to consider. For use
+                                when some have already been
+                                eliminated for other reasons.
+                                Defaults to considering all.
 
     Returns:
-        Nothing, fills in the 'in_final_set' and 'equivalent_graph'
+        Nothing, fills in the 'in_non_iso' and 'equiv_circuit'
         columns of df
     """
+    to_consider = kwargs.get("to_consider", np.ones(df.shape[0], dtype=bool))
+
+    # See if there's anything to consider
+    if np.all(np.logical_not(to_consider)):
+        return
+
+    # Determine starting point -- first entry to consider
+    i0 = np.argmax(to_consider)
+
+    in_non_iso_set = df['in_non_iso_set'].values
+    equiv_circuit = df['equiv_circuit'].values
 
     # The first graph is always unique
-    in_final_set = df['in_final_set'].values
-    equivalent_graph = df['equivalent_graph'].values
-    unique_graphs = [convert_circuit_to_port_graph(
-        df.iloc[0]['circuit'], df.iloc[0]['edges'])]
+    unique_graphs = [(convert_circuit_to_port_graph(df.iloc[i0]['circuit'],
+                                                    df.iloc[i0]['edges']),
+                      df.iloc[i0]['unique_key'])]
+    in_non_iso_set[i0] = 1
+    equiv_circuit[i0] = ""
 
     # Compare to each previously found unique graph
     # If it's not isomorphic to any of them
     # Then add it to the list
     # If it is, then mark which graph it is isomorphic to
-    for i in range(df.shape[0]):
+    for i in range(i0+1, df.shape[0]):
         if to_consider[i]:
             # Compare port graph to all entries in unique set
             row = df.iloc[i]
@@ -182,34 +195,20 @@ def mark_non_isomorphic_set(df: pd.DataFrame, to_consider: np.array):
             for (g, uid) in unique_graphs:
                 if nx.is_isomorphic(g, g_new, node_match=colors_match):
                     iso_flag = True
-                    equivalent_graph[i] = uid
+                    equiv_circuit[i] = uid
                     break
             # Is unique - add to unique set
             if not iso_flag:
                 unique_graphs.append((g_new, row['unique_key']))
-                in_final_set[i] = 1
-                equivalent_graph[i] = ""
+                in_non_iso_set[i] = 1
+                equiv_circuit[i] = ""
             # Is not unique
             else:
-                in_final_set[i] = 0
+                in_non_iso_set[i] = 0
 
-    df['in_isomorphic_set'] = in_final_set
-    df['equivalent_graph'] = equivalent_graph
+    df['in_non_iso_set'] = in_non_iso_set
+    df['equiv_circuit'] = equiv_circuit
 
-
-# def _remove_series_elems(circuit: list, edges: list,
-#                          to_reduce: list = ["L", "C"]):
-#     """
-#     Recursive helper function, removes a 
-
-#     Args:
-#         circuit (list): a list of element labels for the desired circuit
-#                         e.g. [["J"],["L", "J"], ["C"]]
-#         edges (list): a list of edge connections for the desired circuit
-#                         e.g. [(0,1), (0,2), (1,2)]
-#         to_reduce (list, optional): circuit elements to reduce.
-#                                     Defaults to linear elements ['L','C']
-#     """
 
 def remove_series_elems(circuit: list, edges: list,
                         to_reduce: list = ["L", "C"]):
@@ -256,74 +255,39 @@ def remove_series_elems(circuit: list, edges: list,
         if total_present == 2:
             for component in to_reduce:
 
-                #### Recursive case:
+                # Recursive case:
                 # Reduce if both components connected to
                 # a node are the same linear element
                 if n_present[component] == 2:
 
                     # Remove this node and insert
                     # a direct edge in its place
-                    new_circuit = []
-                    new_edges = []
+                    new_c = []
+                    new_e = []
+                    to_connect = []
                     for i in range(len(edges)):
-                        to_connect = []
                         edge = list(edges[i])
                         if node in edge:
                             edge.remove(node)
                             to_connect.append(edge[0])
-                        else:
-                            new_edges.append(edges[i])
-                            new_circuit.append(circuit[i])
-                    new_edges.append(tuple(sorted(to_connect)))
-                    new_circuit.append((component,))
 
-                    # Re-number nodes if you removed 
+                        else:
+                            new_e.append(edges[i])
+                            new_c.append(circuit[i])
+                    new_e.append(tuple(sorted(to_connect)))
+                    new_c.append((component,))
+
+                    # Re-number nodes if you removed
                     # not the max number
-                    new_edges = utils.renumber_nodes(new_edges)
+                    new_e = utils.renumber_nodes(new_e)
 
                     # Combine any redundant edges
-                    new_circuit, new_edges = utils.combine_redundant_edges(circuit, new_edges)
+                    new_c, new_e = utils.combine_redundant_edges(new_c, new_e)
 
-                    return remove_series_elems(new_circuit, new_edges)
+                    return remove_series_elems(new_c, new_e)
 
     # Base case -- nothing to reduce
     return circuit, edges
-
-    # Remove marked indices
-    # And add an edge to replace it
-    for i in sorted(i_to_remove)[::-1]:
-        new_circuit.pop(i)
-        new_edges.pop(i)
-    new_edges.append(tuple(sorted(to_connect)))
-    new_circuit.append((component,))
-    print(new_edges, new_circuit)
-
-    # Re-number nodes if you got rid of ones not at the top
-    if to_remove:
-        nodes = np.unique(np.concatenate(new_edges))
-        if nodes[-1] != nodes.shape[0]-1:
-            breakpoint()
-            relabel_map = {}
-            for i in range(len(nodes)):
-                relabel_map[nodes[i]] = i
-            for i in range(len(new_edges)):
-                edge = new_edges[i]
-                new_edges[i] = tuple([relabel_map[x] for x in edge])
-
-    # Combine any redundant edges
-    if to_remove:
-        edge_dict = {}
-        for i in range(len(new_edges)):
-            edge = new_edges[i]
-            comps = new_circuit[i]
-            if edge in edge_dict:
-                edge_dict[edge] = sorted(edge_dict[edge] + comps)
-            else:
-                edge_dict[edge] = comps
-        new_edges = list(edge_dict.keys())
-        new_circuit = [edge_dict[x] for x in new_edges]
-
-    return new_circuit, new_edges
 
 
 def jj_present(circuit: list):
@@ -362,21 +326,22 @@ def full_reduction(df: pd.DataFrame):
     eq_circuits = df.apply(lambda row: remove_series_elems(row['circuit'],
                                                            row['edges']),
                            axis=1)
-    no_series = np.array([utils.get_num_nodes(eq_circuits[i][1]) ==
+    no_series = np.array([utils.get_num_nodes(eq_circuits.iloc[i][1]) ==
                           utils.get_num_nodes(df['edges'].iloc[i])
                           for i in range(df.shape[0])])
     df['no_series'] = no_series
 
     # Mark no jj circuits
-    has_jj = no_series.apply(lambda row: jj_present(row['circuit']), axis=1)
+    has_jj = df.apply(lambda row: jj_present(row['circuit']), axis=1).values
     df['has_jj'] = has_jj
 
     # Create non-isomorphic set of yes-jj, no-series circuits
-    mark_non_isomorphic_set(df, np.logical_and(no_series, has_jj))
+    mark_non_isomorphic_set(df, to_consider=np.logical_and(no_series, has_jj))
 
     # Create non-isomorphic set of no-jj, no-series circuits
-    mark_non_isomorphic_set(df, np.logical_and(no_series,
-                                               np.logical_not(has_jj)))
+    mark_non_isomorphic_set(df,
+                            to_consider=np.logical_and(no_series,
+                                                       np.logical_not(has_jj)))
 
 
 def full_reduction_by_group(df: pd.DataFrame):
@@ -399,7 +364,8 @@ def full_reduction_by_group(df: pd.DataFrame):
         subset1 = by_basegraph.get_group(graph_index)
         by_edge_counts = subset1.groupby("edge_counts")
         for edge_counts in by_edge_counts.indices:
-            subset2 = by_edge_counts.get_group(edge_counts)
-            reduced.append(full_reduction(subset2))
+            subset2 = by_edge_counts.get_group(edge_counts).copy()
+            full_reduction(subset2)
+            reduced.append(subset2)
 
     return pd.concat(reduced)
