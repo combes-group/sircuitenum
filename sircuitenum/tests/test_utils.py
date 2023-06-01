@@ -40,7 +40,7 @@ NON_SERIES_3 += [
 ]
 
 TEST_C = ["0","1","2"]
-TEST_MAPPED_C = utils.circuit_to_components(TEST_C)
+TEST_MAPPED_C = utils.encoding_to_components(TEST_C)
 TEST_GI = 1
 TEST_NN = 3
 TEST_B = 7
@@ -97,14 +97,68 @@ def test_graph_index_to_edges():
     return
 
 
+def test_renumber_nodes():
+
+    # Test a few obvious cases
+    edges = [(0, 1), (1, 2), (2, 0)]
+    e2 = utils.renumber_nodes(edges)
+    assert e2 == edges
+
+    edges = [(1, 3), (1, 2)]
+    e2 = utils.renumber_nodes(edges)
+    assert e2 == [(0, 2), (0, 1)]
+
+    edges = [(0, 1), (1, 2), (6, 0)]
+    e2 = utils.renumber_nodes(edges)
+    assert e2 == [(0, 1), (1, 2), (3, 0)]
+
+    # Some larger ones -- test the 2,3/3,4 connection
+    edges = [(0, 1), (1, 2), (2, 3), (2, 4), (3, 4)]
+    e2 = utils.renumber_nodes(edges)
+    assert e2 == edges
+
+    edges = [(1, 4), (1, 2), (2, 5), (2, 4), (2, 4)]
+    e2 = utils.renumber_nodes(edges)
+    assert e2 == [(0, 2), (0, 1), (1, 3), (1, 2), (1, 2)]
+
+
+def test_combine_redundant_edges():
+
+    # Test a few obvious cases
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("L",), ("L",), ("L",)]
+    c2, e2 = utils.combine_redundant_edges(circuit, edges)
+    assert e2 == [(0, 1), (1, 2), (0, 2)]
+    assert c2 == circuit
+
+    edges = [(0, 1), (1, 0)]
+    circuit = [("L",), ("L",)]
+    c2, e2 = utils.combine_redundant_edges(circuit, edges)
+    assert e2 == [(0, 1)]
+    assert c2 == [("L",)]
+
+    edges = [(0, 1), (0, 1), (2, 0)]
+    circuit = [("C",), ("C",), ("L",)]
+    c2, e2 = utils.combine_redundant_edges(circuit, edges)
+    assert e2 == [(0, 1), (0, 2)]
+    assert c2 == [("C",), ("L",)]
+
+    # Some larger ones -- test the 2,3/3,4 connection
+    edges = [(0, 1), (1, 0), (2, 1), (2, 1), (2, 3)]
+    circuit = [("C",), ("J",), ("C", "J"), ("L", "J"), ("L",)]
+    c2, e2 = utils.combine_redundant_edges(circuit, edges)
+    assert e2 == [(0, 1), (1, 2), (2, 3)]
+    assert c2 == [("C", "J"), ("C", "J", "L"), ("L",)]
+
+
 def test_encoding_to_components():
-    components = utils.circuit_to_components("261")
+    components = utils.encoding_to_components("261")
     assert(components == [("L",), ("C", "J", "L"), ("J",)])
 
-    components = utils.circuit_to_components("234")
+    components = utils.encoding_to_components("234")
     assert(components == [("L",), ("C", "J"), ("C", "L")])
 
-    components = utils.circuit_to_components("2345")
+    components = utils.encoding_to_components("2345")
     assert(components == [("L",), ("C", "J"), ("C", "L"), ("J", "L")])
 
     return
@@ -428,4 +482,6 @@ def write_test_df_in_mem(fname=MEMFNAME1, overwrite=False):
     return df
 
 if __name__ == "__main__":
-    test_circuit_node_representation()
+    test_renumber_nodes()
+    test_combine_redundant_edges()
+    test_encoding_to_components()

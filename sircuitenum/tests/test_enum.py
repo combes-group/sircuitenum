@@ -97,6 +97,14 @@ def test_generate_for_specific_graph():
         assert utils.circuit_in_set(random_circuit, df['circuit'].values)
 
 
+def test_delete_table():
+    assert(False)
+
+    
+def test_find_equiv_cir_series():
+    assert(False)
+
+
 def test_generate_graphs_nodes():
     
     # Most simple two node graph

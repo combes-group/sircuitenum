@@ -63,42 +63,60 @@ def test_convert_circuit_to_port_graph():
     assert all(x in G.nodes for x in exp_nodes)
     assert all(x in G.edges for x in exp_edges)
 
-def test_find_equiv_cir_series():
-    assert(False)
-    
+
 def test_remove_series_elems():
 
     # Test a few obvious cases
-    edges = [(0,1), (1,2), (2,0)]
-    circuit = [("L",),("L",),("L",)]
-    assert red.circuit_series_check(circuit, edges) is False
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("L",), ("L",), ("L",)]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    print(c2, e2)
+    assert e2 == [(0, 1)]
+    assert c2 == [("L",)]
 
-    edges = [(0,1), (1,2)]
-    circuit = [("C",),("L",)]
-    assert red.circuit_series_check(circuit, edges) is True
+    edges = [(0, 1), (1, 2)]
+    circuit = [("C",), ("L",)]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    assert e2 == edges
+    assert c2 == circuit
 
-    edges = [(0,1), (1,2)]
-    circuit = [("C",),("C",),("C",)]
-    assert red.circuit_series_check(circuit, edges) is False
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("C",), ("C",), ("L",)]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    assert e2 == [(0, 1)]
+    assert c2 == [("C", "L")]
 
     # Some larger ones -- test the 2,3/3,4 connection
-    edges = [(0,1), (1,2), (2,3), (2,4), (3,4)]
-    circuit = [("C",),("J",),("C","J"), ("L","J"), ("L",)]
-    assert red.circuit_series_check(circuit, edges) is True
+    edges = [(0, 1), (1, 2), (2, 3), (2, 4), (3, 4)]
+    circuit = [("C",), ("J",), ("C", "J"), ("L", "J"), ("L",)]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    assert e2 == edges
+    assert c2 == circuit
 
-    edges = [(0,1), (1,2), (2,3), (2,4), (3,4)]
-    circuit = [("C",),("J",),("L",), ("L","J"), ("L",)]
-    assert red.circuit_series_check(circuit, edges) is False
+    edges = [(0, 1), (1, 2), (2, 3), (2, 4), (3, 4)]
+    circuit = [("C",), ("J",), ("L",), ("L", "J"), ("L",)]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    assert e2 == [(0, 1), (1, 2), (2, 3), (2, 3)]
+    assert c2 == [("C",), ("J",), ("L",), ("L", "J")]
 
-    edges = [(0,1), (1,2), (2,3), (2,4), (3,4)]
-    circuit = [("C",),("J",),("C","J"), ("L","J"), ("L","J")]
-    assert red.circuit_series_check(circuit, edges) is True
+    edges = [(0, 1), (1, 2), (2, 3), (2, 4), (3, 4)]
+    circuit = [("C",), ("J",), ("C", "J"), ("L", "J"), ("L", "J")]
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    assert e2 == edges
+    assert c2 == circuit
 
     # Test the full set of fully connected three nodes
-    edges = [(0,1), (1,2), (2,0)]
-    filt = [c for c in ALL_CONNECTED_3 if red.circuit_series_check(c, edges)]
-    assert len(filt) == len(NON_SERIES_3)
-    assert all(utils.circuit_in_set(c, NON_SERIES_3) for c in filt)
+    edges = [(0, 1), (1, 2), (2, 0)]
+    eq_circuits = [c for c in ALL_CONNECTED_3 if red.remove_series_elems(c, edges)]
+    
+    no_series = np.array([utils.get_num_nodes(eq_circuits[i][1]) == 3
+                          for i in range(len(NON_SERIES_3))])
+
+    assert np.sum(no_series) == len(NON_SERIES_3)
+    for i in range(len(eq_circuits)):
+        if no_series[i]:
+            c = eq_circuits[i][0]
+            assert utils.circuit_in_set(c, NON_SERIES_3)
 
 def test_non_isomorphic_set():
 
@@ -220,4 +238,4 @@ def test_jj_present():
 
 
 if __name__ == "__main__":
-    test_full_reduction_by_group()
+    test_remove_series_elems()

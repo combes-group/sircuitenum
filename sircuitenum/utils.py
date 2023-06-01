@@ -305,8 +305,64 @@ def circuit_node_representation(circuit: list, edges: list):
 
 
 def get_num_nodes(edges: list):
-    """Simple function that returns the number of nodes in the graph, given the edge list"""
-    return np.max(np.array(edges)) + 1
+    """
+    Simple function that returns the number of unique nodes
+    in edges
+    """
+    return np.unique(np.concatenate(edges)).size
+
+def renumber_nodes(edges: list):
+    """
+    Renumbers nodes so that there is a continuous range
+    of integers between 0 and the max number
+
+    Args:
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+
+    Returns:
+        new version of edges with nodes relabeled so that the max
+        number present is equal to the number of nodes + 1
+    """
+    new_edges = edges[:]
+    nodes = np.unique(np.concatenate(new_edges))
+    if nodes[-1] != nodes.shape[0]-1:
+        relabel_map = {}
+        for i in range(len(nodes)):
+            relabel_map[nodes[i]] = i
+        for i in range(len(new_edges)):
+            edge = new_edges[i]
+            new_edges[i] = tuple([relabel_map[x] for x in edge])
+
+    return new_edges
+
+def combine_redundant_edges(circuit: list, edges: list):
+    """
+    Combines edges that are between the same two nodes
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+    
+    Returns:
+        New version of circuit/edges with any redundant edges combined.
+        If multiple edges have the same element, then a single
+
+    """
+    edge_dict = {}
+    for i in range(len(edges)):
+        edge = tuple(sorted(edges[i]))
+        comps = circuit[i]
+        if edge in edge_dict:
+            edge_dict[edge] = edge_dict[edge] + comps
+        else:
+            edge_dict[edge] = comps
+    new_edges = list(edge_dict.keys())
+    new_circuit = [tuple(sorted(set(edge_dict[x]))) for x in new_edges]
+    
+    return new_circuit, new_edges
 
 
 def circuit_in_set(circuit: list, c_set: list):

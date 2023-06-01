@@ -47,31 +47,6 @@ def num_possible_circuits(base: int, n_nodes: int, quiet: bool = True):
     return n_circuits
 
 
-def total_num_possible(max_base: int, n_nodes: int, quiet: bool = True):
-    """ Calculates the number of possible circuits for a given number
-        of possible edges, assuming a specific number of nodes.
-
-    Args:
-        max_base (int): maximum number of possible edges to loop until
-        n_nodes (int): the number of vertices in a graph.
-        quiet (bool): whether to print the number possible or not
-
-    Returns:
-        counts (dict): dictionary that contains the number of possible circuits
-                        with each number of edges.
-    """
-    total = 0
-    counts = {}
-    # Iterate over all possible number of edges
-    for i in range(max_base+1):
-        counts[str(i)] = num_possible_circuits(i, n_nodes, quiet=quiet)
-        total += counts[str(i)]
-    if not quiet:
-        print("There are: ", total, " Elements")
-    counts["total"] = total
-    return counts
-
-
 def generate_for_specific_graph(base: int, graph: nx.Graph,
                                 graph_index: int,
                                 cursor_obj=None,
@@ -129,6 +104,41 @@ def delete_table(db_file: str, n_nodes: int):
     connection_obj.commit()
     connection_obj.close()
     return
+
+
+def find_equiv_cir_series(db_file: str, circuit: list,
+                          edges: list, graph_index: int):
+    """
+    Searches the database for circuits that are equivalent
+    to the one given, up to a reduction of series linear
+    circuit elements
+
+    Args:
+        db_file (str): sql database file that's already been completed
+                       for the previous number of nodes.
+        circuit (list): _description_
+        edges (list): _description_
+        graph_index (int): _description_
+
+    Returns:
+        _type_: _description_
+    """
+
+    n_nodes = utils.get_num_nodes(edges)
+
+    # What does it look like with series elems removed
+    c2, e2 = red.remove_series_elems(circuit, edges)
+    encoding = utils.components_to_encoding(c2)
+    filters = f"WHERE circuit LIKE {encoding}\
+                AND graph_index = {graph_index}"
+    equiv = utils.get_circuit_data_batch(db_file, n_nodes-1,
+                                         filter_str=filters)
+
+    # Return the equivalent circuit
+    if equiv.iloc[0]['equivalent_circuit'] == "":
+        return equiv.iloc[0]['unique_key']
+    else:
+        return equiv.iloc[0]['equivalent_circuit']
 
 
 def generate_graphs_nodes(base: int, n_nodes: int,

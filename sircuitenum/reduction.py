@@ -197,8 +197,22 @@ def mark_non_isomorphic_set(df: pd.DataFrame, to_consider: np.array):
     df['equivalent_graph'] = equivalent_graph
 
 
+# def _remove_series_elems(circuit: list, edges: list,
+#                          to_reduce: list = ["L", "C"]):
+#     """
+#     Recursive helper function, removes a 
+
+#     Args:
+#         circuit (list): a list of element labels for the desired circuit
+#                         e.g. [["J"],["L", "J"], ["C"]]
+#         edges (list): a list of edge connections for the desired circuit
+#                         e.g. [(0,1), (0,2), (1,2)]
+#         to_reduce (list, optional): circuit elements to reduce.
+#                                     Defaults to linear elements ['L','C']
+#     """
+
 def remove_series_elems(circuit: list, edges: list,
-                        to_reduce: list = ['L', 'C']):
+                        to_reduce: list = ["L", "C"]):
     """
     Reduces the size of the given circuit by eliminating
     linear components that are in series.
@@ -209,7 +223,7 @@ def remove_series_elems(circuit: list, edges: list,
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
         to_reduce (list, optional): circuit elements to reduce.
-                                    Defaults to linear elements ['L','C'].
+                                    Defaults to linear elements ['L','C']
 
     Returns:
         True if the circuit cannot be reduced
@@ -218,11 +232,12 @@ def remove_series_elems(circuit: list, edges: list,
 
     num_nodes = utils.get_num_nodes(edges)
 
+    # Base case: 2 nodes
+    if num_nodes == 2:
+        return circuit, edges
+
     node_representation = utils.circuit_node_representation(
         circuit, edges)
-
-    # List of nodes to eliminate
-    to_remove = []
 
     # Check each node to see if there are only
     # two of the same linear element connect to it
@@ -240,69 +255,75 @@ def remove_series_elems(circuit: list, edges: list,
         # connected to the node
         if total_present == 2:
             for component in to_reduce:
+
+                #### Recursive case:
                 # Reduce if both components connected to
                 # a node are the same linear element
                 if n_present[component] == 2:
-                    to_remove.append((node, component))
 
-    # Remove nodes that were marked
-    new_circuit = circuit[:]
-    new_edges = edges[:]
-    for node, component in to_remove:
-        to_connect = []
-        i_to_remove = []
+                    # Remove this node and insert
+                    # a direct edge in its place
+                    new_circuit = []
+                    new_edges = []
+                    for i in range(len(edges)):
+                        to_connect = []
+                        edge = list(edges[i])
+                        if node in edge:
+                            edge.remove(node)
+                            to_connect.append(edge[0])
+                        else:
+                            new_edges.append(edges[i])
+                            new_circuit.append(circuit[i])
+                    new_edges.append(tuple(sorted(to_connect)))
+                    new_circuit.append((component,))
+
+                    # Re-number nodes if you removed 
+                    # not the max number
+                    new_edges = utils.renumber_nodes(new_edges)
+
+                    # Combine any redundant edges
+                    new_circuit, new_edges = utils.combine_redundant_edges(circuit, new_edges)
+
+                    return remove_series_elems(new_circuit, new_edges)
+
+    # Base case -- nothing to reduce
+    return circuit, edges
+
+    # Remove marked indices
+    # And add an edge to replace it
+    for i in sorted(i_to_remove)[::-1]:
+        new_circuit.pop(i)
+        new_edges.pop(i)
+    new_edges.append(tuple(sorted(to_connect)))
+    new_circuit.append((component,))
+    print(new_edges, new_circuit)
+
+    # Re-number nodes if you got rid of ones not at the top
+    if to_remove:
+        nodes = np.unique(np.concatenate(new_edges))
+        if nodes[-1] != nodes.shape[0]-1:
+            breakpoint()
+            relabel_map = {}
+            for i in range(len(nodes)):
+                relabel_map[nodes[i]] = i
+            for i in range(len(new_edges)):
+                edge = new_edges[i]
+                new_edges[i] = tuple([relabel_map[x] for x in edge])
+
+    # Combine any redundant edges
+    if to_remove:
+        edge_dict = {}
         for i in range(len(new_edges)):
             edge = new_edges[i]
-            # Mark edge for removal
-            # and connecting node
-            if node in edge:
-                i_to_remove.append(i)
-                edge.remove(node)
-                to_connect.append(edge[0])
-        # Remove marked indices
-        # And add an edge to replace it
-        for i in i_to_remove:
-            new_circuit.pop(i)
-            new_edges.pop(i)
-        edges.append(tuple(sorted))
-        circuit.append((component,))
+            comps = new_circuit[i]
+            if edge in edge_dict:
+                edge_dict[edge] = sorted(edge_dict[edge] + comps)
+            else:
+                edge_dict[edge] = comps
+        new_edges = list(edge_dict.keys())
+        new_circuit = [edge_dict[x] for x in new_edges]
 
     return new_circuit, new_edges
-
-
-def find_equiv_cir_series(db_file: str, circuit: list,
-                          edges: list, graph_index: int):
-    """
-    Searches the database for circuits that are equivalent
-    to the one given, up to a reduction of series linear
-    circuit elements
-
-    Args:
-        db_file (str): sql database file that's already been completed
-                       for the previous number of nodes.
-        circuit (list): _description_
-        edges (list): _description_
-        graph_index (int): _description_
-
-    Returns:
-        _type_: _description_
-    """
-
-    n_nodes = utils.get_num_nodes(edges)
-
-    # What does it look like with series elems removed
-    c2, e2 = remove_series_elems(circuit, edges)
-    encoding = utils.components_to_encoding(c2)
-    filters = f"WHERE circuit LIKE {encoding}\
-                AND graph_index = {graph_index}"
-    equiv = utils.get_circuit_data_batch(db_file, n_nodes-1,
-                                         filter_str=filters)
-
-    # Return the equivalent circuit
-    if equiv.iloc[0]['equivalent_circuit'] == "":
-        return equiv.iloc[0]['unique_key']
-    else:
-        return equiv.iloc[0]['equivalent_circuit']
 
 
 def jj_present(circuit: list):
