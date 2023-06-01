@@ -67,18 +67,20 @@ ELEM_DICT = {
 DOWNLOAD_PATH = Path(__file__).parent.parent
 
 
-def graph_index_to_edges(graph_index: int, n_nodes: int, all_graphs: list = []):
+def graph_index_to_edges(graph_index: int, n_nodes: int,
+                         all_graphs: list = []):
     """
-    Returns a list of edges [(from, to), (from, to)] 
+    Returns a list of edges [(from, to), (from, to)]
     for the specified base graph
 
     Args:
         graph_index (int): base graph number
         n_nodes (int): number of nodes in the base graph
-        all_graphs (list of nx graphs): optionally preload the list to avoid loading it in every call
+        all_graphs (list of nx graphs): optionally preload the list to avoid
+                                        loading it in every call
 
     Returns:
-        list of len 2 tuples where each tuple represents 
+        list of len 2 tuples where each tuple represents
         the starting and ending nodes for an edge in the graph
         [(from, to), (from, to),...]
     """
@@ -124,10 +126,11 @@ def components_to_encoding(circuit: list,
         list of lists that represent the circuit elements along an edge:
         e.g. [["J"], ["C", "J", "L"], ["L"]]
     """
-    return [elem_mapping[tuple(comps)] for comps in circuit]
+    return "".join([elem_mapping[tuple(comps)] for comps in circuit])
 
 
-def convert_loaded_df(df: pd.DataFrame, n_nodes: int, elem_mapping: dict = COMBINATION_DICT):
+def convert_loaded_df(df: pd.DataFrame, n_nodes: int,
+                      elem_mapping: dict = COMBINATION_DICT):
     """Load the edges/circuit element labels for a freshly-loaded df
 
 
@@ -148,7 +151,8 @@ def convert_loaded_df(df: pd.DataFrame, n_nodes: int, elem_mapping: dict = COMBI
 
 
 def get_basegraphs(n_nodes: int):
-    """Loads the base graphs for a specific number of nodes 
+    """
+    Loads the base graphs for a specific number of nodes
 
     Args:
         n_nodes (int): number of nodes in the graph
@@ -176,7 +180,8 @@ def count_elems(circuit: list, base: int):
                         (i.e., J, C, I, JI, CI, JC, JCI)
 
     Returns:
-        list of length base, where each entry is the number of that element present
+        list of length base, where each entry is the number of that
+        element present
     """
     counts = [0]*base
     for part in circuit:
@@ -290,16 +295,16 @@ def circuit_node_representation(circuit: list, edges: list):
     # how many of that component connect to a given node
     # i.e. 'J': [0,0,1,2,0]
     component_counts = {}
-    for component in np.unique(np.concatenate(list(COMBINATION_DICT.values()))):
-        component_counts[component] = [0] * n_nodes
+    for comp in np.unique(np.concatenate(list(COMBINATION_DICT.values()))):
+        component_counts[comp] = [0] * n_nodes
 
     # Go through each component code in the circuit
     # and loop through the circuit element that it entails
     # and add counts to the appropriate nodes
-    for component_combo, edge in zip(circuit, edges):
-        for component in component_combo:
-            component_counts[component][edge[0]] += 1
-            component_counts[component][edge[1]] += 1
+    for components, edge in zip(circuit, edges):
+        for comp in components:
+            component_counts[comp][edge[0]] += 1
+            component_counts[comp][edge[1]] += 1
 
     return component_counts
 
@@ -310,6 +315,7 @@ def get_num_nodes(edges: list):
     in edges
     """
     return np.unique(np.concatenate(edges)).size
+
 
 def renumber_nodes(edges: list):
     """
@@ -336,6 +342,7 @@ def renumber_nodes(edges: list):
 
     return new_edges
 
+
 def combine_redundant_edges(circuit: list, edges: list):
     """
     Combines edges that are between the same two nodes
@@ -345,7 +352,7 @@ def combine_redundant_edges(circuit: list, edges: list):
                         e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
-    
+
     Returns:
         New version of circuit/edges with any redundant edges combined.
         If multiple edges have the same element, then a single
@@ -361,7 +368,7 @@ def combine_redundant_edges(circuit: list, edges: list):
             edge_dict[edge] = comps
     new_edges = list(edge_dict.keys())
     new_circuit = [tuple(sorted(set(edge_dict[x]))) for x in new_edges]
-    
+
     return new_circuit, new_edges
 
 
@@ -385,21 +392,22 @@ def circuit_in_set(circuit: list, c_set: list):
     return False
 
 
-################################################################################
+###############################################################################
 # I/O Functions for Circuit Database
-################################################################################
+###############################################################################
 
 
 def write_df(file: str, df: pd.DataFrame, n_nodes: int, overwrite=False):
     """
-    Writes the given dataframe to a database file. Appends it if the 
+    Writes the given dataframe to a database file. Appends it if the
     table is already there.
 
     Args:
+        file (str, optional): Database file to write to.
         df (pd.Dataframe): dataframe that represents the circuit entries
         n_nodes (int, optional): number of nodes in the circuit. Defaults to 7.
-        file (str, optional): database file to write to. Defaults to "circuits.db".
-        overwrite (bool, optional): overwrite the table or append to it if it exists
+        overwrite (bool, optional): overwrite the table or
+                                    append to it if it exists
 
     Returns:
         None, writes the dataframe to the database
@@ -417,20 +425,21 @@ def write_df(file: str, df: pd.DataFrame, n_nodes: int, overwrite=False):
     if_exists = "append"
     if overwrite:
         if_exists = "replace"
-    
+
     with sqlite3.connect(file) as con:
         to_write.to_sql(f"CIRCUITS_{n_nodes}_NODES",
                         con, if_exists=if_exists, index=False)
 
 
-def delete_circuit_data(file: str, n_nodes: int, indices: Union[list,str]):
+def delete_circuit_data(file: str, n_nodes: int, indices: Union[list, str]):
     """
     Deletes the specified graphs (num nodes/indices) from the database file
 
     Args:
-        file (str, optional): path to the databse file. 
+        file (str, optional): path to the databse file.
         n_nodes (int): number of nodes for the graph
-        indices (list or str): unique key (or list of keys) of the graph(s) to be deleted
+        indices (list or str): unique key (or list of keys) of the graph(s)
+                                to be deleted
 
     Returns:
         None, just modifies the database
@@ -489,7 +498,7 @@ def get_circuit_data(file: str, n_nodes: int, index: str,
     return circuit, edges
 
 
-def get_circuit_data_batch(file: str, n_nodes: int, 
+def get_circuit_data_batch(file: str, n_nodes: int,
                            elem_mapping: dict = COMBINATION_DICT,
                            filter_str: str = ''):
     """
@@ -498,7 +507,7 @@ def get_circuit_data_batch(file: str, n_nodes: int,
 
     Args:
         n_nodes (int): number of nodes in the circuit
-        file (str, optional): sqlite file to look in. 
+        file (str, optional): sqlite file to look in.
                               Defaults to "circuits.db"
         elem_mapping (dict, optional): mapping from character to
                                        list of circuit elements
@@ -548,4 +557,3 @@ def write_circuit(cursor_obj, c_dict: dict, to_commit: bool = False):
                        )
     if to_commit:
         cursor_obj.connection.commit()
-
