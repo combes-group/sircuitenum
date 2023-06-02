@@ -47,8 +47,7 @@ TEST_CN = 16
 TEST_ENTRY = utils.circuit_entry_dict(TEST_C, TEST_GI, TEST_NN,
                                       TEST_CN, TEST_B)
 
-MEMFNAME1 = 'file:cachedb?mode=memory&cache=shared'
-MEMFNAME2 = 'file:cachedb2?mode=memory&cache=shared'
+TEMP_FILE = 'temp.db'
 
 
 def test_get_basegraphs():
@@ -99,6 +98,45 @@ def test_graph_index_to_edges():
     G = utils.get_basegraphs(5)[3]
     g = utils.graph_index_to_edges(3, 5)
     assert all(x in G.edges for x in g)
+
+
+def test_edges_to_graph_index():
+
+    # 2 Nodes
+    edges = [(0, 1)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 0
+    edges = [(1, 0)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 0
+
+    # 3 Nodes
+    edges = [(0, 2), (2, 1)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 0
+    edges = [(0, 2), (2, 1), (0, 1)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 1
+
+    # 4 Nodes
+    edges = [(0, 2), (1, 0), (3, 0)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 0
+    edges = [(0, 2), (2, 1), (3, 1)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 1
+    edges = [(0, 1), (1, 2), (2, 0), (1, 3)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 2
+    edges = [(0, 1), (1, 3), (2, 3), (0, 2)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 3
+    edges = [(0, 1), (1, 2), (2, 0), (1, 3), (2, 3)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 4
+    edges = [(0, 1), (1, 2), (2, 0), (1, 3), (2, 3), (3, 0)]
+    gi = utils.edges_to_graph_index(edges)
+    assert gi == 5
 
 
 def test_renumber_nodes():
@@ -304,61 +342,78 @@ def test_convert_loaded_df():
 
 def test_write_df():
 
-    if Path(MEMFNAME1).exists():
-        os.remove(MEMFNAME1)
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
 
-    df = write_test_df_in_mem()
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df = write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
 
     assert df.shape == df2.shape
-    write_test_df_in_mem(overwrite=False)
+    write_test_df(overwrite=False)
 
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     assert 2*df.shape[0] == df2.shape[0]
     assert df.shape[1] == df2.shape[1]
 
-    write_test_df_in_mem(overwrite=True)
+    write_test_df(overwrite=True)
 
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
 
     assert df.shape[0] == df2.shape[0]
     assert df.shape[1] == df2.shape[1]
 
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
+
+
+def test_update_db_from_df():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
+    df = write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    df2['in_non_iso_set'] = 1
+    utils.update_db_from_df(TEMP_FILE, df2)
+
+    df3 = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    assert np.all(df3['in_non_iso_set'] == 1)
+    assert np.all(df['in_non_iso_set'] == 0)
+
+    os.remove(TEMP_FILE)
 
 
 def test_delete_circuit_data():
 
-    df = write_test_df_in_mem(MEMFNAME1, overwrite=True)
+    df = write_test_df(TEMP_FILE, overwrite=True)
 
-    uid = 'g1_c21'
-    utils.delete_circuit_data(MEMFNAME1, 3, uid)
+    uid = 'n3_g1_c21'
+    utils.delete_circuit_data(TEMP_FILE, 3, uid)
 
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
 
     assert df2.shape[0] == df.shape[0]-1
     assert uid not in df2.unique_key
 
-    df = write_test_df_in_mem(MEMFNAME1, overwrite=True)
+    df = write_test_df(TEMP_FILE, overwrite=True)
 
     n_delete = 10
-    uid = sorted([f'g1_c{str(i).zfill(2)}'
+    uid = sorted([f'n3_g1_c{str(i).zfill(2)}'
                   for i in np.random.choice(np.arange(df.shape[0]),
                                             size=n_delete, replace=False)])
-    utils.delete_circuit_data(MEMFNAME1, 3, uid)
+    utils.delete_circuit_data(TEMP_FILE, 3, uid)
 
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
 
     assert df2.shape[0] == df.shape[0]-n_delete
     assert all(u not in df2.unique_key for u in uid)
 
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
 
 
 def test_get_circuit_data():
 
-    con, cur = write_test_circuit(MEMFNAME1)
-    circuit, edges = utils.get_circuit_data(MEMFNAME1, TEST_NN,
+    con, cur = write_test_circuit(TEMP_FILE)
+    circuit, edges = utils.get_circuit_data(TEMP_FILE,
                                             TEST_ENTRY['unique_key'])
 
     assert circuit == TEST_MAPPED_C
@@ -371,10 +426,10 @@ def test_get_circuit_data():
 
     # Try loading and re-writing with batch function to make sure
     # it doesn't break anything
-    df = utils.get_circuit_data_batch(MEMFNAME1, 3)
-    utils.write_df(MEMFNAME1, df, 3, overwrite=True)
+    df = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    utils.write_df(TEMP_FILE, df, 3, overwrite=True)
 
-    circuit, edges = utils.get_circuit_data(MEMFNAME1, TEST_NN,
+    circuit, edges = utils.get_circuit_data(TEMP_FILE,
                                             TEST_ENTRY['unique_key'])
 
     assert circuit == TEST_MAPPED_C
@@ -386,9 +441,9 @@ def test_get_circuit_data():
                utils.circuit_in_set(x[::-1], edges) for x in test_edges)
 
     # Load elements of the full dataframe individually
-    df = write_test_df_in_mem(MEMFNAME1, overwrite=True)
+    df = write_test_df(TEMP_FILE, overwrite=True)
     for i, row in df.iterrows():
-        circuit, edges = utils.get_circuit_data(MEMFNAME1, row['n_nodes'],
+        circuit, edges = utils.get_circuit_data(TEMP_FILE,
                                                 row['unique_key'])
         test_edges = row['edges']
         test_circuit = row['circuit']
@@ -401,16 +456,16 @@ def test_get_circuit_data():
 
     # Cleanup
     con.close()
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
 
 
 def test_get_circuit_data_batch():
 
-    if Path(MEMFNAME1).exists():
-        os.remove(MEMFNAME1)
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
 
-    df = write_test_df_in_mem()
-    df2 = utils.get_circuit_data_batch(MEMFNAME1, 3)
+    df = write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
 
     assert df.shape == df2.shape
     for i in range(df2.shape[0]):
@@ -424,24 +479,24 @@ def test_get_circuit_data_batch():
         else:
             assert v1 == v2
 
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
 
 
 def test_write_circuit():
 
-    con, cur = write_test_circuit(MEMFNAME1)
+    con, cur = write_test_circuit(TEMP_FILE)
     df = pd.read_sql_query("select * from CIRCUITS_3_NODES",
                            con=con)
-
+    breakpoint()
     for k in df.columns:
         assert df.iloc[0][k] == TEST_ENTRY[k]
 
     # Cleanup
     con.close()
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
 
     # Write multiple rows
-    con, cur = write_test_circuit(MEMFNAME1, reps=10)
+    con, cur = write_test_circuit(TEMP_FILE, reps=10)
     df = pd.read_sql_query("select * from CIRCUITS_3_NODES",
                            con=con)
 
@@ -451,10 +506,19 @@ def test_write_circuit():
 
     # Cleanup
     con.close()
-    os.remove(MEMFNAME1)
+    os.remove(TEMP_FILE)
 
 
-def write_test_circuit(fname: str = MEMFNAME1, reps: int = 1):
+def test_list_all_tables():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+    write_test_circuit(TEMP_FILE)
+    assert utils.list_all_tables(TEMP_FILE) == [("CIRCUITS_3_NODES",)]
+    os.remove(TEMP_FILE)
+
+
+def write_test_circuit(fname: str = TEMP_FILE, reps: int = 1):
     """
     Helper function that writes a single test circuit into
     a temporary database individually for testing
@@ -474,9 +538,11 @@ def write_test_circuit(fname: str = MEMFNAME1, reps: int = 1):
     con = sqlite3.connect(fname)
     cur = con.cursor()
     table_name = "CIRCUITS_3_NODES"
-    cur.execute("CREATE TABLE {table} (circuit, graph_index int, \
-                edge_counts, unique_key, n_nodes int, base int\
-                )".format(table=table_name))
+    cur.execute(
+           "CREATE TABLE {table} (circuit, graph_index int, edge_counts, \
+            unique_key, n_nodes int, base int, no_series int, \
+            has_jj int, in_non_iso_set int, \
+            equiv_circuit)".format(table=table_name))
 
     for i in range(reps):
         utils.write_circuit(cur, TEST_ENTRY, True)
@@ -484,7 +550,7 @@ def write_test_circuit(fname: str = MEMFNAME1, reps: int = 1):
     return con, cur
 
 
-def write_test_df_in_mem(fname: str = MEMFNAME1, overwrite: bool = False):
+def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
     """
     Helper function that writes a dataframe of circuits into a temporary
     file for testing
@@ -504,12 +570,17 @@ def write_test_df_in_mem(fname: str = MEMFNAME1, overwrite: bool = False):
     df['edges'] = edges
     df['n_nodes'] = 3
     df['base'] = 7
-    df['unique_key'] = [f"g1_c{str(i).zfill(2)}" for i in range(df.shape[0])]
+    df['unique_key'] = [f"n3_g1_c{str(i).zfill(2)}"
+                        for i in range(df.shape[0])]
+    df['no_series'] = 0
+    df['has_jj'] = 0
+    df['in_non_iso_set'] = 0
+    df['equiv_circuit'] = ""
 
-    utils.write_df(MEMFNAME1, df, 3, overwrite=overwrite)
+    utils.write_df(TEMP_FILE, df, 3, overwrite=overwrite)
 
     return df
 
 
 if __name__ == "__main__":
-    test_get_basegraphs()
+    test_update_db_from_df()

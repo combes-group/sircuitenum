@@ -329,11 +329,11 @@ def full_reduction(df: pd.DataFrame):
     no_series = np.array([utils.get_num_nodes(eq_circuits.iloc[i][1]) ==
                           utils.get_num_nodes(df['edges'].iloc[i])
                           for i in range(df.shape[0])])
-    df['no_series'] = no_series
+    df['no_series'] = no_series.astype(int)
 
     # Mark no jj circuits
     has_jj = df.apply(lambda row: jj_present(row['circuit']), axis=1).values
-    df['has_jj'] = has_jj
+    df['has_jj'] = has_jj.astype(int)
 
     # Create non-isomorphic set of yes-jj, no-series circuits
     mark_non_isomorphic_set(df, to_consider=np.logical_and(no_series, has_jj))

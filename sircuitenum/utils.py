@@ -66,9 +66,13 @@ ELEM_DICT = {
 
 DOWNLOAD_PATH = Path(__file__).parent.parent
 
+# Dictionary to store loaded basegraphs, so
+# you don't have to load them from storage
+# every time
+LOADED_BASEGRAPHS = {}
 
-def graph_index_to_edges(graph_index: int, n_nodes: int,
-                         all_graphs: list = []):
+
+def graph_index_to_edges(graph_index: int, n_nodes: int):
     """
     Returns a list of edges [(from, to), (from, to)]
     for the specified base graph
@@ -76,18 +80,37 @@ def graph_index_to_edges(graph_index: int, n_nodes: int,
     Args:
         graph_index (int): base graph number
         n_nodes (int): number of nodes in the base graph
-        all_graphs (list of nx graphs): optionally preload the list to avoid
-                                        loading it in every call
+
 
     Returns:
         list of len 2 tuples where each tuple represents
         the starting and ending nodes for an edge in the graph
         [(from, to), (from, to),...]
     """
-    if len(all_graphs) == 0:
-        all_graphs = get_basegraphs(n_nodes)
-    edges = all_graphs[graph_index].edges
-    return list(edges)
+    return list(get_basegraphs(n_nodes)[graph_index].edges)
+
+
+def edges_to_graph_index(edges: list):
+    """
+    Matches a set of edges to a basegraph that's isomorphic to it
+
+    Args:
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+    """
+    # Graph object to use in comparison
+    G1 = nx.Graph()
+    G1.add_edges_from(edges)
+
+    n_nodes = get_num_nodes(edges)
+    n_edges = len(edges)
+    possible_graphs = get_basegraphs(n_nodes)
+    for i, G2 in enumerate(possible_graphs):
+        if G2.number_of_edges() == n_edges:
+            if nx.is_isomorphic(G1, G2):
+                return i
+
+    raise ValueError("Error: No Isomorphic Graph Found")
 
 
 def encoding_to_components(circuit_raw: str,
@@ -141,13 +164,12 @@ def convert_loaded_df(df: pd.DataFrame, n_nodes: int,
     Returns:
         Nothing, modifies the dataframe
     """
-    # Load basegraph to get the edges
-    all_graphs = get_basegraphs(n_nodes)
-    df['edges'] = [graph_index_to_edges(
-        int(i), n_nodes, all_graphs) for i in df.graph_index.values]
+    # Get the edges
+    df['edges'] = [graph_index_to_edges(int(i), n_nodes)
+                   for i in df.graph_index.values]
     df['circuit_encoding'] = df.circuit.values.copy()
-    df['circuit'] = [encoding_to_components(
-        c, elem_mapping=elem_mapping) for c in df.circuit.values]
+    df['circuit'] = [encoding_to_components(c, elem_mapping=elem_mapping)
+                     for c in df.circuit.values]
 
 
 def get_basegraphs(n_nodes: int):
@@ -157,14 +179,17 @@ def get_basegraphs(n_nodes: int):
     Args:
         n_nodes (int): number of nodes in the graph
     """
-    f = Path(DOWNLOAD_PATH, 'sircuitenum', 'graphs', f"graph{n_nodes}c.g6")
-    all_graphs = nx.read_graph6(f)
+    # Load it if it hasn't been loaded
+    if str(n_nodes) not in LOADED_BASEGRAPHS:
+        f = Path(DOWNLOAD_PATH, 'sircuitenum', 'graphs', f"graph{n_nodes}c.g6")
+        all_graphs = nx.read_graph6(f)
+        # Fix two vertex case so it always returns a list
+        if n_nodes == 2:
+            all_graphs = [all_graphs]
+        LOADED_BASEGRAPHS[str(n_nodes)] = all_graphs
 
-    # Fix two vertex case so it always returns a list
-    if n_nodes == 2:
-        all_graphs = [all_graphs]
-
-    return all_graphs
+    # Return if it has already been loaded
+    return LOADED_BASEGRAPHS[str(n_nodes)]
 
 
 def count_elems(circuit: list, base: int):
@@ -240,9 +265,9 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     c_dict['circuit'] = "".join(circuit)
     c_dict['graph_index'] = graph_index
     c_dict['unique_key'] = f"n{n_nodes}_g{graph_index}_c{circuit_num}"
-    c_dict['in_non_iso_set'] = False
-    c_dict['no_series'] = False
-    c_dict['has_jj'] = False
+    c_dict['in_non_iso_set'] = 0
+    c_dict['no_series'] = 0
+    c_dict['has_jj'] = 0
     c_dict['equiv_circuit'] = ""
 
     counts = [str(c) for c in count_elems(circuit, base)]
@@ -435,6 +460,37 @@ def write_df(file: str, df: pd.DataFrame, n_nodes: int, overwrite=False):
                         con, if_exists=if_exists, index=False)
 
 
+def update_db_from_df(file: str, df: pd.DataFrame):
+    """
+    Updates the no_series, has_jj, in_non_iso_set, and
+    equiv_circuit columns for every entry in df
+
+    Args:
+        file (str, optional): Database file to write to.
+        df (pd.Dataframe): dataframe that represents the circuit entries
+
+    Returns:
+        None, writes the dataframe info to the database
+
+    """
+
+    to_update = ["no_series", "has_jj", "in_non_iso_set", "equiv_circuit"]
+    n_fields = len(to_update)
+
+    with sqlite3.connect(file) as con:
+        cur = con.cursor()
+        for _, row in df.iterrows():
+            n_nodes = row['n_nodes']
+            sql_str = f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
+            for i, col in enumerate(to_update):
+                if i < n_fields - 1:
+                    sql_str += f"{col} = '{row[col]}', "
+                else:
+                    sql_str += f"{col} = '{row[col]}' "
+                    sql_str += f"WHERE unique_key = '{row['unique_key']}';"
+            cur.execute(sql_str)
+
+
 def delete_circuit_data(file: str, n_nodes: int, indices: Union[list, str]):
     """
     Deletes the specified graphs (num nodes/indices) from the database file
@@ -465,14 +521,13 @@ def delete_circuit_data(file: str, n_nodes: int, indices: Union[list, str]):
     return
 
 
-def get_circuit_data(file: str, n_nodes: int, index: str,
+def get_circuit_data(file: str, unique_key: str,
                      elem_mapping: dict = COMBINATION_DICT):
     """ gets circuit data from database
 
     Args:
         n_nodes (int): The number of nodes in the circuit
-        index (str): Unique Idenitifier of the circuit within the table for
-                     the number of nodes
+        unique_key (str): Unique Idenitifier of the circuit
         file (str): path to the database to get circuit from
         elem_mapping (dict, optional): mapping from character to list of
                                        circuit elements
@@ -484,12 +539,14 @@ def get_circuit_data(file: str, n_nodes: int, index: str,
                                         desired circuit
                                         (i.e., [(0,1),(1,2),(2,3),(3,0)])
     """
+    # Parse uid to get number of nodes
+    n_nodes = unique_key[unique_key.find("n") + 1:unique_key.find("_")]
 
     # Fetch entry from database
-    connection_obj = sqlite3.connect(file)
+    connection_obj = sqlite3.connect(file, uri=True)
     cursor_obj = connection_obj.cursor()
     table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-    query_str = f"SELECT * FROM {table_name} WHERE unique_key = '{index}'"
+    query_str = f"SELECT * FROM {table_name} WHERE unique_key = '{unique_key}'"
     cursor_obj.execute(query_str)
     output = cursor_obj.fetchone()
     connection_obj.commit()
@@ -547,17 +604,33 @@ def write_circuit(cursor_obj, c_dict: dict, to_commit: bool = False):
         c_dict: dictionary that represents a circuit entry
         to_commit: commit the database (i.e., save changes)
     """
-    cursor_obj.execute("INSERT INTO {table} VALUES ('{circuit}',"
-                       "'{graph_index}', '{edge_counts}', '{unique_key}', \
-                        '{n_nodes}', '{base}')".format(
-                           table=f"CIRCUITS_{c_dict['n_nodes']}_NODES",
-                           circuit=c_dict['circuit'],
-                           graph_index=c_dict['graph_index'],
-                           edge_counts=c_dict['edge_counts'],
-                           unique_key=c_dict['unique_key'],
-                           n_nodes=c_dict['n_nodes'],
-                           base=c_dict['base']
-                        )
-                       )
+    table = f"CIRCUITS_{c_dict['n_nodes']}_NODES"
+    sql_str = f"INSERT INTO {table} VALUES ("
+    sql_fields = ["circuit", "graph_index", "edge_counts",
+                  "unique_key", "n_nodes", "base",
+                  "no_series", "has_jj", "in_non_iso_set",
+                  "equiv_circuit"]
+    n_fields = len(sql_fields)
+    for i, field in enumerate(sql_fields):
+        if i < n_fields - 1:
+            sql_str += f"'{c_dict[field]}', "
+        else:
+            sql_str += f"'{c_dict[field]}')"
+    cursor_obj.execute(sql_str)
+
     if to_commit:
         cursor_obj.connection.commit()
+
+
+def list_all_tables(db_file: str):
+    """
+    Lists all the tables in the database file
+
+    Args:
+        db_file (str): file to examine
+    """
+    with sqlite3.connect(db_file, uri=True) as connection_obj:
+        cursor_obj = connection_obj.cursor()
+        tables = cursor_obj.execute("SELECT name FROM sqlite_master\
+                                WHERE type='table'").fetchall()
+    return tables

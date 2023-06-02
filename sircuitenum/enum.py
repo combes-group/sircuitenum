@@ -14,6 +14,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+from pathlib import Path
 from tqdm import tqdm
 
 from sircuitenum import utils
@@ -106,8 +107,7 @@ def delete_table(db_file: str, n_nodes: int):
     return
 
 
-def find_equiv_cir_series(db_file: str, circuit: list,
-                          edges: list, graph_index: int):
+def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
     """
     Searches the database for circuits that are equivalent
     to the one given, up to a reduction of series linear
@@ -116,29 +116,30 @@ def find_equiv_cir_series(db_file: str, circuit: list,
     Args:
         db_file (str): sql database file that's already been completed
                        for the previous number of nodes.
-        circuit (list): _description_
-        edges (list): _description_
-        graph_index (int): _description_
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
 
     Returns:
-        _type_: _description_
+        unique key of the equivalent circuit
     """
-
-    n_nodes = utils.get_num_nodes(edges)
 
     # What does it look like with series elems removed
     c2, e2 = red.remove_series_elems(circuit, edges)
     encoding = utils.components_to_encoding(c2)
+    n_nodes = utils.get_num_nodes(e2)
+    graph_index = utils.edges_to_graph_index(e2)
     filters = f"WHERE circuit LIKE {encoding}\
                 AND graph_index = {graph_index}"
-    equiv = utils.get_circuit_data_batch(db_file, n_nodes-1,
+    equiv = utils.get_circuit_data_batch(db_file, n_nodes,
                                          filter_str=filters)
 
     # Return the equivalent circuit
-    if equiv.iloc[0]['equivalent_circuit'] == "":
+    if equiv.iloc[0]['equiv_circuit'] == "":
         return equiv.iloc[0]['unique_key']
     else:
-        return equiv.iloc[0]['equivalent_circuit']
+        return equiv.iloc[0]['equiv_circuit']
 
 
 def generate_graphs_nodes(base: int, n_nodes: int,
@@ -157,7 +158,8 @@ def generate_graphs_nodes(base: int, n_nodes: int,
 
     # Initialize table
     if db_file is not None:
-        delete_table(db_file, n_nodes)
+        if Path(db_file).exists():
+            delete_table(db_file, n_nodes)
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
         connection_obj = sqlite3.connect(db_file)
         cursor_obj = connection_obj.cursor()
@@ -165,7 +167,7 @@ def generate_graphs_nodes(base: int, n_nodes: int,
            "CREATE TABLE {table} (circuit, graph_index int, edge_counts, \
             unique_key, n_nodes int, base int, no_series int, \
             has_jj int, in_non_iso_set int, \
-            equiv_circuit)".format(table=table_name))
+            equiv_circuit, PRIMARY KEY(unique_key))".format(table=table_name))
         connection_obj.commit()
     else:
         cursor_obj = None
@@ -214,7 +216,6 @@ def trim_graph_node(db_file: str, n_nodes: int,
     # Sets within these slices
     print("Trimming graphs with no jj's, linear elements in series",
           "and reducing isomorphic graphs...")
-    is_first_write = True
     n_set = set(n_edges_in_graph)
     counts_to_consider = [x for x in itertools.product(range(max_edges+1),
                           repeat=base) if sum(x) in n_set]
@@ -238,7 +239,6 @@ def trim_graph_node(db_file: str, n_nodes: int,
             df = utils.get_circuit_data_batch(db_file, n_nodes,
                                               elem_mapping=mapping,
                                               filter_str=filter_str)
-
             if df.empty:
                 raise ValueError("Empty Dataframe when there shouldn't be")
 
@@ -246,21 +246,18 @@ def trim_graph_node(db_file: str, n_nodes: int,
             red.full_reduction(df)
 
             # Find equivalent circuits for the series reduced circuits
-            equiv_cir = df['equivalent_circuit'].values
+            equiv_cir = df['equiv_circuit'].values
             yes_series = np.logical_not(df['no_series'].values)
             for i in range(df.shape[0]):
-                if yes_series:
+                if yes_series[i]:
                     row = df.iloc[i]
-                    equiv_cir[i] = red.find_equiv_cir_series(db_file,
-                                                             row['circuit'],
-                                                             row['edges'],
-                                                             row['graph_index']
-                                                             )
+                    equiv_cir[i] = find_equiv_cir_series(db_file,
+                                                         row['circuit'],
+                                                         row['edges']
+                                                         )
 
-            # Overwrite the table on the first instance
-            utils.write_df(db_file, df, n_nodes,
-                           overwrite=is_first_write)
-            is_first_write = False
+            # Update the table
+            utils.update_db_from_df(db_file, df)
 
 
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
