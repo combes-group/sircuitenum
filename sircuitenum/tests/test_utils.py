@@ -502,6 +502,70 @@ def test_get_unique_qubits():
     os.remove(TEMP_FILE)
 
 
+def test_get_equiv_circuits_uid():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
+    write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    winner = df2.iloc[3]['unique_key']
+    other = df2.iloc[1]['unique_key']
+    df2.at[winner, 'in_non_iso_set'] = 1
+    df2.at[winner, 'no_series'] = 1
+    df2.at[winner, 'has_jj'] = 1
+    df2.at[other, 'equiv_circuit'] = winner
+    utils.update_db_from_df(TEMP_FILE, df2)
+
+    df3 = utils.get_equiv_circuits_uid(TEMP_FILE, winner)
+    assert df3.shape[0] == 2
+    assert df3.iloc[0]['unique_key'] == winner
+    assert df3.iloc[1]['equiv_circuit'] == winner
+
+    os.remove(TEMP_FILE)
+
+
+def test_get_equiv_circuits():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
+    write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    winner = df2.iloc[3]
+    uid = winner['unique_key']
+    other = df2.iloc[1]['unique_key']
+    df2.at[uid, 'in_non_iso_set'] = 1
+    df2.at[uid, 'no_series'] = 1
+    df2.at[uid, 'has_jj'] = 1
+    df2.at[other, 'equiv_circuit'] = uid
+    utils.update_db_from_df(TEMP_FILE, df2)
+
+    df3 = utils.get_equiv_circuits(TEMP_FILE, winner.circuit,
+                                   winner.edges)
+    assert df3.shape[0] == 2
+    assert df3.iloc[0]['unique_key'] == uid
+    assert df3.iloc[1]['equiv_circuit'] == uid
+
+    os.remove(TEMP_FILE)
+
+
+def test_find_circuit_in_db():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
+    df = write_test_df()
+    winner = df.iloc[3]
+    df2 = utils.find_circuit_in_db(TEMP_FILE, winner.circuit,
+                                   winner.edges)
+    
+    assert df2.shape[0] == 1
+    assert df2.iloc[0]['unique_key'] == winner['unique_key']
+
+    os.remove(TEMP_FILE)
+    
+
 def test_write_circuit():
 
     con, cur = write_test_circuit(TEMP_FILE)
@@ -585,6 +649,7 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
     # Make test dataframe
     df = pd.DataFrame({"circuit": ALL_CONNECTED_3})
     df['circuit_encoding'] = ["".join(x) for x in ALL_CONNECTED_3_RAW]
+
     df['graph_index'] = 1
     edges = [[(0, 1), (1, 2), (0, 2)]]*df.shape[0]
     df['edges'] = edges
@@ -603,4 +668,4 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_get_unique_qubits()
+    test_get_equiv_circuits()

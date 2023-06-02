@@ -122,19 +122,14 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
                         e.g. [(0,1), (0,2), (1,2)]
 
     Returns:
-        unique key of the equivalent circuit
+        unique key of the equivalent circuit that is in the 
+        non isomorphic set
     """
 
     # What does it look like with series elems removed
     c2, e2 = red.remove_series_elems(circuit, edges)
-    encoding = utils.components_to_encoding(c2)
-    n_nodes = utils.get_num_nodes(e2)
-    graph_index = utils.edges_to_graph_index(e2)
-    filters = f"WHERE circuit LIKE {encoding}\
-                AND graph_index = {graph_index}"
-    equiv = utils.get_circuit_data_batch(db_file, n_nodes,
-                                         filter_str=filters)
-    if equiv.shape[0] == 0:
+    equiv = utils.find_circuit_in_db(db_file, c2, e2)
+    if equiv.empty:
         return "not found"
     # Return the equivalent circuit
     if equiv.iloc[0]['equiv_circuit'] == "":

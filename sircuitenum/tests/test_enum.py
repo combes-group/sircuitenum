@@ -230,6 +230,7 @@ def test_generate_all_graphs():
         df_untrimmed_good['has_jj']),
         df_untrimmed_good['no_series'])
     df_trimmed_good = df_untrimmed_good[unique_qubits]
+    
     # Find equivalent circuits for the series reduced circuits
     equiv_cir = df_untrimmed_good['equiv_circuit'].values
     yes_series = np.logical_not(df_untrimmed_good['no_series'].values)
@@ -262,6 +263,14 @@ def test_generate_all_graphs():
     edges = [(0, 1), (1, 2), (2, 0)]
     for c in NON_ISOMORPHIC_3:
         assert red.isomorphic_circuit_in_set(c, edges, df3.circuit.values)
+
+    # A set of four 4 element circuits that should be there
+    edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    circuit = [("J",), ("J",), ("C",), ("J",)]
+    equiv_cirs = utils.get_equiv_circuits(TEMP_FILE, circuit, edges)
+    assert equiv_cirs.shape[0] == 4
+    assert all(equiv_cirs['equiv_circuit'].iloc[1:] ==
+               equiv_cirs['unique_key'].iloc[0])
 
     # Test a few random circuits for 4
     edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
@@ -307,5 +316,5 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    test_generate_graphs_node()
+    # test_generate_graphs_node()
     test_generate_all_graphs()

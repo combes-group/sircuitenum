@@ -130,7 +130,7 @@ def encoding_to_components(circuit_raw: str,
         list of lists that represent the circuit elements along an edge:
         e.g. [["J"], ["C", "J", "L"], ["L"]]
     """
-    return [elem_mapping[e] for e in circuit_raw]
+    return [elem_mapping[str(e)] for e in circuit_raw]
 
 
 def components_to_encoding(circuit: list,
@@ -611,7 +611,7 @@ def get_unique_qubits(db_file: str, n_nodes: str):
     of nodes
 
     Args:
-        db_file (str, optional): sqlite db_file to look in.
+        db_file (str): sqlite db_file to look in.
                                 Defaults to "circuits.db"
         n_nodes (int): number of nodes in the circuit
 
@@ -621,6 +621,84 @@ def get_unique_qubits(db_file: str, n_nodes: str):
     filter_str = "WHERE in_non_iso_set = 1 AND "
     filter_str += "has_jj = 1 AND no_series = 1"
     return get_circuit_data_batch(db_file, n_nodes, filter_str=filter_str)
+
+
+def get_equiv_circuits_uid(db_file: str, unique_key: str):
+    """
+    Finds all circuits in the database with either the
+    given unique key, or with it as the equiv circuit
+
+    Args:
+        db_file (str): sqlite db_file to look in.
+                                Defaults to "circuits.db"
+        unique_key (str): unique identifier for the circuit
+    """
+    tables = list_all_tables(db_file)
+    entries = []
+    filt_str = f"WHERE equiv_circuit LIKE '{unique_key}'\
+                 OR unique_key LIKE '{unique_key}'"
+    for tbl in tables:
+        start = tbl[0].find("_") + 1
+        end = start + 1
+        n_nodes = int(tbl[0][start:end])
+        entries.append(get_circuit_data_batch(db_file, n_nodes,
+                                              filter_str=filt_str))
+    
+    return pd.concat(entries).sort_values(by="equiv_circuit")
+
+
+def get_equiv_circuits(db_file: str, circuit: list, edges: list):
+    """
+    Finds all circuits equivalent to the one provided
+    that are present in the database. 
+    Returns None if none are found.
+
+    Args:
+        db_file (str): sqlite db_file to look in.
+                                Defaults to "circuits.db"
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+    """
+
+    entry = find_circuit_in_db(db_file, circuit, edges)
+    if entry.shape[0] > 1:
+        raise ValueError("Getting too many circuits")
+    elif entry.empty:
+        return None
+    else:
+        entry = entry.iloc[0]
+    
+    if entry["in_non_iso_set"]:
+        uid = entry["unique_key"]
+    elif entry["equiv_circuit"] != "not found":
+        uid = entry["equiv_circuit"]
+    else:
+        return [entry]
+    
+    return get_equiv_circuits_uid(db_file, uid)
+
+
+
+def find_circuit_in_db(db_file: str, circuit: list, edges: list):
+    """
+    Finds the database entry for a given circuit/edges combination
+
+    Args:
+        db_file (str): sqlite db_file to look in.
+                                Defaults to "circuits.db"
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+    """
+
+    encoding = components_to_encoding(circuit)
+    n_nodes = get_num_nodes(edges)
+    graph_index = edges_to_graph_index(edges)
+    filters = f"WHERE circuit LIKE '{encoding}' AND graph_index = '{graph_index}'"
+    return get_circuit_data_batch(db_file, n_nodes, filter_str=filters)
 
 
 def write_circuit(cursor_obj, c_dict: dict, to_commit: bool = False):
