@@ -8,6 +8,7 @@ import pandas as pd
 from pathlib import Path
 
 from sircuitenum import utils
+from sircuitenum.tests.test_qpackage_interface import TEST_CIRCUITS
 
 import numpy.random
 numpy.random.seed(7)  # seed random number generation for all calls to rand_ops
@@ -273,26 +274,79 @@ def test_circuit_in_set():
         [("L",), ("C",), ("L",)], NON_ISOMORPHIC_3) is False
 
 
+def test_gen_param_dict():
+
+    # Go through test circuits
+    for i in range(len(TEST_CIRCUITS)):
+        edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
+        param_dict = utils.gen_param_dict(circuit, edges, params=utils.ELEM_DICT)
+        counts = utils.count_elems_mapped(circuit)
+
+        assert len(param_dict['C']) == counts["C"]
+        assert len(param_dict['L']) == counts["L"]
+        assert len(param_dict['J']) == counts["J"]
+        assert len(param_dict['CJ']) == counts["J"]
+
+        assert all(x == utils.ELEM_DICT['C']['default_value']
+                   for x in param_dict['C'])
+        assert all(x == utils.ELEM_DICT['L']['default_value']
+                   for x in param_dict['L'])
+        assert all(x == utils.ELEM_DICT['J']['default_value']
+                   for x in param_dict['J'])
+        assert all(x == utils.ELEM_DICT['CJ']['default_value']
+                   for x in param_dict['CJ'])
+
+        assert utils.ELEM_DICT['C']['default_unit'] == param_dict['C_units']
+        assert utils.ELEM_DICT['L']['default_unit'] == param_dict['L_units']
+        assert utils.ELEM_DICT['J']['default_unit'] == param_dict['J_units']
+        assert utils.ELEM_DICT['CJ']['default_unit'] == param_dict['CJ_units']
+
+
 def test_convert_circuit_to_graph():
+
+    vals = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 5.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
+             }
 
     G = nx.MultiGraph()
     G.add_edges_from([(0, 1, 0), (1, 2, 0), (1, 2, 1), (2, 3, 0), (2, 3, 1)])
     c = [["J"], ["C", "J"], ["C", "L"]]
     e = [(0, 1), (1, 2), (2, 3)]
-    assert utils.convert_circuit_to_graph(c, e).edges == G.edges
+    params = utils.gen_param_dict(c, e, vals)
+    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
 
     G = nx.MultiGraph()
     G.add_edges_from([(0, 1, 0), (0, 1, 1), (1, 2, 0),
                       (1, 4, 0), (2, 3, 0), (2, 3, 1)])
     c = [["J", "L"], ["C"], ["C", "J"], ["L"]]
     e = [(0, 1), (1, 2), (2, 3), (1, 4)]
-    assert utils.convert_circuit_to_graph(c, e).edges == G.edges
+    params = utils.gen_param_dict(c, e, vals)
+    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
 
     G = nx.MultiGraph()
     G.add_edges_from([(0, 1, 0), (1, 2, 0), (1, 2, 1), (1, 2, 2)])
     c = [["C"], ["C", "J", "L"]]
     e = [(0, 1), (1, 2)]
-    assert utils.convert_circuit_to_graph(c, e).edges == G.edges
+    params = utils.gen_param_dict(c, e, vals)
+    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
+
+    # Test junction capacitance
+    vals = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 5.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 4.0}
+             }
+    params = utils.gen_param_dict(c, e, vals)
+    G = nx.MultiGraph()
+    G.add_edges_from([(0, 1, 0), (0, 1, 1)])
+    c = [["J"]]
+    e = [(0, 1)]
+    params = utils.gen_param_dict(c, e, vals)
+    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
 
 
 def test_circuit_node_representation():
@@ -668,4 +722,4 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_get_equiv_circuits()
+    test_convert_circuit_to_graph()

@@ -140,58 +140,172 @@ def test_find_loops():
     loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
     assert loops == []
 
-
-def test_gen_param_dict():
-
-    # Go through test circuits
-    for i in range(len(TEST_CIRCUITS)):
-        edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
-        param_dict = pi.gen_param_dict(circuit, edges, params=utils.ELEM_DICT)
-        counts = utils.count_elems_mapped(circuit)
-
-        assert len(param_dict['c_list']) == counts["C"]
-        assert len(param_dict['l_list']) == counts["L"]
-        assert len(param_dict['j_list']) == counts["J"]
-        assert len(param_dict['cj_list']) == counts["J"]
-
-        assert all(x == utils.ELEM_DICT['C']['default_value']
-                   for x in param_dict['c_list'])
-        assert all(x == utils.ELEM_DICT['L']['default_value']
-                   for x in param_dict['l_list'])
-        assert all(x == utils.ELEM_DICT['J']['default_value']
-                   for x in param_dict['j_list'])
-        assert all(x == utils.ELEM_DICT['CJ']['default_value']
-                   for x in param_dict['cj_list'])
-
-        assert utils.ELEM_DICT['C']['default_unit'] == param_dict['c_units']
-        assert utils.ELEM_DICT['L']['default_unit'] == param_dict['l_units']
-        assert utils.ELEM_DICT['J']['default_unit'] == param_dict['j_units']
-        assert utils.ELEM_DICT['CJ']['default_unit'] == param_dict['cj_units']
+    # Zero pi
+    edges = [(0, 1), (1, 3), (3, 2), (2, 0), (0, 3), (1, 2)]
+    circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
+    loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
+    assert loops == [(0, 1, 2, 3)]
 
 
-def test_convert_circuit_to_SQcircuit():
-    for i in range(len(TEST_CIRCUITS)):
-        assert True
+def test_to_SQcircuit():
+    
+    # See if we get the right frequency 
+    # and anharmonicity for a Transmon
+    elems = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 15.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 0}
+        }
+    edges = [(0, 1)]
+    circuit = [("C", "J")]
+    obj = pi.to_SQcircuit(circuit, edges,
+          params = utils.gen_param_dict(circuit, edges, elems))
+    ev, es = obj.diag(3)
+    w01 = ev[1] - ev[0]
+    w12 = ev[2] - ev[1]
+    Ec = elems['C']['default_value']
+    Ej = elems['J']['default_value']
+    zeta = np.sqrt(2*Ec/Ej)
+    good_freq = np.sqrt(8*Ec*Ej) - Ec*(1+9*(2**-2)*zeta)
+    good_anharm = Ec*(1+9*(2**-4)*zeta)
+
+    assert abs(1 - abs(w01/good_freq)) <= 0.025
+    assert abs(1 - abs(w12 - w01)/good_anharm) <= 0.025
+
+    # Fluxonium comparing to my numerical 
+    # simulation
+    # E0 = 0 GHz/h
+    # E1 = 0.34 GHz/h
+    # E2 = 4.35 GHz/h
+    # EJ = 5 GHz/h
+    # Ec = El = 1 GHz/h
+    elems['C']['default_value']  = 1
+    elems['J']['default_value']  = 5
+    edges = [(0, 1)]
+    circuit = [("C", "J", "L")]
+
+    obj = pi.to_SQcircuit(circuit, edges,
+          params = utils.gen_param_dict(circuit, edges, elems))
+    obj.loops[0].set_flux(0.5)
+    ev, es = obj.diag(3)
+    ev = ev - ev[0]
+    good_vals = [0, 0.34, 4.35]
+    for i in range(1, 3):
+        assert 1 - abs(ev[i]/good_vals[i]) <= 0.025
+
+
+    # Try zero pi much more complicated example
+    # From https://docs.sqcircuit.org/examples/zeropi_qubit.html
+    elems["C"]["default_value"] = 0.15
+    elems["CJ"]["default_value"] = 10.0
+    elems["J"]["default_value"] = 5.0
+    elems["L"]["default_value"] = 0.13
+    edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
+    circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
+    obj = pi.to_SQcircuit(circuit, edges, [35, 6],
+          params = utils.gen_param_dict(circuit, edges, elems))
+    # breakpoint()
+    obj.loops[0].set_flux(0.5)
+    ev, es = obj.diag(5)
+    ev = ev - ev[0]
+    good_vals = [0. , 0.02479347, 1.28957426, 1.58410963, 2.18419302]
+    for i in range(1, 5):
+        assert 1 - abs(ev[i]/good_vals[i]) <= 0.025
+
+
+def test_to_CircuitQ():
+    
+    # See if we get the right frequency 
+    # and anharmonicity for a Transmon
+    elems = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 15.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 0}
+        }
+    edges = [(0, 1)]
+    circuit = [("C", "J")]
+    obj = pi.to_CircuitQ(circuit, edges,
+          params = utils.gen_param_dict(circuit, edges, elems))
+    
+    breakpoint()
+
+    ev, es = obj.diag(3)
+    w01 = ev[1] - ev[0]
+    w12 = ev[2] - ev[1]
+    Ec = elems['C']['default_value']
+    Ej = elems['J']['default_value']
+    zeta = np.sqrt(2*Ec/Ej)
+    good_freq = np.sqrt(8*Ec*Ej) - Ec*(1+9*(2**-2)*zeta)
+    good_anharm = Ec*(1+9*(2**-4)*zeta)
+
+    assert abs(1 - abs(w01/good_freq)) <= 0.025
+    assert abs(1 - abs(w12 - w01)/good_anharm) <= 0.025
+
+    # Fluxonium comparing to my numerical 
+    # simulation
+    # E0 = 0 GHz/h
+    # E1 = 0.34 GHz/h
+    # E2 = 4.35 GHz/h
+    # EJ = 5 GHz/h
+    # Ec = El = 1 GHz/h
+    elems['C']['default_value']  = 1
+    elems['J']['default_value']  = 5
+    edges = [(0, 1)]
+    circuit = [("C", "J", "L")]
+
+    obj = pi.to_SQcircuit(circuit, edges,
+          params = utils.gen_param_dict(circuit, edges, elems))
+    obj.loops[0].set_flux(0.5)
+    ev, es = obj.diag(3)
+    ev = ev - ev[0]
+    good_vals = [0, 0.34, 4.35]
+    for i in range(1, 3):
+        assert 1 - abs(ev[i]/good_vals[i]) <= 0.025
+
+
+    # Try zero pi much more complicated example
+    # From https://docs.sqcircuit.org/examples/zeropi_qubit.html
+    elems["C"]["default_value"] = 0.15
+    elems["CJ"]["default_value"] = 10.0
+    elems["J"]["default_value"] = 5.0
+    elems["L"]["default_value"] = 0.13
+    edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
+    circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
+    obj = pi.to_SQcircuit(circuit, edges, [35, 6],
+          params = utils.gen_param_dict(circuit, edges, elems))
+    # breakpoint()
+    obj.loops[0].set_flux(0.5)
+    ev, es = obj.diag(5)
+    ev = ev - ev[0]
+    good_vals = [0. , 0.02479347, 1.28957426, 1.58410963, 2.18419302]
+    for i in range(1, 5):
+        assert 1 - abs(ev[i]/good_vals[i]) <= 0.025
 
 
 if __name__ == "__main__":
     # edges, circuit = TEST_CIRCUITS[4][0], TEST_CIRCUITS[4][1]
-    edges, circuit = [[(0, 1), (1, 2), (2, 3),
-                       (2, 4), (3, 4), (4, 0)],
-                      [("C", "J"), ("C", "J"), ("C", "L"),
-                      ("C", "J", "L"), ("C", "L"), ("C", "J")]]
+    # edges, circuit = [[(0, 1), (1, 2), (2, 3),
+    #                    (2, 4), (3, 4), (4, 0)],
+    #                   [("C", "J"), ("C", "J"), ("C", "L"),
+    #                   ("C", "J", "L"), ("C", "L"), ("C", "J")]]
 
-    # edges, circuit = [[(0, 1), (1, 2), (2, 3), (3,0)],
-    # [("C", "J"), ("C", "J"), ("C", "J"), ("C", "J")]]
-    # edges, circuit = [(0, 1)], [("C", "J")]
-    c2, e2 = pi.single_edge_loop_kiting(circuit, edges)
+    # # edges, circuit = [[(0, 1), (1, 2), (2, 3), (3,0)],
+    # # [("C", "J"), ("C", "J"), ("C", "J"), ("C", "J")]]
+    # # edges, circuit = [(0, 1)], [("C", "J")]
+    # c2, e2 = pi.single_edge_loop_kiting(circuit, edges)
 
-    ind_edges = pi.inductive_subgraph(c2, e2)
-    G = nx.from_edgelist(ind_edges)
-    cb = nx.cycle_basis(nx.Graph(G))
+    # ind_edges = pi.inductive_subgraph(c2, e2)
+    # G = nx.from_edgelist(ind_edges)
+    # cb = nx.cycle_basis(nx.Graph(G))
 
-    # cir = pi.convert_circuit_to_SQcircuit(circuit, edges)
-    cir = pi.convert_circuit_to_CircuitQ(circuit, edges)
+    # # cir = pi.to_SQcircuit(circuit, edges)
+    # cir = pi.convert_circuit_to_CircuitQ(circuit, edges)
+
+    test_to_SQcircuit()
+    # test_to_scqubits()
+    # test_to_CircuitQ()
 
     # test_single_edge_loop_knitting()
     # test_inductive_subgraph()

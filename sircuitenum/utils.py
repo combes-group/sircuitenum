@@ -60,8 +60,7 @@ ELEM_DICT = {
     'C': {'default_unit': 'GHz', 'default_value': 0.2},
     'L': {'default_unit': 'GHz', 'default_value': 1.0},
     'J': {'default_unit': 'GHz', 'default_value': 5.0},
-    'CJ': {'default_unit': 'GHz', 'default_value': 3.6}
-    # 'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
+    'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
 }
 
 DOWNLOAD_PATH = Path(__file__).parent.parent
@@ -277,9 +276,48 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     return c_dict
 
 
-def convert_circuit_to_graph(circuit: list, edges: list):
+def gen_param_dict(circuit, edges, vals=ELEM_DICT):
     """
-    Encodes a circuit as a simple, undirected nx graph
+    Generates a dictionary of parameters for use with
+    the circuit conversion functions. Sets all components
+    to the same values.
+
+    Maps (edge, elem) to (value, unit):
+
+    i.e., ((0,1), "J") -> (5.0, "GHz")
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        vals (dict of dicts): Dictionary with entries for each circuit
+                                element. Shows default values
+    """
+    
+    counts = count_elems_mapped(circuit)
+    param_dict = {}
+    for elems, edge in zip(circuit, edges):
+        for elem in elems:
+            key = (edge, elem)
+            param_dict[key] = (vals[elem]['default_value'],
+                               vals[elem]['default_unit'])
+            
+            # Junction capacitance
+            if elem == "J":
+                if vals["CJ"]['default_value'] > 0:
+                    key = (edge, "CJ")
+                    param_dict[key] = (vals["CJ"]['default_value'],
+                                       vals["CJ"]['default_unit'])
+
+    
+    return param_dict
+
+
+def convert_circuit_to_graph(circuit: list, edges: list, **kwargs):
+    """
+    Encodes a circuit as a simple, undirected nx graph with labels
+    on the edges for the circuit element, unit, and value
 
     Args:
         circuit (list of str): a list of elements for the desired circuit
@@ -287,16 +325,31 @@ def convert_circuit_to_graph(circuit: list, edges: list):
         edges (list of tuples of ints): a list of edge connections for the
                                         desired circuit
                                         (i.e., [(0,1),(1,2),(2,3),(3,0)])
+        params (dict): dictionary with entries C, L, J, CJ,
+                    which represent the paramaters for the circuit elements. 
+                    Additionally entries of C_units, L_units, J_units, and CJ_units.
+                    Inputting nothing uses the default parameter values/units from
+                    utils.ELEM_DICT.
+
     """
 
+    params = kwargs.get("params", gen_param_dict(circuit, edges, ELEM_DICT))
+
     circuit_graph = nx.MultiGraph()
-    for i in range(len(circuit)):
-        edge = edges[i]
-        elements = circuit[i]
-        for elem in elements:
+    for elems, edge in zip(circuit, edges):
+        for elem in elems:
+            value, unit = params[(edge, elem)]
             circuit_graph.add_edge(edge[0], edge[1], element=elem,
-                                   unit=ELEM_DICT[elem]['default_unit'],
-                                   value=ELEM_DICT[elem]['default_value'])
+                                   unit=unit,
+                                   value=value)
+            # Junction capacitance
+            if elem == "J":
+                if (edge, "CJ") in params:
+                    value, unit = params[(edge, "CJ")]
+                    circuit_graph.add_edge(edge[0], edge[1],
+                                           element="CJ",
+                                           unit=unit,
+                                           value=value)
     return circuit_graph
 
 
