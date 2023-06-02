@@ -483,10 +483,13 @@ def update_db_from_df(file: str, df: pd.DataFrame):
             n_nodes = row['n_nodes']
             sql_str = f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
             for i, col in enumerate(to_update):
+                val = row[col]
+                if col != "equiv_circuit":
+                    val = int(val)
                 if i < n_fields - 1:
-                    sql_str += f"{col} = '{row[col]}', "
+                    sql_str += f"{col} = '{val}', "
                 else:
-                    sql_str += f"{col} = '{row[col]}' "
+                    sql_str += f"{col} = '{val}' "
                     sql_str += f"WHERE unique_key = '{row['unique_key']}';"
             cur.execute(sql_str)
 
@@ -559,7 +562,7 @@ def get_circuit_data(file: str, unique_key: str,
     return circuit, edges
 
 
-def get_circuit_data_batch(file: str, n_nodes: int,
+def get_circuit_data_batch(db_file: str, n_nodes: int,
                            elem_mapping: dict = COMBINATION_DICT,
                            filter_str: str = ''):
     """
@@ -567,9 +570,9 @@ def get_circuit_data_batch(file: str, n_nodes: int,
     number of nodes, and any other filter statements given.
 
     Args:
+        db_file (str, optional): sqlite db_file to look in.
+                                Defaults to "circuits.db"
         n_nodes (int): number of nodes in the circuit
-        file (str, optional): sqlite file to look in.
-                              Defaults to "circuits.db"
         elem_mapping (dict, optional): mapping from character to
                                        list of circuit elements
         filters (str, optional): SQL filter statement
@@ -580,7 +583,7 @@ def get_circuit_data_batch(file: str, n_nodes: int,
     """
 
     table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-    connection_obj = sqlite3.connect(file)
+    connection_obj = sqlite3.connect(db_file)
     query = "SELECT * FROM {table} {filter_str}".format(
         table=table_name, filter_str=filter_str)
     df = pd.read_sql_query(query, connection_obj)
@@ -593,7 +596,31 @@ def get_circuit_data_batch(file: str, n_nodes: int,
     if 'unique_key' in df.columns:
         df.index = df['unique_key']
 
+    # Convert int to bool columns
+    int_to_bool = ["no_series", "has_jj", "in_non_iso_set"]
+    for col in int_to_bool:
+        df[col] = df[col].astype(bool)
+
     return df
+
+
+def get_unique_qubits(db_file: str, n_nodes: str):
+    """
+    Loads all entries corresponding to unique qubits
+    from the specified file for the specified number
+    of nodes
+
+    Args:
+        db_file (str, optional): sqlite db_file to look in.
+                                Defaults to "circuits.db"
+        n_nodes (int): number of nodes in the circuit
+
+    Returns:
+        pd.DataFrame: set of unique qubit circuits
+    """
+    filter_str = "WHERE in_non_iso_set = 1 AND "
+    filter_str += "has_jj = 1 AND no_series = 1"
+    return get_circuit_data_batch(db_file, n_nodes, filter_str=filter_str)
 
 
 def write_circuit(cursor_obj, c_dict: dict, to_commit: bool = False):

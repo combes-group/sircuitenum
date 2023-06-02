@@ -134,7 +134,8 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
                 AND graph_index = {graph_index}"
     equiv = utils.get_circuit_data_batch(db_file, n_nodes,
                                          filter_str=filters)
-
+    if equiv.shape[0] == 0:
+        return "not found"
     # Return the equivalent circuit
     if equiv.iloc[0]['equiv_circuit'] == "":
         return equiv.iloc[0]['unique_key']
@@ -142,8 +143,8 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
         return equiv.iloc[0]['equiv_circuit']
 
 
-def generate_graphs_nodes(base: int, n_nodes: int,
-                          db_file: str = None, return_vals: bool = False):
+def generate_graphs_node(db_file: str, n_nodes: int,
+                         base: int, return_vals: bool = False):
     """ Generates circuits for all graphs for a given number of nodes
         Stores circuits in table in sql database for the number of nodes
         Table labeled: 'CIRCUITS_' + str(n_nodes) + '_NODES'
@@ -240,6 +241,8 @@ def trim_graph_node(db_file: str, n_nodes: int,
                                               elem_mapping=mapping,
                                               filter_str=filter_str)
             if df.empty:
+                print(n_nodes, edge_counts, graph_index)
+                print(utils.get_circuit_data_batch(db_file, n_nodes))
                 raise ValueError("Empty Dataframe when there shouldn't be")
 
             # Mark up the set
@@ -274,11 +277,11 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     """
     print("----------------------------------------")
     print('Starting generating ' + str(n_nodes) + ' node circuits.')
-    generate_graphs_nodes(base, n_nodes, db_file)
+    generate_graphs_node(db_file, n_nodes, base)
     print("Circuits Generated for " +
           str(n_nodes) + " node circuits.")
     print("Now Trimming.")
-    trim_graph_node(db_file=db_file, n_nodes=n_nodes)
+    trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base)
     print("Finished trimming " + str(n_nodes) + " node circuits.")
     return True
 

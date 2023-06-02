@@ -94,7 +94,7 @@ def test_generate_for_specific_graph():
 def test_delete_table():
 
     # Generate 2 node circuits
-    enum.generate_graphs_nodes(7, 2, TEMP_FILE)
+    enum.generate_graphs_node(TEMP_FILE, 2, 7)
     # Should be one table in the file
     t1 = utils.list_all_tables(TEMP_FILE)
     enum.delete_table(TEMP_FILE, 2)
@@ -154,11 +154,11 @@ def test_find_equiv_cir_series():
     assert red.isomorphic_circuit_in_set(c, e, [c2])
 
 
-def test_generate_graphs_nodes():
+def test_generate_graphs_node():
 
     # Most simple two node graph
     G = utils.get_basegraphs(2)[0]
-    df = enum.generate_graphs_nodes(7, 2, return_vals=True)
+    df = enum.generate_graphs_node(None, 2, 7, return_vals=True)
     exp_circuits = ['0', '1', '2', '3', '4', '5', '6']
     assert [x for x in df['circuit'].values] == exp_circuits
 
@@ -166,7 +166,7 @@ def test_generate_graphs_nodes():
     n_trials = 100
     n_nodes = 3
     base = 7
-    df = enum.generate_graphs_nodes(base, n_nodes, return_vals=True)
+    df = enum.generate_graphs_node(None, n_nodes, base, return_vals=True)
     grouped = df.groupby("graph_index")
     for graph_index, G in enumerate(utils.get_basegraphs(n_nodes)):
         subset = grouped.get_group(graph_index)
@@ -182,7 +182,7 @@ def test_generate_graphs_nodes():
     n_trials = 100
     n_nodes = 4
     base = 7
-    df = enum.generate_graphs_nodes(base, n_nodes, return_vals=True)
+    df = enum.generate_graphs_node(None, n_nodes, base, return_vals=True)
     grouped = df.groupby("graph_index")
     for graph_index, G in enumerate(utils.get_basegraphs(n_nodes)):
         subset = grouped.get_group(graph_index)
@@ -197,31 +197,49 @@ def test_generate_graphs_nodes():
 
 def test_generate_all_graphs():
 
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
     # Generate all the 2 and 3 node circuits
-    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=7)
+    enum.generate_all_graphs(TEMP_FILE, 2, 4, base=3)
 
-    # test the 2 nodes I/O
+    # Test the 2 nodes I/O
     df_untrimmed = utils.get_circuit_data_batch(TEMP_FILE, n_nodes=2)
-    df_trimmed = 3
+    df_trimmed = utils.get_unique_qubits(TEMP_FILE, n_nodes=2)
 
-    df_untrimmed_good = enum.generate_graphs_nodes(base=7,
-                                                   n_nodes=2,
-                                                   return_vals=True)
+    df_untrimmed_good = enum.generate_graphs_node(None, 2, 3, True)
     utils.convert_loaded_df(df_untrimmed_good, n_nodes=2)
-    df_trimmed_good = red.full_reduction(df_untrimmed_good)
-
+    red.full_reduction(df_untrimmed_good)
+    unique_qubits = np.logical_and(np.logical_and(
+        df_untrimmed_good['in_non_iso_set'],
+        df_untrimmed_good['has_jj']),
+        df_untrimmed_good['no_series'])
+    df_trimmed_good = df_untrimmed_good[unique_qubits]
     df_equality_check(df_untrimmed, df_untrimmed_good)
     df_equality_check(df_trimmed, df_trimmed_good)
 
-    # test the 3 nodes I/0
+    # Test the 3 nodes I/0
     df_untrimmed = utils.get_circuit_data_batch(TEMP_FILE, n_nodes=3)
-    df_trimmed = utils.get_circuit_data_batch(MEMFNAME2, n_nodes=3)
+    df_trimmed = utils.get_unique_qubits(TEMP_FILE, n_nodes=3)
 
-    df_untrimmed_good = enum.generate_graphs_nodes(base=7,
-                                                   n_nodes=3,
-                                                   return_vals=True)
+    df_untrimmed_good = enum.generate_graphs_node(None, 3, 3, True)
     utils.convert_loaded_df(df_untrimmed_good, n_nodes=3)
-    df_trimmed_good = red.full_reduction(df_untrimmed_good)
+    red.full_reduction(df_untrimmed_good)
+    unique_qubits = np.logical_and(np.logical_and(
+        df_untrimmed_good['in_non_iso_set'],
+        df_untrimmed_good['has_jj']),
+        df_untrimmed_good['no_series'])
+    df_trimmed_good = df_untrimmed_good[unique_qubits]
+    # Find equivalent circuits for the series reduced circuits
+    equiv_cir = df_untrimmed_good['equiv_circuit'].values
+    yes_series = np.logical_not(df_untrimmed_good['no_series'].values)
+    for i in range(df_untrimmed_good.shape[0]):
+        if yes_series[i]:
+            row = df_untrimmed_good.iloc[i]
+            equiv_cir[i] = enum.find_equiv_cir_series(TEMP_FILE,
+                                                      row['circuit'],
+                                                      row['edges']
+                                                      )
 
     df_untrimmed = df_untrimmed.sort_index()
     df_untrimmed_good = df_untrimmed_good.sort_values(by="unique_key")
@@ -231,8 +249,39 @@ def test_generate_all_graphs():
     df_equality_check(df_untrimmed, df_untrimmed_good)
     df_equality_check(df_trimmed, df_trimmed_good)
 
+    # Test the accuracy
+    df2 = utils.get_unique_qubits(TEMP_FILE, n_nodes=2)
+    df3 = utils.get_unique_qubits(TEMP_FILE, n_nodes=3)
+    df3 = df3[df3['graph_index'] == 1]
+    df4 = utils.get_unique_qubits(TEMP_FILE, n_nodes=4)
+    df4 = df4[df4['graph_index'] == 3]
+
+    assert df2.shape[0] == 1
+    assert df3.shape[0] == len(NON_ISOMORPHIC_3)
+
+    edges = [(0, 1), (1, 2), (2, 0)]
+    for c in NON_ISOMORPHIC_3:
+        assert red.isomorphic_circuit_in_set(c, edges, df3.circuit.values)
+
+    # Test a few random circuits for 4
+    edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    circuit = [("L",), ("J",), ("C",), ("J",)]
+    assert red.isomorphic_circuit_in_set(circuit, edges,
+                                         df4.circuit.values,
+                                         df4.edges.values)
+    circuit = [("J",), ("J",), ("C",), ("J",)]
+    assert red.isomorphic_circuit_in_set(circuit, edges,
+                                         df4.circuit.values,
+                                         df4.edges.values)
+    circuit = [("J",), ("C",), ("C",), ("J",)]
+    assert red.isomorphic_circuit_in_set(circuit, edges,
+                                         df4.circuit.values,
+                                         df4.edges.values) is False
+    circuit = [("L",), ("C",), ("L",), ("J",)]
+    assert red.isomorphic_circuit_in_set(circuit, edges,
+                                         df4.circuit.values,
+                                         df4.edges.values)
     os.remove(TEMP_FILE)
-    os.remove(MEMFNAME2)
 
 
 def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
@@ -258,4 +307,5 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
 
 
 if __name__ == "__main__":
-    test_find_equiv_cir_series()
+    test_generate_graphs_node()
+    test_generate_all_graphs()

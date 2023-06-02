@@ -482,6 +482,26 @@ def test_get_circuit_data_batch():
     os.remove(TEMP_FILE)
 
 
+def test_get_unique_qubits():
+
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
+    write_test_df()
+    df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    winner = df2.iloc[3]['unique_key']
+    df2.at[winner, 'in_non_iso_set'] = 1
+    df2.at[winner, 'no_series'] = 1
+    df2.at[winner, 'has_jj'] = 1
+    utils.update_db_from_df(TEMP_FILE, df2)
+
+    df3 = utils.get_unique_qubits(TEMP_FILE, 3)
+    assert df3.shape[0] == 1
+    assert df3.iloc[0]['unique_key'] == winner
+
+    os.remove(TEMP_FILE)
+
+
 def test_write_circuit():
 
     con, cur = write_test_circuit(TEMP_FILE)
@@ -583,4 +603,4 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_update_db_from_df()
+    test_get_unique_qubits()

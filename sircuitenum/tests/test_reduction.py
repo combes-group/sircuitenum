@@ -294,13 +294,13 @@ def test_full_reduction_by_group():
                                                     return_vals=True)
     utils.convert_loaded_df(all_circuits, 4)
     df = red.full_reduction_by_group(all_circuits)
-    filt = df[(df['in_non_iso_set']) &
-              (df['has_jj']) &
-              (df['no_series'])]
-    filt2 = df[(df['in_non_iso_set']) &
-               np.logical_not(df['has_jj']) &
-               (df['no_series'])]
-    filt3 = df[np.logical_not(df['no_series'])]
+    filt = df[(df['in_non_iso_set'] == 1) &
+              (df['has_jj'] == 1) &
+              (df['no_series'] == 1)]
+    filt2 = df[(df['in_non_iso_set'] == 1) &
+               np.logical_not(df['has_jj'] == 1) &
+               (df['no_series'] == 1)]
+    filt3 = df[np.logical_not(df['no_series'] == 1)]
 
     # A few hand picked examples -- make sure they're there/not
     edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
