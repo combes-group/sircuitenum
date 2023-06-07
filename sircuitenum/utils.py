@@ -60,7 +60,7 @@ ELEM_DICT = {
     'C': {'default_unit': 'GHz', 'default_value': 0.2},
     'L': {'default_unit': 'GHz', 'default_value': 1.0},
     'J': {'default_unit': 'GHz', 'default_value': 5.0},
-    'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
+    'CJ': {'default_unit': 'GHz', 'default_value': 20.0}
 }
 
 DOWNLOAD_PATH = Path(__file__).parent.parent
@@ -294,23 +294,19 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT):
         vals (dict of dicts): Dictionary with entries for each circuit
                                 element. Shows default values
     """
-    
-    counts = count_elems_mapped(circuit)
     param_dict = {}
     for elems, edge in zip(circuit, edges):
         for elem in elems:
             key = (edge, elem)
             param_dict[key] = (vals[elem]['default_value'],
                                vals[elem]['default_unit'])
-            
+
             # Junction capacitance
             if elem == "J":
-                if vals["CJ"]['default_value'] > 0:
-                    key = (edge, "CJ")
-                    param_dict[key] = (vals["CJ"]['default_value'],
-                                       vals["CJ"]['default_unit'])
+                key = (edge, "CJ")
+                param_dict[key] = (vals["CJ"]['default_value'],
+                                   vals["CJ"]['default_unit'])
 
-    
     return param_dict
 
 
@@ -326,10 +322,10 @@ def convert_circuit_to_graph(circuit: list, edges: list, **kwargs):
                                         desired circuit
                                         (i.e., [(0,1),(1,2),(2,3),(3,0)])
         params (dict): dictionary with entries C, L, J, CJ,
-                    which represent the paramaters for the circuit elements. 
-                    Additionally entries of C_units, L_units, J_units, and CJ_units.
-                    Inputting nothing uses the default parameter values/units from
-                    utils.ELEM_DICT.
+                    which represent the paramaters for the circuit elements.
+                    Additionally entries of C_units, L_units, J_units,
+                    and CJ_units. Inputting nothing uses the default parameter
+                    values/units from utils.ELEM_DICT.
 
     """
 
@@ -346,10 +342,11 @@ def convert_circuit_to_graph(circuit: list, edges: list, **kwargs):
             if elem == "J":
                 if (edge, "CJ") in params:
                     value, unit = params[(edge, "CJ")]
-                    circuit_graph.add_edge(edge[0], edge[1],
-                                           element="CJ",
-                                           unit=unit,
-                                           value=value)
+                    if value > 0:
+                        circuit_graph.add_edge(edge[0], edge[1],
+                                               element="CJ",
+                                               unit=unit,
+                                               value=value)
     return circuit_graph
 
 
@@ -696,14 +693,14 @@ def get_equiv_circuits_uid(db_file: str, unique_key: str):
         n_nodes = int(tbl[0][start:end])
         entries.append(get_circuit_data_batch(db_file, n_nodes,
                                               filter_str=filt_str))
-    
+
     return pd.concat(entries).sort_values(by="equiv_circuit")
 
 
 def get_equiv_circuits(db_file: str, circuit: list, edges: list):
     """
     Finds all circuits equivalent to the one provided
-    that are present in the database. 
+    that are present in the database.
     Returns None if none are found.
 
     Args:
@@ -722,16 +719,15 @@ def get_equiv_circuits(db_file: str, circuit: list, edges: list):
         return None
     else:
         entry = entry.iloc[0]
-    
+
     if entry["in_non_iso_set"]:
         uid = entry["unique_key"]
     elif entry["equiv_circuit"] != "not found":
         uid = entry["equiv_circuit"]
     else:
         return [entry]
-    
-    return get_equiv_circuits_uid(db_file, uid)
 
+    return get_equiv_circuits_uid(db_file, uid)
 
 
 def find_circuit_in_db(db_file: str, circuit: list, edges: list):
@@ -750,7 +746,8 @@ def find_circuit_in_db(db_file: str, circuit: list, edges: list):
     encoding = components_to_encoding(circuit)
     n_nodes = get_num_nodes(edges)
     graph_index = edges_to_graph_index(edges)
-    filters = f"WHERE circuit LIKE '{encoding}' AND graph_index = '{graph_index}'"
+    filters = f"WHERE circuit LIKE '{encoding}' AND\
+                graph_index = '{graph_index}'"
     return get_circuit_data_batch(db_file, n_nodes, filter_str=filters)
 
 

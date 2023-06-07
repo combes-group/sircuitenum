@@ -230,7 +230,7 @@ def test_generate_all_graphs():
         df_untrimmed_good['has_jj']),
         df_untrimmed_good['no_series'])
     df_trimmed_good = df_untrimmed_good[unique_qubits]
-    
+
     # Find equivalent circuits for the series reduced circuits
     equiv_cir = df_untrimmed_good['equiv_circuit'].values
     yes_series = np.logical_not(df_untrimmed_good['no_series'].values)

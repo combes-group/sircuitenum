@@ -125,7 +125,7 @@ def inductive_subgraph(circuit, edges, ind_elem = ["J", "L"]):
 
 
 def to_SQcircuit(circuit: list, edges: list,
-                                 trunc_num: Union[int,list] = 10, **kwargs):
+                 trunc_num: Union[int, list] = 10, **kwargs):
     """Converts circuit from list of labels and edges to a
     SQcircuit formatted circuit network
 
@@ -134,42 +134,42 @@ def to_SQcircuit(circuit: list, edges: list,
                         e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
-        trunc_num (int or list): 
+        trunc_num (int or list):
         params (dict): dictionary with entries C, L, J, CJ,
-                    which represent the paramaters for the circuit elements. 
-                    Additionally entries of C_units, L_units, J_units, and CJ_units.
-                    Inputting nothing uses the default parameter values/units from
-                    utils.ELEM_DICT.
+                    which represent the paramaters for the circuit elements.
+                    Additionally entries of C_units, L_units, J_units,
+                    and CJ_units. Inputting nothing uses the default
+                    parameter values/units from utils.ELEM_DICT.
 
     Returns:
-        converted_circuit (SQcircuit.Circuit): returns the input circuit converted
-        into a SQcircuit circuit.
+        converted_circuit (SQcircuit.Circuit): returns the input circuit
+                                               converted to SQcircuit.
 
-        Charge modes are where cir.omega == 0, harmonic modes are when cir.omega != 0
+        Charge modes are where cir.omega == 0,
+        harmonic modes are when cir.omega != 0
     """
 
-    params = kwargs.get("params", utils.gen_param_dict(circuit, edges, utils.ELEM_DICT))
+    params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
+                                                       utils.ELEM_DICT))
 
-   
     loops = find_loops(circuit, edges)
     loop_defs = {}
 
     # Map inductive cycle basis to loops
-    for l in loops:
-        loop_defs[l] = sq.Loop()
-
+    for lp in loops:
+        loop_defs[lp] = sq.Loop()
 
     # Build sqcircuit dictionary that maps edges
-    # to a list of element objects, which have 
+    # to a list of element objects, which have
     # their loops set
     circuit_dict = {}
     for elems, edge in zip(circuit, edges):
-        
+
         # Record all the loops for this edge
-        loops_present = []
-        for l in loops:
-            if edge[0] in l and edge[1] in l:
-                loops_present.append(loop_defs[l])
+        loops_pres = []
+        for lp in loops:
+            if edge[0] in lp and edge[1] in lp:
+                loops_pres.append(loop_defs[lp])
 
         # Add all the elements
         circuit_dict[edge] = []
@@ -177,40 +177,47 @@ def to_SQcircuit(circuit: list, edges: list,
             val, units = params[(edge, elem)]
             if elem == "C":
                 id_str = "C_" + "".join([str(x) for x in edge])
-                circuit_dict[edge].append(sq.Capacitor(val, units, id_str=id_str))
-                
+                circuit_dict[edge].append(sq.Capacitor(val, units,
+                                                       id_str=id_str))
+
             elif elem == "L":
                 id_str = "L_" + "".join([str(x) for x in edge])
-                circuit_dict[edge].append(sq.Inductor(val, units, 
+                circuit_dict[edge].append(sq.Inductor(val, units,
                                                       id_str=id_str,
-                                                      loops=loops_present))
+                                                      loops=loops_pres))
             elif elem == "J":
                 id_str = "J_" + "".join([str(x) for x in edge])
                 if (edge, "CJ") in params:
                     val2, units2 = params[(edge, "CJ")]
-                    j_c = sq.Capacitor(val2, units2, id_str="C"+id_str)
-                    circuit_dict[edge].append(sq.Junction(val, units, id_str=id_str,
-                                                          loops=loops_present,
-                                                          cap = j_c))
+                    if val2 > 0:
+                        j_c = sq.Capacitor(val2, units2, id_str="C"+id_str)
+                        circuit_dict[edge].append(sq.Junction(val, units,
+                                                              id_str=id_str,
+                                                              loops=loops_pres,
+                                                              cap=j_c))
                 else:
-                    circuit_dict[edge].append(sq.Junction(val, units, id_str=id_str,
-                                                          loops=loops_present))
+                    circuit_dict[edge].append(sq.Junction(val, units,
+                                                          id_str=id_str,
+                                                          loops=loops_pres))
             else:
-                raise ValueError("Unknown circuit compenent present. Must be either C, J, or L")
+                raise ValueError("Unknown circuit compenent present.\
+                                  Must be either C, J, or L")
 
     sqC = sq.Circuit(circuit_dict, flux_dist='junctions')
-    
+
     # Convert truncation num to list
     if not isinstance(trunc_num, list):
         trunc_num = [trunc_num]*len(sqC.omega)
-    
+
     sqC.set_trunc_nums(trunc_num)
 
     return sqC
 
 
 def to_SCqubits(circuit: list, edges: list,
-                trunc_num: Union[int,list] = 10, **kwargs):
+                trunc_num: Union[int, list] = 10,
+                cutoff: Union[int, list] = 31,
+                **kwargs):
     """Converts circuit from list of labels and edges to a
     SCqubits formatted circuit network
 
@@ -219,68 +226,83 @@ def to_SCqubits(circuit: list, edges: list,
     Args:
         circuit (list): a list of element labels for the desired circuit
         edges (list): a list of edge connections for the desired circuit
-        trunc_num (int or list): 
+        trunc_num (int or list): Number of eigenstates to consider for each
+                                 mode in a composite circuit.
         https://scqubits.readthedocs.io/en/latest/guide/ipynb/custom_circuit_hd.html
+        cutoff (int or list): Number of points to use in the underlying
+                              position space for each mode.
 
         params (dict): dictionary with entries C, L, J, CJ,
-                    which represent the paramaters for the circuit elements. 
-                    Additionally entries of C_units, L_units, J_units, and CJ_units.
-                    Inputting nothing uses the default parameter values/units from
-                    utils.ELEM_DICT.
+                    which represent the paramaters for the circuit elements.
+                    Additionally entries of C_units, L_units, J_units,
+                    and CJ_units. Inputting nothing uses the default
+                    parameter values/units from utils.ELEM_DICT.
 
     Returns:
-        converted_circuit (SCqubits.Circuit): returns the input circuit converted
-        into a SCqubits circuit
+        converted_circuit (scqubits.Circuit): returns the input circuit
+                                               converted to scqubits.
     """
-    params = kwargs.get("params", utils.gen_param_dict(circuit, edges, utils.ELEM_DICT))
-
-    
+    params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
+                                                       utils.ELEM_DICT))
 
     # Build scqubits circuit yaml string
     circuit_yaml = "branches:"
     for elems, edge in zip(circuit, edges):
+        edge_str = "_".join([str(x) for x in edge])
         # Add all the elements
         for elem in elems:
+            val = f"{elem}_{edge_str} = "
             if elem == "J":
                 e_str = "JJ"
                 val1, _ = params[(edge), elem]
-                if (edge, "CJ") in params
-                val = f"EJ = {1},{1}"
+                if (edge, "CJ") in params:
+                    val2, _ = params[(edge), "CJ"]
+                    if val2 > 0:
+                        val += f"{val1}, {val2}"
+                    else:
+                        val += f"{val1}, 1000"
+                else:
+                    val += f"{val1}, 1000"
             else:
                 e_str = elem
-                val, _ = params[(edge), elem]
-            circuit_yaml += "\n"
-            circuit_yaml += f"- ['{e_str}', {edge[0]}, {edge[1]}"
-            if elem == "C":
-                circuit_dict[edge].append(sq.Capacitor(params['C'][elem_counts["C"]],
-                                 params['C_units'], id_str=("C_" + str(elem_counts["C"]))))
-                
-            elif elem == "L":
-                circuit_dict[edge].append(sq.Inductor(params['L'][elem_counts["L"]],
-                                 params['C_units'], id_str=("L_" + str(elem_counts["L"])),
-                                 loops=loops_present))
-            elif elem == "J":
-                if params['CJ'][elem_counts["J"]] > 0:
-                    j_c = sq.Capacitor(params['CJ'][elem_counts["J"]],
-                                    params['C_units'], id_str=("J_C_" + str(elem_counts["J"])))
-                    circuit_dict[edge].append(sq.Junction(params['J'][elem_counts["J"]],
-                                 params['C_units'], id_str=("J_" + str(elem_counts["J"])),
-                                 loops=loops_present, cap = j_c))
-                else:
-                    circuit_dict[edge].append(sq.Junction(params['J'][elem_counts["J"]],
-                                 params['C_units'], id_str=("J_" + str(elem_counts["J"])),
-                                 loops=loops_present))
-            else:
-                raise ValueError("Unknown circuit compenent present. Must be either C, J, or L")
-            elem_counts[elem] += 1
+                val += f"{params[(edge), elem][0]}"
 
-    # print(circuit_yaml)
-    converted_circuit = scq.Circuit(circuit_yaml, from_file=False)
-    return converted_circuit
+            circuit_yaml += "\n"
+            circuit_yaml += f"- ['{e_str}', {edge[0]}, {edge[1]}, {val}]"
+
+    print(circuit_yaml)
+    conv = scq.Circuit(circuit_yaml, from_file=False)
+
+    # Set cutoff
+    n_nodes = utils.get_num_nodes(edges)
+    heir = conv.system_hierarchy
+    if not isinstance(cutoff, list):
+        if n_nodes > 2:
+            n_modes = len(scq.truncation_template(heir))
+            cutoff = [cutoff]*n_modes
+        else:
+            cutoff = [cutoff]
+    for mode_type in ['periodic', 'extended']:
+        if mode_type == "periodic":
+            mode_str = "n"
+        elif mode_type == "extended":
+            mode_str = "ext"
+        for mode in conv.var_categories[mode_type]:
+            exec(f"conv.cutoff_{mode_str}_{mode}={cutoff[mode-1]}")
+
+    # Convert truncation num to list
+    if not isinstance(trunc_num, list):
+        if n_nodes > 2:
+            n_modes = len(scq.truncation_template(heir))
+            trunc_num = [trunc_num]*n_modes
+    conv.configure(system_hierarchy=heir,
+                   subsystem_trunc_dims=trunc_num)
+
+    return conv
 
 
 def to_CircuitQ(circuit: list, edges: list,
-                                trunc_num: Union[int,list] = 10, **kwargs):
+                trunc_num: Union[int, list] = 10, **kwargs):
     """Converts circuit from list of labels and edges to a
     SQcircuit formatted circuit network
     Args:
@@ -295,7 +317,7 @@ def to_CircuitQ(circuit: list, edges: list,
     Returns:
         circuitQ circuit
     """
-    
+
     params = kwargs.get("params", utils.gen_param_dict(circuit, edges, utils.ELEM_DICT))
 
     circuit_graph = utils.convert_circuit_to_graph(circuit, edges, params=params)

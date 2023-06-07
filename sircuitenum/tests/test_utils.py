@@ -279,7 +279,8 @@ def test_gen_param_dict():
     # Go through test circuits
     for i in range(len(TEST_CIRCUITS)):
         edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
-        param_dict = utils.gen_param_dict(circuit, edges, params=utils.ELEM_DICT)
+        param_dict = utils.gen_param_dict(circuit, edges,
+                                          params=utils.ELEM_DICT)
         counts = utils.count_elems_mapped(circuit)
 
         assert len(param_dict['C']) == counts["C"]
@@ -316,7 +317,7 @@ def test_convert_circuit_to_graph():
     c = [["J"], ["C", "J"], ["C", "L"]]
     e = [(0, 1), (1, 2), (2, 3)]
     params = utils.gen_param_dict(c, e, vals)
-    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
+    assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
 
     G = nx.MultiGraph()
     G.add_edges_from([(0, 1, 0), (0, 1, 1), (1, 2, 0),
@@ -324,14 +325,14 @@ def test_convert_circuit_to_graph():
     c = [["J", "L"], ["C"], ["C", "J"], ["L"]]
     e = [(0, 1), (1, 2), (2, 3), (1, 4)]
     params = utils.gen_param_dict(c, e, vals)
-    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
+    assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
 
     G = nx.MultiGraph()
     G.add_edges_from([(0, 1, 0), (1, 2, 0), (1, 2, 1), (1, 2, 2)])
     c = [["C"], ["C", "J", "L"]]
     e = [(0, 1), (1, 2)]
     params = utils.gen_param_dict(c, e, vals)
-    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
+    assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
 
     # Test junction capacitance
     vals = {
@@ -346,7 +347,7 @@ def test_convert_circuit_to_graph():
     c = [["J"]]
     e = [(0, 1)]
     params = utils.gen_param_dict(c, e, vals)
-    assert utils.convert_circuit_to_graph(c, e, params = params).edges == G.edges
+    assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
 
 
 def test_circuit_node_representation():
@@ -613,12 +614,12 @@ def test_find_circuit_in_db():
     winner = df.iloc[3]
     df2 = utils.find_circuit_in_db(TEMP_FILE, winner.circuit,
                                    winner.edges)
-    
+
     assert df2.shape[0] == 1
     assert df2.iloc[0]['unique_key'] == winner['unique_key']
 
     os.remove(TEMP_FILE)
-    
+
 
 def test_write_circuit():
 
