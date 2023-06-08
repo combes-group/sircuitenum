@@ -216,7 +216,7 @@ def to_SQcircuit(circuit: list, edges: list,
 
 def to_SCqubits(circuit: list, edges: list,
                 trunc_num: Union[int, list] = 10,
-                cutoff: Union[int, list] = 31,
+                cutoff: Union[int, list] = 101,
                 **kwargs):
     """Converts circuit from list of labels and edges to a
     SCqubits formatted circuit network
@@ -275,11 +275,9 @@ def to_SCqubits(circuit: list, edges: list,
 
     # Set cutoff
     n_nodes = utils.get_num_nodes(edges)
-    heir = conv.system_hierarchy
     if not isinstance(cutoff, list):
         if n_nodes > 2:
-            n_modes = len(scq.truncation_template(heir))
-            cutoff = [cutoff]*n_modes
+            cutoff = [cutoff]*(n_nodes - 1)
         else:
             cutoff = [cutoff]
     for mode_type in ['periodic', 'extended']:
@@ -290,13 +288,16 @@ def to_SCqubits(circuit: list, edges: list,
         for mode in conv.var_categories[mode_type]:
             exec(f"conv.cutoff_{mode_str}_{mode}={cutoff[mode-1]}")
 
-    # Convert truncation num to list
-    if not isinstance(trunc_num, list):
-        if n_nodes > 2:
-            n_modes = len(scq.truncation_template(heir))
-            trunc_num = [trunc_num]*n_modes
-    conv.configure(system_hierarchy=heir,
-                   subsystem_trunc_dims=trunc_num)
+    # Set truncation
+    if n_nodes > 2:
+        heir = list(np.arange(n_nodes-1) + 1)
+        if not isinstance(trunc_num, list):
+            if n_nodes > 2:
+                trunc_num = [trunc_num]*(n_nodes - 1)
+            else:
+                heir = conv.system_hierarchy
+        conv.configure(system_hierarchy=heir,
+                       subsystem_trunc_dims=trunc_num)
 
     return conv
 

@@ -251,10 +251,10 @@ def test_to_SCqubits():
     edges = [(0, 1)]
     circuit = [("C", "J", "L")]
 
-    obj = pi.to_SQcircuit(circuit, edges,
-                          params=utils.gen_param_dict(circuit, edges, elems))
-    obj.loops[0].set_flux(0.5)
-    ev, es = obj.diag(3)
+    obj = pi.to_SCqubits(circuit, edges,
+                         params=utils.gen_param_dict(circuit, edges, elems))
+    obj.Φ1 = 0.5
+    ev, es = obj.eigensys(3)
     ev = ev - ev[0]
     good_vals = [0, 0.34, 4.35]
     for i in range(1, 3):
@@ -268,11 +268,11 @@ def test_to_SCqubits():
     elems["L"]["default_value"] = 0.13
     edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
     circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
-    obj = pi.to_SQcircuit(circuit, edges, [35, 6],
-                          params=utils.gen_param_dict(circuit, edges, elems))
-    # breakpoint()
-    obj.loops[0].set_flux(0.5)
-    ev, es = obj.diag(5)
+    obj = pi.to_SCqubits(circuit, edges, 6,
+                         params=utils.gen_param_dict(circuit, edges, elems))
+    breakpoint()
+    obj.Φ1 = 0.5
+    ev, es = obj.eigensys(5)
     ev = ev - ev[0]
     good_vals = [0., 0.02479347, 1.28957426, 1.58410963, 2.18419302]
     for i in range(1, 5):
