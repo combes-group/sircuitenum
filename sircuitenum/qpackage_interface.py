@@ -290,7 +290,7 @@ def to_SCqubits(circuit: list, edges: list,
 
     # Set truncation
     if n_nodes > 2:
-        heir = list(np.arange(n_nodes-1) + 1)
+        heir = [[x] for x in np.arange(n_nodes-1) + 1]
         if not isinstance(trunc_num, list):
             if n_nodes > 2:
                 trunc_num = [trunc_num]*(n_nodes - 1)

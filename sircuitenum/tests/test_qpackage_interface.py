@@ -268,9 +268,8 @@ def test_to_SCqubits():
     elems["L"]["default_value"] = 0.13
     edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
     circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
-    obj = pi.to_SCqubits(circuit, edges, 6,
+    obj = pi.to_SCqubits(circuit, edges, 20,
                          params=utils.gen_param_dict(circuit, edges, elems))
-    breakpoint()
     obj.Φ1 = 0.5
     ev, es = obj.eigensys(5)
     ev = ev - ev[0]
