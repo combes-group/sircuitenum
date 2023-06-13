@@ -302,8 +302,8 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT):
                                vals[elem]['default_unit'])
 
             # Junction capacitance
-            if elem == "J":
-                key = (edge, "CJ")
+            key = (edge, "CJ")
+            if elem == "J" and key in vals:
                 param_dict[key] = (vals["CJ"]['default_value'],
                                    vals["CJ"]['default_unit'])
 

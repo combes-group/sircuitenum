@@ -161,7 +161,7 @@ def print_bare_graphs(all_graphs: list):
         draw_basegraph(G, f"graph index: {i}")
 
 
-def draw_all_basegraphs(base_path: str, n_start: int = 2, n_end: int = 5):
+def draw_all_basegraphs(base_path: str, n_start: int = 2, n_end: int = 4):
     """
     Draws all the basegraphs for nodes with number
     n_start through n_end.
@@ -262,7 +262,14 @@ def draw_circuit_diagram(circuit: list, edges: list,
         None: displays plot if out == ""
     """
 
-    G = utils.convert_circuit_to_graph(circuit, edges)
+    elem_dict = {
+        'C': {'default_unit': 'GHz', 'default_value': 0.2},
+        'L': {'default_unit': 'GHz', 'default_value': 1.0},
+        'J': {'default_unit': 'GHz', 'default_value': 5.0},
+        }
+    params = utils.gen_param_dict(circuit, edges, elem_dict)
+    G = utils.convert_circuit_to_graph(circuit, edges,
+                                       params=params)
 
     # Get layout of vertices
     if layout == 'planar':
@@ -384,8 +391,8 @@ if __name__ == "__main__":
     draw_all_basegraphs(base)
 
     # Actual Circuits
-    base = '/home/eweissler/img/fixed_layout'
-    toLoad = '/home/eweissler/src/test/circuits_trimmed.db'
+    base = "/home/eweissler/img/fixed_layout"
+    toLoad = "/home/eweissler/scratch/circuits.db"
     for n_nodes in range(2, 5):
         out_dir = Path(base, f'{n_nodes}_node_circuits')
         out_dir.mkdir(parents=True, exist_ok=True)
