@@ -1,8 +1,6 @@
 import os
 import re
-from pathlib import Path
-
-from setuptools import setup, find_packages
+from setuptools import setup
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 
@@ -14,17 +12,16 @@ def read(*parts):
 
 def find_version(*file_paths):
     version_file = read(*file_paths)
-    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_file, re.M)
+    version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                              version_file, re.M)
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
 
 
- 
-
 setup(
     name='Superconducting Circuit Enumeration',
-    version='0.1', #find_version('asdf', '__init__.py'),
+    version='0.1',  # find_version('asdf', '__init__.py'),
     description='asdf',
     url=' ',
     author='asdf',
@@ -32,7 +29,9 @@ setup(
     license='GNU GPL-3.0',
     long_description_content_type="text/markdown",
     long_description=open('README.md').read(),
-    install_requires=['numpy',
+    install_requires=[
+                    # enumeration dependencies
+                    'numpy',
                     'networkx',
                     'scipy',
                     'sympy',
@@ -59,6 +58,7 @@ setup(
                     'sphinx-autodoc-typehints',
                     'sphinx_rtd_theme',
                     'nbsphinx',
+                    'myst-parser',
 
                     # for testing examples
                     'nbval'
@@ -66,6 +66,4 @@ setup(
     packages=['sircuitenum'],
 )
 
-
-py_modules=[]
- 
+py_modules = []

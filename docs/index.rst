@@ -6,9 +6,7 @@
 Welcome to sircuitenum's documentation!
 =======================================
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+See example 2 node circuits
 
 
 
@@ -18,3 +16,7 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+.. toctree::
+
+   2_node_circuits
