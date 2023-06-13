@@ -280,27 +280,23 @@ def test_gen_param_dict():
     for i in range(len(TEST_CIRCUITS)):
         edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
         param_dict = utils.gen_param_dict(circuit, edges,
-                                          params=utils.ELEM_DICT)
+                                          vals=utils.ELEM_DICT)
         counts = utils.count_elems_mapped(circuit)
+        for components, edge in zip(circuit, edges):
+            # Make sure component value/unit setting
+            # worked right
+            for comp in components:
+                counts[comp] -= 1
+                v, u = param_dict[(edge, comp)]
+                assert v == utils.ELEM_DICT[comp]['default_value']
+                assert u == utils.ELEM_DICT[comp]['default_unit']
+                if comp == "J":
+                    v2, u2 = param_dict[(edge, "CJ")]
+                    assert v2 == utils.ELEM_DICT["CJ"]['default_value']
+                    assert u2 == utils.ELEM_DICT["CJ"]['default_unit']
 
-        assert len(param_dict['C']) == counts["C"]
-        assert len(param_dict['L']) == counts["L"]
-        assert len(param_dict['J']) == counts["J"]
-        assert len(param_dict['CJ']) == counts["J"]
-
-        assert all(x == utils.ELEM_DICT['C']['default_value']
-                   for x in param_dict['C'])
-        assert all(x == utils.ELEM_DICT['L']['default_value']
-                   for x in param_dict['L'])
-        assert all(x == utils.ELEM_DICT['J']['default_value']
-                   for x in param_dict['J'])
-        assert all(x == utils.ELEM_DICT['CJ']['default_value']
-                   for x in param_dict['CJ'])
-
-        assert utils.ELEM_DICT['C']['default_unit'] == param_dict['C_units']
-        assert utils.ELEM_DICT['L']['default_unit'] == param_dict['L_units']
-        assert utils.ELEM_DICT['J']['default_unit'] == param_dict['J_units']
-        assert utils.ELEM_DICT['CJ']['default_unit'] == param_dict['CJ_units']
+        # Make sure total counts are right
+        assert all(np.array(list(counts.values())) == 0)
 
 
 def test_convert_circuit_to_graph():
@@ -723,4 +719,4 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_convert_circuit_to_graph()
+    test_gen_param_dict()
