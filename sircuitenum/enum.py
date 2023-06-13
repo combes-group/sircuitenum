@@ -122,7 +122,7 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
                         e.g. [(0,1), (0,2), (1,2)]
 
     Returns:
-        unique key of the equivalent circuit that is in the 
+        unique key of the equivalent circuit that is in the
         non isomorphic set
     """
 

@@ -1,3 +1,4 @@
+"qpackage_interface.py: converts circuits to analysis packages"
 __author__ = "Mohit Bhat, Eli Weissler"
 __version__ = "0.1.0"
 __status__ = "Development"
