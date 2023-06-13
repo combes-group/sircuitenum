@@ -1,4 +1,4 @@
-# Sample Circuits: |
+# 2 Node Circuits
 | Circuit | Hamiltonian |
 | ------- | ----------- |
 |![](img/2_node_circuits/n2_g0_c0.svg)|placeholder|
