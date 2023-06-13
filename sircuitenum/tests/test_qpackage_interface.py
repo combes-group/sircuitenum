@@ -4,6 +4,7 @@ import os
 import itertools
 import networkx as nx
 import SQcircuit as sq
+import scqubits as scq
 
 from sircuitenum import qpackage_interface as pi
 from sircuitenum import utils
@@ -227,7 +228,7 @@ def test_to_SCqubits():
     circuit = [("C", "J")]
     obj = pi.to_SCqubits(circuit, edges,
                          params=utils.gen_param_dict(circuit, edges, elems))
-    ev, es = obj.eigensys(3)
+    ev, es = obj.eigensys(evals_count=3)
     w01 = ev[1] - ev[0]
     w12 = ev[2] - ev[1]
     Ec = elems['C']['default_value']
@@ -254,7 +255,7 @@ def test_to_SCqubits():
     obj = pi.to_SCqubits(circuit, edges,
                          params=utils.gen_param_dict(circuit, edges, elems))
     obj.Φ1 = 0.5
-    ev, es = obj.eigensys(3)
+    ev, es = obj.eigensys(evals_count=3)
     ev = ev - ev[0]
     good_vals = [0, 0.34, 4.35]
     for i in range(1, 3):
@@ -268,10 +269,14 @@ def test_to_SCqubits():
     elems["L"]["default_value"] = 0.13
     edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
     circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
-    obj = pi.to_SCqubits(circuit, edges, 20,
+    obj = pi.to_SCqubits(circuit, edges, 10,
                          params=utils.gen_param_dict(circuit, edges, elems))
     obj.Φ1 = 0.5
-    ev, es = obj.eigensys(5)
+    system_hierarchy = [[1,3], [2]]
+    scq.truncation_template(system_hierarchy)
+    obj.configure(system_hierarchy=system_hierarchy,
+                  subsystem_trunc_dims=[35, 6])
+    ev, es = obj.eigensys(evals_count=5)
     ev = ev - ev[0]
     good_vals = [0., 0.02479347, 1.28957426, 1.58410963, 2.18419302]
     for i in range(1, 5):

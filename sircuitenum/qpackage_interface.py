@@ -248,7 +248,7 @@ def to_SCqubits(circuit: list, edges: list,
     # Build scqubits circuit yaml string
     circuit_yaml = "branches:"
     for elems, edge in zip(circuit, edges):
-        edge_str = "_".join([str(x) for x in edge])
+        edge_str = "_".join([str(x+1) for x in edge])
         # Add all the elements
         for elem in elems:
             val = f"{elem}_{edge_str} = "
@@ -268,7 +268,7 @@ def to_SCqubits(circuit: list, edges: list,
                 val += f"{params[(edge), elem][0]}"
 
             circuit_yaml += "\n"
-            circuit_yaml += f"- ['{e_str}', {edge[0]}, {edge[1]}, {val}]"
+            circuit_yaml += f"- ['{e_str}', {edge[0] + 1}, {edge[1] + 1}, {val}]"
 
     print(circuit_yaml)
     conv = scq.Circuit(circuit_yaml, from_file=False)
@@ -290,13 +290,13 @@ def to_SCqubits(circuit: list, edges: list,
 
     # Set truncation
     if n_nodes > 2:
-        heir = [[x] for x in np.arange(n_nodes-1) + 1]
+        hier = [[x] for x in np.arange(n_nodes-1) + 1]
         if not isinstance(trunc_num, list):
             if n_nodes > 2:
                 trunc_num = [trunc_num]*(n_nodes - 1)
             else:
-                heir = conv.system_hierarchy
-        conv.configure(system_hierarchy=heir,
+                hier = conv.system_hierarchy
+        conv.configure(system_hierarchy=hier,
                        subsystem_trunc_dims=trunc_num)
 
     return conv
