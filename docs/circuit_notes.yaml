@@ -1,0 +1,9 @@
+Transmon:
+  circuit: [[C,J]]
+  edges: [[0,1]]
+  notes: "Transmon"
+
+Fluxonium:
+  circuit: [[C,J,L]]
+  edges: [[0,1]]
+  notes: "Fluxonium"

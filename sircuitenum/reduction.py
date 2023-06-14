@@ -112,7 +112,7 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
 
 
 def isomorphic_circuit_in_set(circuit: list, edges: list, c_set: list,
-                              e_set=None):
+                              e_set=None, return_index=False):
     """Helper function to see if a circuit that is isomprphic
     to the given circuit
     (list/tuple of tuples) is in a set of circuits
@@ -128,6 +128,8 @@ def isomorphic_circuit_in_set(circuit: list, edges: list, c_set: list,
         c_set (list of lists): list of circuit-like elements
         e_set (list of lists): list of edges for the circuit list. If none
                                is given then assumes edges argument is the edge
+        return_index (bool): return index of isomorphic circuit, returns
+                             nan if it's not present
 
     Returns:
         True if circuit is present in c_set, False if it isn't
@@ -139,8 +141,14 @@ def isomorphic_circuit_in_set(circuit: list, edges: list, c_set: list,
             c2_edges = e_set[i]
         port_graph_2 = convert_circuit_to_port_graph(c2, c2_edges)
         if nx.is_isomorphic(port_graph, port_graph_2, node_match=colors_match):
-            return True
-    return False
+            if return_index:
+                return i
+            else:
+                return True
+    if return_index:
+        return np.nan
+    else:
+        return False
 
 
 def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):

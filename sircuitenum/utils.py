@@ -59,8 +59,9 @@ EDGE_COLOR_DICT = {
 ELEM_DICT = {
     'C': {'default_unit': 'GHz', 'default_value': 0.2},
     'L': {'default_unit': 'GHz', 'default_value': 1.0},
-    'J': {'default_unit': 'GHz', 'default_value': 5.0},
-    'CJ': {'default_unit': 'GHz', 'default_value': 20.0}
+    'J': {'default_unit': 'GHz', 'default_value': 5.0}
+    # 'CJ': {'default_unit': 'GHz', 'default_value': 20.0}
+    # 'CJ': {'default_unit': 'GHz', 'default_value': 0.0}
 }
 
 DOWNLOAD_PATH = Path(__file__).parent.parent

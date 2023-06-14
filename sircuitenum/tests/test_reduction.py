@@ -355,16 +355,25 @@ def test_isomorphic_circuit_in_set():
     # Test some obvious cases
     edges = [(0, 1), (1, 2), (2, 0)]
     circuit = list(itertools.permutations([("C",), ("L",), ("J",)]))
-    test_c = circuit.pop()
+    test_c = circuit[0]
     assert red.isomorphic_circuit_in_set(test_c, edges, circuit)
     assert red.isomorphic_circuit_in_set([("C",), ("J",), ("J",)],
                                          edges, circuit) is False
     assert red.isomorphic_circuit_in_set(test_c, edges,
                                          circuit,
                                          [edges]*len(circuit))
+    assert red.isomorphic_circuit_in_set(test_c, edges,
+                                         circuit,
+                                         [edges]*len(circuit),
+                                         return_index=True) == 0
     assert red.isomorphic_circuit_in_set([("C",), ("J",), ("J",)],
                                          edges, circuit,
                                          [edges]*len(circuit)) is False
+
+    assert np.isnan(red.isomorphic_circuit_in_set([("C",), ("J",), ("J",)],
+                                                  edges, circuit,
+                                                  [edges]*len(circuit),
+                                                  return_index=True))
 
 
 def test_jj_present():
