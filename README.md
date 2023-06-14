@@ -1,10 +1,6 @@
-|build-status|
-
+[![Documentation Status](https://readthedocs.org/projects/sircuitenum/badge/?version=latest)](https://sircuitenum.readthedocs.io/en/latest/?badge=latest)
 Superconducting cIRCUIT-ENUMeration
 ======================================
-
-https://sircuitenum.readthedocs.io/en/latest/
-
 
 A library for enumerating superconducting circuits.
 
