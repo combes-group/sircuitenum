@@ -21,15 +21,8 @@ sys.path.insert(0, os.path.abspath("../sircuitenum"))
 
 extensions = [
     "myst_parser",
-    "sphinx.ext.napoleon",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.todo",
-    "sphinx.ext.doctest",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.extlinks",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.ifconfig",
-    "sphinx.ext.mathjax"
+    "sphinx.ext.mathjax",
+    "sphinx-mathjax-offline"
 ]
 
 templates_path = ['_templates']
