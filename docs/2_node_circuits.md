@@ -1,5 +1,5 @@
 # 2 Node Circuits
-| Circuit | SCqubits | SQcircuit |
+| Circuit | scQubits | SQcircuit |
 | ------- | -------- | --------- |
 |![](img/2_node_circuits/n2_g0_c1.svg)|$\left(4000.0 n_{1}^{2} + 4000.0 n_{g1}^{2} + 8000.0 n_{1} n_{g1}\right) - J_{1 2} \cos{\left(θ_{1} \right)}$|$\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)$|
 |![](img/2_node_circuits/n2_g0_c3.svg)|$\left(\frac{0.5 n_{1}^{2}}{0.000125 + \frac{1}{8 C_{1 2}}} + \frac{0.5 n_{g1}^{2}}{0.000125 + \frac{1}{8 C_{1 2}}} + \frac{1.0 n_{1} n_{g1}}{0.000125 + \frac{1}{8 C_{1 2}}}\right) - J_{1 2} \cos{\left(θ_{1} \right)}$|$\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)$|

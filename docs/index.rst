@@ -6,7 +6,7 @@
 Welcome to sircuitenum's documentation!
 =======================================
 
-See example 2 node circuits
+See example 2 node circuits :ref:`2_node_circuits`
 
 
 
