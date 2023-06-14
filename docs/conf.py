@@ -16,7 +16,16 @@ release = '0.1.0'
 
 extensions = [
     "myst_parser",
-    'sphinx.ext.mathjax']
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.todo",
+    "sphinx.ext.doctest",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.extlinks",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.ifconfig",
+    "sphinx.ext.mathjax"
+]
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
