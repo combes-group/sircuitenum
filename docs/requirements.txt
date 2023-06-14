@@ -2,3 +2,11 @@
 sphinx==7.0.1
 sphinx_rtd_theme
 myst-parser==2.0.0
+IPython
+ipywidgets
+nbsphinx
+sphinxcontrib-napoleon
+sphinx-autodoc-typehints
+autodoc
+cycler
+sphinx-design
