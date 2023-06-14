@@ -6,10 +6,15 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
+import os
+import sys
+
 project = 'sircuitenum'
 copyright = '2023, Eli Weissler, Mohit Bhat, Josh Combes'
 author = 'Eli Weissler, Mohit Bhat, Josh Combes'
 release = '0.1.0'
+
+sys.path.insert(0, os.path.abspath("../sircuitenum"))
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
