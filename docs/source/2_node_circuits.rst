@@ -2,7 +2,7 @@
 ===============
 
 .. list-table::
-   :widths: 17 20 22 12
+   :widths: 34 20 22 12
    :header-rows: 1
 
    - 
