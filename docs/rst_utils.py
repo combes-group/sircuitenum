@@ -45,7 +45,10 @@ def make_md_table(title, df, outfile=None):
     md_str += "\n"
 
     for i, row in df.iterrows():
-        md_str += f"|![]({row['filename']})|"
+        # md_str += f"|![]({row['filename']})|"
+        # md_str += f"|<img src='{row['filename']}' style='width:1300px;height:1300px;'/>|"
+        md_str += f"|<img src='{row['filename']}' width='300' height='300'>|"
+        
         for col in df.columns:
             if col != "filename":
                 md_str += f"{row[col]}|"
@@ -89,5 +92,5 @@ if __name__ == "__main__":
                        "SCqubits": sc_hams,
                        "SQcircuit": sq_hams})
 
-    df["notes"] = gen_notes("circuit_notes.yaml", cir)
+    df["Notes"] = gen_notes("circuit_notes.yaml", cir)
     make_md_table("2 Node Circuits", df, "source/2_node_circuits.rst")
