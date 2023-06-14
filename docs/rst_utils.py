@@ -45,10 +45,9 @@ def make_md_table(title, df, outfile=None):
     md_str += "\n"
 
     for i, row in df.iterrows():
-        md_str += f"|![]({row['filename']})"+"{width=500px}|"
-        # md_str += f"|<img src='{row['filename']}' style='width:1300px;height:1300px;'/>|"
-        # md_str += f"|<img src='{row['filename']}' width='300' height='300'/>|"
-        
+        # md_str += f"|![]({row['filename']})"+"{width=500px}|"
+        md_str += f"|![]({row['filename']})|"
+       
         for col in df.columns:
             if col != "filename":
                 md_str += f"{row[col]}|"

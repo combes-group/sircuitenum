@@ -2,7 +2,7 @@
 ===============
 
 .. list-table::
-   :widths: 34 20 22 12
+   :widths: 17 20 22 12
    :header-rows: 1
 
    - 
@@ -37,10 +37,6 @@
       - Fluxonium
 
 .. |image1| image:: img/2_node_circuits/n2_g0_c1.svg
-   :width: 500px
 .. |image2| image:: img/2_node_circuits/n2_g0_c3.svg
-   :width: 500px
 .. |image3| image:: img/2_node_circuits/n2_g0_c5.svg
-   :width: 500px
 .. |image4| image:: img/2_node_circuits/n2_g0_c6.svg
-   :width: 500px
