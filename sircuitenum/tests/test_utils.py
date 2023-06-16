@@ -276,11 +276,18 @@ def test_circuit_in_set():
 
 def test_gen_param_dict():
 
+    elem_dict = {
+                'C': {'default_unit': 'GHz', 'default_value': 0.2},
+                'L': {'default_unit': 'GHz', 'default_value': 1.0},
+                'J': {'default_unit': 'GHz', 'default_value': 5.0},
+                'CJ': {'default_unit': 'GHz', 'default_value': 20.0}
+                }
+
     # Go through test circuits
     for i in range(len(TEST_CIRCUITS)):
         edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
         param_dict = utils.gen_param_dict(circuit, edges,
-                                          vals=utils.ELEM_DICT)
+                                          vals=elem_dict)
         counts = utils.count_elems_mapped(circuit)
         for components, edge in zip(circuit, edges):
             # Make sure component value/unit setting
@@ -288,12 +295,38 @@ def test_gen_param_dict():
             for comp in components:
                 counts[comp] -= 1
                 v, u = param_dict[(edge, comp)]
-                assert v == utils.ELEM_DICT[comp]['default_value']
-                assert u == utils.ELEM_DICT[comp]['default_unit']
+                assert v == elem_dict[comp]['default_value']
+                assert u == elem_dict[comp]['default_unit']
                 if comp == "J":
                     v2, u2 = param_dict[(edge, "CJ")]
-                    assert v2 == utils.ELEM_DICT["CJ"]['default_value']
-                    assert u2 == utils.ELEM_DICT["CJ"]['default_unit']
+                    assert v2 == elem_dict["CJ"]['default_value']
+                    assert u2 == elem_dict["CJ"]['default_unit']
+
+        # Make sure total counts are right
+        assert all(np.array(list(counts.values())) == 0)
+
+    elem_dict = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 5.0}
+            }
+
+    # Go through test circuits
+    for i in range(len(TEST_CIRCUITS)):
+        edges, circuit = TEST_CIRCUITS[i][0], TEST_CIRCUITS[i][1]
+        param_dict = utils.gen_param_dict(circuit, edges,
+                                          vals=elem_dict)
+        counts = utils.count_elems_mapped(circuit)
+        for components, edge in zip(circuit, edges):
+            # Make sure component value/unit setting
+            # worked right
+            for comp in components:
+                counts[comp] -= 1
+                v, u = param_dict[(edge, comp)]
+                assert v == elem_dict[comp]['default_value']
+                assert u == elem_dict[comp]['default_unit']
+                if comp == "J":
+                    assert (edge, "CJ") not in param_dict
 
         # Make sure total counts are right
         assert all(np.array(list(counts.values())) == 0)

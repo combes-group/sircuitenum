@@ -20,9 +20,6 @@ sys.path.insert(0, os.path.abspath("../sircuitenum"))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 
-def setup(app):
-    app.add_css_file('my_theme.css')
-
 
 extensions = [
     'sphinx.ext.duration',

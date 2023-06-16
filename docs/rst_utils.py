@@ -106,6 +106,7 @@ def gen_qubit_tables(db, n_nodes):
     df = pd.DataFrame({"filename": filenames,
                        "SCqubits": sc_hams,
                        "SQcircuit": sq_hams})
+    df = df[["filename", "SQcircuit", "SCqubits"]]
 
     df["Notes"] = gen_notes("circuit_notes.yaml", cir)
     make_md_table(f"{n_nodes} Node Circuits", df,
