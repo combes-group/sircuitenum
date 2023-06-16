@@ -272,9 +272,9 @@ def to_SCqubits(circuit: list, edges: list,
                     if val2 > 0:
                         val += f"{val1}, {val2}"
                     else:
-                        val += f"{val1}, 1000"
+                        val += f"{val1}, 1000.0"
                 else:
-                    val += f"{val1}, 1000"
+                    val += f"{val1}, 1000.0"
             else:
                 e_str = elem
                 val += f"{params[(edge), elem][0]}"
@@ -282,7 +282,9 @@ def to_SCqubits(circuit: list, edges: list,
             circuit_yaml += "\n"
             circuit_yaml += f"- ['{e_str}', {edge[0]+1}, {edge[1]+1}, {val}]"
 
+    # print(circuit_yaml)
     conv = scq.Circuit(circuit_yaml, from_file=False)
+
 
     # Set cutoff
     n_nodes = utils.get_num_nodes(edges)

@@ -215,12 +215,12 @@ def draw_basegraph(G: nx.Graph, title: str = "",
     return f, pos
 
 
-def draw_all_circuits(file: str, n_nodes: int, out_dir: str,
-                      layout: str = 'fixed', format: str = ".svg"):
+def draw_all_qubits(file: str, n_nodes: int, out_dir: str,
+                    layout: str = 'fixed', format: str = ".svg"):
 
     # So plots don't pop up
     matplotlib.use('agg')
-    df = utils.get_circuit_data_batch(file, n_nodes)
+    df = utils.get_unique_qubits(file, n_nodes)
     for uid, row in tqdm(df.iterrows(), total=df.shape[0]):
         circuit = row.circuit
         edges = row.edges
@@ -396,4 +396,4 @@ if __name__ == "__main__":
     for n_nodes in range(2, 5):
         out_dir = Path(base, f'{n_nodes}_node_circuits')
         out_dir.mkdir(parents=True, exist_ok=True)
-        draw_all_circuits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')
+        draw_all_qubits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')

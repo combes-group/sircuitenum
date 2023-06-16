@@ -20,3 +20,4 @@ Indices and tables
 .. toctree::
 
    2_node_circuits
+   3_node_circuits

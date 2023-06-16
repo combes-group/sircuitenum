@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 from sympy import latex
 import pypandoc
@@ -68,28 +69,51 @@ def md_to_rst(md_str):
                                  extra_args=["--list-tables"])
 
 
-if __name__ == "__main__":
+def gen_qubit_tables(db, n_nodes):
 
-    # Load 2 node circuit database
-    db = "/home/eweissler/scratch/circuits.db"
-    cir = utils.get_unique_qubits(db, 2)
+    # Load n node circuit database
+    cir = utils.get_unique_qubits(db, n_nodes)
+
+    # Filter out any circuits with single JJ's
+    cir = cir[[("J",) not in x for x in cir.circuit.values]]
 
     # Locate images
-    filenames = [f"img/2_node_circuits/{x}.svg" for x in cir['unique_key']]
+    filenames = [str(Path("img", f"{n_nodes}_node_circuits", f"{x}.svg"))
+                 for x in cir['unique_key']]
 
-    # Make scqubits Hamiltonian
-    sc_hams = cir.apply(lambda row: str(latex(pi.to_SCqubits(row.circuit, row.edges).sym_hamiltonian(return_expr=True))), axis=1).values
-    sc_hams = ["$" + x + "$" for x in sc_hams]
-    # sc_hams = ["{math}`" + x + "`" for x in sc_hams]
-
-    # Make sqcircuit Hamiltonian
-    sq_hams = cir.apply(lambda row: pi.to_SQcircuit(row.circuit, row.edges).description(tp="ltx", _test=True), axis=1).values
-    sq_hams = ["$"+x[:x.find("\n")]+"$" for x in sq_hams]
-    # sq_hams = [r"{math}`" + x + "`" for x in sq_hams]
+    # Make scqubits/sqcircuit Hamiltonians
+    sc_hams = []
+    sq_hams = []
+    for i, row in cir.iterrows():
+        # scqubits
+        try:
+            c1 = pi.to_SCqubits(row.circuit, row.edges)
+            h1 = str(latex(c1.sym_hamiltonian(return_expr=True)))
+            h1 = "$" + h1 + "$"
+        except:
+            h1 = "N/A"
+        # sqcircuit
+        try:
+            c2 = pi.to_SQcircuit(row.circuit, row.edges)
+            h2 = c2.description(tp="ltx", _test=True)
+            h2 = "$" + h2[:h2.find("\n")] + "$"
+        except:
+            h2 = "N/A"
+            
+        sc_hams.append(h1)
+        sq_hams.append(h2)
 
     df = pd.DataFrame({"filename": filenames,
                        "SCqubits": sc_hams,
                        "SQcircuit": sq_hams})
 
     df["Notes"] = gen_notes("circuit_notes.yaml", cir)
-    make_md_table("2 Node Circuits", df, "source/2_node_circuits.rst")
+    make_md_table(f"{n_nodes} Node Circuits", df,
+                  str(Path("source", f"{n_nodes}_node_circuits.rst")))
+
+
+if __name__ == "__main__":
+
+    db = "/home/eweissler/scratch/circuits.db"
+    gen_qubit_tables(db, 2)
+    gen_qubit_tables(db, 3)
