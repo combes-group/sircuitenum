@@ -6,7 +6,7 @@
 Welcome to sircuitenum's documentation!
 =======================================
 
-See example 2 node circuits
+See example circuits
 
 
 
@@ -19,5 +19,6 @@ Indices and tables
 
 .. toctree::
 
-   2_node_circuits
-   3_node_circuits
+   Basegraph_0_Nodes_2
+   Basegraph_0_Nodes_3
+   Basegraph_1_Nodes_3

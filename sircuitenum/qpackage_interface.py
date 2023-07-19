@@ -282,9 +282,7 @@ def to_SCqubits(circuit: list, edges: list,
             circuit_yaml += "\n"
             circuit_yaml += f"- ['{e_str}', {edge[0]+1}, {edge[1]+1}, {val}]"
 
-    # print(circuit_yaml)
     conv = scq.Circuit(circuit_yaml, from_file=False)
-
 
     # Set cutoff
     n_nodes = utils.get_num_nodes(edges)
@@ -328,15 +326,19 @@ def to_CircuitQ(circuit: list, edges: list,
                     Additionally entries of C_units, L_units, J_units,
                     and CJ_units. Inputting nothing uses the default
                     parameter values/units from utils.ELEM_DICT.
+        **kwargs: Include any keyword arguments to be included
+                  in the circuitq constructor
+
     Returns:
         circuitQ circuit
     """
 
-    params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
+    params = kwargs.pop("params", utils.gen_param_dict(circuit, edges,
                                                        utils.ELEM_DICT))
+
     circuit_graph = utils.convert_circuit_to_graph(circuit, edges,
                                                    params=params)
-    return cq.CircuitQ(circuit_graph)
+    return cq.CircuitQ(circuit_graph, **kwargs)
 
 
 def to_Qucat(circuit: list, edges: list,

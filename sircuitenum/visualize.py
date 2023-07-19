@@ -24,15 +24,15 @@ from sircuitenum import reduction as red
 from sircuitenum import visualize as viz
 
 
-G_POS = {'2': [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
+G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                 1: np.array([0., 0.])}],
-         '3': [{0: np.array([-1/np.sqrt(2), 1/np.sqrt(2)]),
+         3: [{0: np.array([-1/np.sqrt(2), 1/np.sqrt(2)]),
                 1: np.array([1/np.sqrt(2), -1/np.sqrt(2)]),
                 2: np.array([0., 0.])},
                {0: np.array([0., 0.]),
                 1: np.array([0.5, np.sqrt(3)/2]),
                 2: np.array([-0.5, np.sqrt(3)/2])}],
-         '4': [{0: np.array([np.sqrt(3)/2, -0.5]),
+         4: [{0: np.array([np.sqrt(3)/2, -0.5]),
                 1: np.array([0., 1.]),
                 2: np.array([-np.sqrt(3)/2, -0.5]),
                 3: np.array([0., 0.])},
@@ -193,24 +193,30 @@ def draw_all_basegraphs(base_path: str, n_start: int = 2, n_end: int = 4):
 
 
 def draw_basegraph(G: nx.Graph, title: str = "",
-                   savename: str = "", pos: dict = {}):
+                   savename: str = None, **kwargs):
     """Plots unlabeled graphs from graph list returned
     from get_graphs_from_file() function
 
     Args:
         G (nx.graph): networkx graph to plot
+        title (str): title for plot
         savename (str): location to save the plots
+        pos (dict): dictionary of node labels -> positions
 
     Returns:
         tuple: figure, positioning (x, y) of nodes
     """
+    edges = [x for x in G.edges()]
+    def_pos = G_POS[G.number_of_nodes()][utils.edges_to_graph_index(edges)]
+    pos = kwargs.get("pos", def_pos)
+
     f = plt.figure()
     if len(pos) == 0:
         pos = nx.spring_layout(G)
     nx.draw_networkx(G, pos=pos)
     plt.title(title)
     plt.gca().set_aspect('equal')
-    if len(savename) > 0:
+    if savename is not None:
         plt.savefig(savename)
     return f, pos
 
