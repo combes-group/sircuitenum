@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2023-07-19T14:28:16.892883</dc:date>
+    <dc:date>2023-07-19T15:25:16.150054</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -40,7 +40,7 @@ z
    <g id="LineCollection_1">
     <path d="M 126.196364 284.491636 
 L 346.123636 64.564364 
-" clip-path="url(#pbbd417b87e)" style="fill: none; stroke: #000000"/>
+" clip-path="url(#pe33e0e585a)" style="fill: none; stroke: #000000"/>
    </g>
    <g id="matplotlib.axis_1">
     <g id="xtick_1"/>
@@ -60,7 +60,7 @@ L 346.123636 64.564364
    </g>
    <g id="PathCollection_1">
     <defs>
-     <path id="mba854b4dee" d="M 0 8.660254 
+     <path id="m8cc94c5a1e" d="M 0 8.660254 
 C 2.296726 8.660254 4.499694 7.747755 6.123724 6.123724 
 C 7.747755 4.499694 8.660254 2.296726 8.660254 0 
 C 8.660254 -2.296726 7.747755 -4.499694 6.123724 -6.123724 
@@ -72,9 +72,9 @@ C -4.499694 7.747755 -2.296726 8.660254 0 8.660254
 z
 " style="stroke: #1f78b4"/>
     </defs>
-    <g clip-path="url(#pbbd417b87e)">
-     <use xlink:href="#mba854b4dee" x="126.196364" y="284.491636" style="fill: #1f78b4; stroke: #1f78b4"/>
-     <use xlink:href="#mba854b4dee" x="346.123636" y="64.564364" style="fill: #1f78b4; stroke: #1f78b4"/>
+    <g clip-path="url(#pe33e0e585a)">
+     <use xlink:href="#m8cc94c5a1e" x="126.196364" y="284.491636" style="fill: #1f78b4; stroke: #1f78b4"/>
+     <use xlink:href="#m8cc94c5a1e" x="346.123636" y="64.564364" style="fill: #1f78b4; stroke: #1f78b4"/>
     </g>
    </g>
    <g id="patch_3">
@@ -98,7 +98,7 @@ L 369.216 41.472
 " style="fill: none; stroke: #000000; stroke-width: 0.8; stroke-linejoin: miter; stroke-linecap: square"/>
    </g>
    <g id="text_1">
-    <g clip-path="url(#pbbd417b87e)">
+    <g clip-path="url(#pe33e0e585a)">
      <!-- 0 -->
      <g transform="translate(122.378864 287.802886)scale(0.12 -0.12)">
       <defs>
@@ -129,7 +129,7 @@ z
     </g>
    </g>
    <g id="text_2">
-    <g clip-path="url(#pbbd417b87e)">
+    <g clip-path="url(#pe33e0e585a)">
      <!-- 1 -->
      <g transform="translate(342.306136 67.875614)scale(0.12 -0.12)">
       <defs>
@@ -493,7 +493,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pbbd417b87e">
+  <clipPath id="pe33e0e585a">
    <rect x="103.104" y="41.472" width="266.112" height="266.112"/>
   </clipPath>
  </defs>

@@ -222,6 +222,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
 
     return md_str
 
+
 def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
     """
     Collects the terms in a sympy expression that
@@ -298,28 +299,55 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
 
     return md_str
 
-def gen_qubit_tables(db, n_nodes):
 
-    # Load n node circuit database
-    cir = utils.get_unique_qubits(db, n_nodes)
+def gen_basegraph_summary(max_nodes: int,
+                          image_dir: str,
+                          outfile: str = None) -> str:
+    """
+    Generates a page that shows images of every basegraph
+    in a table separated by number of nodes.
 
-    # Filter out any circuits with single JJ's
-    cir = cir[[("J",) not in x for x in cir.circuit.values]]
+    Args:
+        max_nodes (int, optional): Maximum number of nodes to show up to.
+                                   Defaults to 5.
+        image_dir (str): folder to save images in
+        outfile (str, optional): path to .md or .rst to save to.
+                                 returns only str of markdown if 
+                                 none is given.
 
-    # Locate images
-    filenames = [str(Path("img", f"{n_nodes}_node_circuits", f"{x}.svg"))
-                 for x in cir['unique_key']]
+    Returns:
+        str: markdown text
+    """
+    md_str = "# All Basegraphs\n"
+    for n_nodes in range(2, max_nodes + 1):
+        md_str += "## {n_nodes} Nodes:\n"
+        basegraphs = utils.get_basegraphs(n_nodes)
+        df = []
+        for ig, G in enumerate(basegraphs):
+            entry = {}
+            entry["Nodes"] = n_nodes
+            entry["Basegraph"] = ig
 
-    
+            # Make the image
+            img_path = Path(image_dir,
+                            f"basegraph_{ig}_{n_nodes}_nodes.svg")
+            Path(img_dir).mkdir(exist_ok=True)
+            viz.draw_basegraph(G, f"{n_nodes} Nodes, Basegraph {ig}",
+                               img_path)
+            entry["filename"] = img_path
+            df.append(entry)
 
-    df = pd.DataFrame({"filename": filenames,
-                       "SCqubits": sc_hams,
-                       "SQcircuit": sq_hams})
-    df = df[["filename", "SQcircuit", "SCqubits"]]
+        df = pd.DataFrame(df)
+        md_str += make_md_table("", df)[1:] + "\n"
 
-    df["Notes"] = gen_notes("circuit_notes.yaml", cir)
-    make_md_table(f"{n_nodes} Node Circuits", df,
-                  str(Path("source", f"{n_nodes}_node_circuits.rst")))
+    if outfile is not None:
+        with open(outfile, "w") as f:
+            if "md" in outfile:
+                f.write(md_str)
+            elif "rst" in outfile:
+                f.write(md_to_rst(md_str))
+
+    return md_str
 
 
 if __name__ == "__main__":
@@ -332,11 +360,11 @@ if __name__ == "__main__":
     # df = utils.get_unique_qubits(db, 2)
     img_dir = "/home/eweissler/src/sircuitenum/docs/source/img"
 
-    # df["Notes"] = gen_notes("circuit_notes.yaml", df)
+    gen_basegraph_summary(5, img_dir, "source/Basegraph_Summary")
 
-    for n_nodes in [2, 3]:
-        basegraphs = utils.get_basegraphs(n_nodes)
-        for graph_index in range(len(basegraphs)):
-            fname = f"Basegraph_{graph_index}_Nodes_{n_nodes}.rst"
-            gen_basegraph_page(db, n_nodes, graph_index,
-                               img_dir, fname)
+    # for n_nodes in [2, 3]:
+    #     basegraphs = utils.get_basegraphs(n_nodes)
+    #     for graph_index in range(len(basegraphs)):
+    #         fname = f"source/Basegraph_{graph_index}_Nodes_{n_nodes}.rst"
+    #         gen_basegraph_page(db, n_nodes, graph_index,
+    #                            img_dir, fname)

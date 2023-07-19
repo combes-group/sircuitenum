@@ -55,7 +55,112 @@ G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                {0: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/5]),
                 1: (3/np.sqrt(3))*np.array([1., 0.]),
                 2: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/2]),
-                3: (3/np.sqrt(3))*np.array([0., 0.])}]}
+                3: (3/np.sqrt(3))*np.array([0., 0.])}],
+         5:   [{0: np.array([-1, 0]),
+                1: np.array([0, 1]),
+                2: np.array([1, 0]),
+                3: np.array([0, -1]),
+                4: np.array([0, 0])},
+               {0: np.array([0., -1.]),
+                1: np.array([-0.5, np.sqrt(3)/2]),
+                2: np.array([0.5, np.sqrt(3)/2]),
+                3: np.array([0, -2]),
+                4: np.array([0., 0.])},
+               {0: np.array([-0.5, -np.sqrt(3)/2]),
+                1: np.array([-0.5, np.sqrt(3)/2]),
+                2: np.array([0.5, np.sqrt(3)/2]),
+                3: np.array([0.5, -np.sqrt(3)/2]),
+                4: np.array([0., 0.])},
+               {0: np.array([-0.5, -np.sqrt(3)/2]),
+                1: np.array([1, 0]),
+                2: np.array([0, 1]),
+                3: np.array([0.5, -np.sqrt(3)/2]),
+                4: np.array([0., 0.])},
+               {0: np.array([0, -1]),
+                1: np.array([1, 0]),
+                2: np.array([0, 1]),
+                3: np.array([1, -1]),
+                4: np.array([0., 0.])},
+               {0: np.array([-0.5, -np.sqrt(3)/2]),
+                1: np.array([1, 0]),
+                2: np.array([0.5, np.sqrt(3)/2]),
+                3: np.array([0.5, -np.sqrt(3)/2]),
+                4: np.array([0., 0.])},
+               {0: np.array([0, -1]),
+                1: np.array([0.5, -0.5]),
+                2: np.array([1, 0]),
+                3: np.array([1, -1]),
+                4: np.array([0., 0.])},
+               {0: np.array([0, -1]),
+                1: np.array([0.75, -0.25]),
+                2: np.array([1, 0]),
+                3: np.array([1, -1]),
+                4: np.array([0., 0.])},
+               {0: np.array([1, 1]),
+                1: np.array([-1, 1]),
+                2: np.array([2, 0]),
+                3: np.array([-2, 0]),
+                4: np.array([0, 0])},
+               {0: np.array([0, 0]),
+                1: np.array([1, 2]),
+                2: np.array([2, 0]),
+                3: np.array([1, 3]),
+                4: np.array([1, 1])},
+               {0: np.array([0.5, 1-np.sqrt(3)/2]),
+                1: np.array([1.5, 1+np.sqrt(3)/2]),
+                2: np.array([1.5, 1-np.sqrt(3)/2]),
+                3: np.array([0.5, 1+np.sqrt(3)/2]),
+                4: np.array([1, 1])},
+               {0: np.array([0, 0]),
+                1: np.array([1, 1+np.sqrt(2)/2]),
+                2: np.array([2, 0]),
+                3: np.array([1, 1-0.6]),
+                4: np.array([1, 1])},
+               {0: np.array([0, 0]),
+                1: np.array([1, 1+np.sqrt(2)/2]),
+                2: np.array([2, 0]),
+                3: np.array([1, 1-0.6]),
+                4: np.array([1, 1])},
+               {0: np.array([0, 1]),
+                1: np.array([np.sin(2*2*np.pi/5), np.cos(2*2*np.pi/5)]),
+                2: np.array([np.sin(4*2*np.pi/5), np.cos(4*2*np.pi/5)]),
+                3: np.array([np.sin(1*2*np.pi/5), np.cos(1*2*np.pi/5)]),
+                4: np.array([np.sin(3*2*np.pi/5), np.cos(3*2*np.pi/5)])},
+               {0: np.array([0, 1]),
+                1: np.array([np.sin(2*2*np.pi/5), np.cos(2*2*np.pi/5)]),
+                2: np.array([np.sin(4*2*np.pi/5), np.cos(4*2*np.pi/5)]),
+                3: np.array([np.sin(1*2*np.pi/5), np.cos(1*2*np.pi/5)]),
+                4: np.array([np.sin(3*2*np.pi/5), np.cos(3*2*np.pi/5)])},
+               {0: np.array([0, 0]),
+                1: np.array([0.5, 1+np.sqrt(3)/2]),
+                2: np.array([1, 0]),
+                3: np.array([0, 1]),
+                4: np.array([1, 1])},
+               {0: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/5]),
+                1: (3/np.sqrt(3))*np.array([0, 2*np.sqrt(3)/5]),
+                2: (3/np.sqrt(3))*np.array([1., 0.]),
+                3: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/2]),
+                4: (3/np.sqrt(3))*np.array([0., 0.])},
+               {0: (3/np.sqrt(3))*np.array([1., 0.]),
+                1: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/2]),
+                2: (3/np.sqrt(3))*np.array([0., 0.]),
+                3: (3/np.sqrt(3))*np.array([1, 2*np.sqrt(3)/5]),
+                4: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/5])},
+               {0: (3/np.sqrt(3))*np.array([1., 0.]),
+                1: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/2]),
+                2: (3/np.sqrt(3))*np.array([0., 0.]),
+                3: (3/np.sqrt(3))*np.array([1, 2*np.sqrt(3)/5]),
+                4: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/5])},
+               {0: (3/np.sqrt(3))*np.array([1., 0.]),
+                1: (3/np.sqrt(3))*np.array([0.2, 0.1+np.sqrt(3)/5]),
+                2: (3/np.sqrt(3))*np.array([-0.25, 0.]),
+                3: (3/np.sqrt(3))*np.array([0.25, np.sqrt(3)/2]),
+                4: (3/np.sqrt(3))*np.array([0.5, np.sqrt(3)/5])},
+               {0: np.array([0, 1]),
+                1: np.array([np.sin(2*2*np.pi/5), np.cos(2*2*np.pi/5)]),
+                2: np.array([np.sin(4*2*np.pi/5), np.cos(4*2*np.pi/5)]),
+                3: np.array([np.sin(1*2*np.pi/5), np.cos(1*2*np.pi/5)]),
+                4: np.array([np.sin(3*2*np.pi/5), np.cos(3*2*np.pi/5)])}]}
 
 
 def black_or_white_text(color: tuple):
@@ -178,16 +283,15 @@ def draw_all_basegraphs(base_path: str, n_start: int = 2, n_end: int = 4):
     """
     pos = {}
     for n_nodes in range(n_start, n_end + 1):
-        pos[str(n_nodes)] = []
+        pos[n_nodes] = []
         all_graphs = utils.get_basegraphs(n_nodes)
         for i, G in enumerate(all_graphs):
             fname = str(Path(base_path, f"n{n_nodes}_g{i}.svg"))
             title = f"{n_nodes} nodes, graph {i}"
-            f, p = draw_basegraph(G, title, fname,
-                                  G_POS[str(n_nodes)][i])
+            f, p = draw_basegraph(G, title, fname)
             for k in p:
                 p[k] = np.round(p[k], 2)
-            pos[str(n_nodes)].append(p)
+            pos[n_nodes].append(p)
 
     return pos
 
@@ -207,12 +311,18 @@ def draw_basegraph(G: nx.Graph, title: str = "",
         tuple: figure, positioning (x, y) of nodes
     """
     edges = [x for x in G.edges()]
-    def_pos = G_POS[G.number_of_nodes()][utils.edges_to_graph_index(edges)]
+    n_nodes = G.number_of_nodes()
+    graph_index = utils.edges_to_graph_index(edges)
+    if n_nodes in G_POS:
+        def_pos = G_POS[n_nodes][graph_index]
+    else:
+        if nx.is_planar(G):
+            def_pos = nx.planar_layout(G)
+        else:
+            def_pos = nx.spring_layout(G)
     pos = kwargs.get("pos", def_pos)
 
     f = plt.figure()
-    if len(pos) == 0:
-        pos = nx.spring_layout(G)
     nx.draw_networkx(G, pos=pos)
     plt.title(title)
     plt.gca().set_aspect('equal')
@@ -394,12 +504,12 @@ if __name__ == "__main__":
 
     # Basegraphs
     base = '/home/eweissler/img/basegraphs'
-    draw_all_basegraphs(base)
+    draw_all_basegraphs(base,n_start=5, n_end=5)
 
-    # Actual Circuits
-    base = "/home/eweissler/img/fixed_layout"
-    toLoad = "/home/eweissler/scratch/circuits.db"
-    for n_nodes in range(2, 5):
-        out_dir = Path(base, f'{n_nodes}_node_circuits')
-        out_dir.mkdir(parents=True, exist_ok=True)
-        draw_all_qubits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')
+    # # Actual Circuits
+    # base = "/home/eweissler/img/fixed_layout"
+    # toLoad = "/home/eweissler/scratch/circuits.db"
+    # for n_nodes in range(2, 5):
+    #     out_dir = Path(base, f'{n_nodes}_node_circuits')
+    #     out_dir.mkdir(parents=True, exist_ok=True)
+    #     draw_all_qubits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')
