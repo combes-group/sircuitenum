@@ -303,7 +303,7 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
 
     print(temp, "temp")
 
-    md_str += "\n".join((df.apply(lambda row: "#"+gen_qubit_page(row, img_dir,
+    md_str += "\n".join((df.apply(lambda row: "\n#"+gen_qubit_page(row, img_dir,
                                                                  temp),
                                   axis=1)).values)
 

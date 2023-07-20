@@ -3,9 +3,28 @@
 
 |image1| All unique qubits derived from the above base graph are shown
 below. Circuits with series linear elements or no no Josephson Junctions
-are excluded. ## n3_g0_c1 \| unique_key \| n_nodes \| graph_index \|
-circuit \| edges \| ———- \| ——- \| ———– \| ——- \| —– \|
-\|n3_g0_c1|3|0|[(‘C’,), (‘J’,)]|[(0, 2), (1, 2)]\|
+are excluded.
+
+n3_g0_c1
+--------
+
+.. list-table::
+   :header-rows: 1
+
+   - 
+
+      - unique_key
+      - n_nodes
+      - graph_index
+      - circuit
+      - edges
+   - 
+
+      - n3_g0_c1
+      - 3
+      - 0
+      - [(‘C’,), (‘J’,)]
+      - [(0, 2), (1, 2)]
 
 Notes:
 
