@@ -339,7 +339,7 @@ def gen_basegraph_summary(max_nodes: int,
     """
     md_str = "# All Basegraphs\n"
     for n_nodes in range(2, max_nodes + 1):
-        md_str += f"## {n_nodes} Nodes:\n"
+        md_str += f"## {n_nodes} Nodes\n"
         basegraphs = utils.get_basegraphs(n_nodes)
         df = []
         for ig, G in enumerate(basegraphs):

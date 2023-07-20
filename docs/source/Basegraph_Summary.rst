@@ -1,8 +1,8 @@
 All Basegraphs
 ==============
 
-2 Nodes:
---------
+2 Nodes
+-------
 
 .. list-table::
    :header-rows: 1
@@ -20,8 +20,8 @@ All Basegraphs
 
 .. _nodes-1:
 
-3 Nodes:
---------
+3 Nodes
+-------
 
 .. list-table::
    :header-rows: 1
@@ -44,8 +44,8 @@ All Basegraphs
 
 .. _nodes-2:
 
-4 Nodes:
---------
+4 Nodes
+-------
 
 .. list-table::
    :header-rows: 1
@@ -88,8 +88,8 @@ All Basegraphs
 
 .. _nodes-3:
 
-5 Nodes:
---------
+5 Nodes
+-------
 
 .. list-table::
    :header-rows: 1
