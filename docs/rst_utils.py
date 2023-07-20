@@ -203,18 +203,18 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
     md_str += "given as $E_C = 0.2$ GHz, $E_L = 1$ GHz, $E_J = 5$ GHz, "
     md_str += "and $E_{CJ} = 20$ GHz.\n"
 
-    md_str += "### scQubits:\n"
+    md_str += "\n#### scQubits:\n"
     md_str += "Nodes index from 1, and are assumed to be "
     md_str += "connected to a voltage source via a coupling capacitor.\n"
     md_str += f"$${h_sc}$$\n"
 
-    md_str += "### SQcircuit:\n"
-    md_str += f"$${h_sq}$$\n"
+    md_str += "\n#### SQcircuit:\n"
+    md_str += f"{h_sq}\n"
 
-    md_str += "### CircuitQ:\n"
+    md_str += "\n#### CircuitQ:\n"
     md_str += "Nodes index from 0, with node 0 assigned to be ground. "
     md_str += "Flux biases are included, but offset charges are ignored.\n"
-    md_str += f"$${h_cq}$$\n"
+    md_str += f"{h_cq}\n"
 
     if outfile is not None:
         write_md_rst(md_str, outfile)
