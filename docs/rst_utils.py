@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import re
@@ -137,6 +138,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
     img_path = Path(img_dir, entry["unique_key"] + ".svg")
     Path(img_dir).mkdir(exist_ok=True)
     viz.draw_circuit_diagram(entry["circuit"], entry["edges"], img_path)
+    plt.close()
 
     # Make scqubits/sqcircuit/circuitq Hamiltonians
     # scqubits
@@ -277,6 +279,7 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
     viz.draw_basegraph(utils.get_basegraphs(n_nodes)[graph_index],
                        f"{n_nodes} Nodes, Basegraph {graph_index}",
                        img_path)
+    plt.close()
 
     # Header
     md_str = ""
@@ -330,10 +333,11 @@ def gen_basegraph_summary(max_nodes: int,
 
             # Make the image
             img_path = Path(image_dir,
-                            f"basegraph_{ig}_{n_nodes}_nodes.svg")
+                            f"basegraph_{n_nodes}_nodes_i_{ig}.svg")
             Path(img_dir).mkdir(exist_ok=True)
             viz.draw_basegraph(G, f"{n_nodes} Nodes, Basegraph {ig}",
                                img_path)
+            plt.close()
             entry["filename"] = img_path
             df.append(entry)
 
@@ -360,7 +364,7 @@ if __name__ == "__main__":
     # df = utils.get_unique_qubits(db, 2)
     img_dir = "/home/eweissler/src/sircuitenum/docs/source/img"
 
-    gen_basegraph_summary(5, img_dir, "source/Basegraph_Summary")
+    gen_basegraph_summary(5, img_dir, "source/Basegraph_Summary.rst")
 
     # for n_nodes in [2, 3]:
     #     basegraphs = utils.get_basegraphs(n_nodes)

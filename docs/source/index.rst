@@ -19,6 +19,7 @@ Indices and tables
 
 .. toctree::
 
+   Basegraph_Summary
    Basegraph_0_Nodes_2
    Basegraph_0_Nodes_3
    Basegraph_1_Nodes_3
