@@ -294,7 +294,7 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
             outfile = Path(str(outfile)).absolute()
         md_str += f"![]({img_path.relative_to(outfile.parent)})\n"
 
-    md_str += "All unique qubits derived from the above base graph are "
+    md_str += "\nAll unique qubits derived from the above base graph are "
     md_str += "shown below. Circuits with series linear elements or no "
     md_str += "no Josephson Junctions are excluded.\n"
 

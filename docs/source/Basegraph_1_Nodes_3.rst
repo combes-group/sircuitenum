@@ -1,9 +1,11 @@
 3 Nodes, Basegraph 1
 ====================
 
-|image1| All unique qubits derived from the above base graph are shown
-below. Circuits with series linear elements or no no Josephson Junctions
-are excluded.
+.. image:: img/basegraph_3_nodes_i_001.svg
+
+All unique qubits derived from the above base graph are shown below.
+Circuits with series linear elements or no no Josephson Junctions are
+excluded.
 
 n3_g1_c8
 --------
@@ -4073,5 +4075,3 @@ Nodes index from 0, with node 0 assigned to be ground. Flux biases are
 included, but offset charges are ignored.
 
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
-
-.. |image1| image:: img/basegraph_3_nodes_i_001.svg

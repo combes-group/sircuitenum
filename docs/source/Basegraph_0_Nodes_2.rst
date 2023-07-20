@@ -1,9 +1,11 @@
 2 Nodes, Basegraph 0
 ====================
 
-|image1| All unique qubits derived from the above base graph are shown
-below. Circuits with series linear elements or no no Josephson Junctions
-are excluded.
+.. image:: img/basegraph_2_nodes_i_000.svg
+
+All unique qubits derived from the above base graph are shown below.
+Circuits with series linear elements or no no Josephson Junctions are
+excluded.
 
 n2_g0_c1
 --------
@@ -240,5 +242,3 @@ Nodes index from 0, with node 0 assigned to be ground. Flux biases are
 included, but offset charges are ignored.
 
 .. math:: \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} + \frac{0.5 q_{1}^{2}}{C_{01}}
-
-.. |image1| image:: img/basegraph_2_nodes_i_000.svg
