@@ -3,7 +3,7 @@
 
 |image1| All unique qubits derived from the above base graph are shown
 below. Circuits with series linear elements or no no Josephson Junctions
-are excluded. # n3_g0_c1 \| unique_key \| n_nodes \| graph_index \|
+are excluded. ## n3_g0_c1 \| unique_key \| n_nodes \| graph_index \|
 circuit \| edges \| ———- \| ——- \| ———– \| ——- \| —– \|
 \|n3_g0_c1|3|0|[(‘C’,), (‘J’,)]|[(0, 2), (1, 2)]\|
 
@@ -34,7 +34,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 \ N/A$$
 
 n3_g0_c3
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -81,7 +81,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 \ N/A$$
 
 n3_g0_c5
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -128,7 +128,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 \ N/A$$
 
 n3_g0_c6
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -175,7 +175,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 \ N/A$$
 
 n3_g0_c8
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -225,7 +225,7 @@ E\_{J210} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c9
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -274,7 +274,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + Cp_{21}}`$$
 
 n3_g0_c10
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -324,7 +324,7 @@ E\_{J210} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c11
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -373,7 +373,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c12
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -424,7 +424,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c13
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -475,7 +475,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c17
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -524,7 +524,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{21} + Cp_{02}}`$$
 
 n3_g0_c19
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -574,7 +574,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{21} + Cp_{02}}`$$
 
 n3_g0_c20
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -624,7 +624,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{21} + Cp_{02}}`$$
 
 n3_g0_c24
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -674,7 +674,7 @@ E\_{J210} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c25
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -723,7 +723,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c26
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -774,7 +774,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c27
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -825,7 +825,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c33
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -875,7 +875,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c34
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -925,7 +925,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c40
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -977,7 +977,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c41
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1029,7 +1029,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
 n3_g0_c48
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1080,26 +1080,26 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{0.5 q_{2}^{2}}{C_{02} + C_{21}}`$$
 
-.. |image1| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_0_3_nodes.svg
-.. |image2| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c1.svg
-.. |image3| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c3.svg
-.. |image4| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c5.svg
-.. |image5| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c6.svg
-.. |image6| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c8.svg
-.. |image7| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c9.svg
-.. |image8| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c10.svg
-.. |image9| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c11.svg
-.. |image10| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c12.svg
-.. |image11| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c13.svg
-.. |image12| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c17.svg
-.. |image13| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c19.svg
-.. |image14| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c20.svg
-.. |image15| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c24.svg
-.. |image16| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c25.svg
-.. |image17| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c26.svg
-.. |image18| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c27.svg
-.. |image19| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c33.svg
-.. |image20| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c34.svg
-.. |image21| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c40.svg
-.. |image22| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c41.svg
-.. |image23| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g0_c48.svg
+.. |image1| image:: img/basegraph_3_nodes_i_000.svg
+.. |image2| image:: img/n3_g0_c1.svg
+.. |image3| image:: img/n3_g0_c3.svg
+.. |image4| image:: img/n3_g0_c5.svg
+.. |image5| image:: img/n3_g0_c6.svg
+.. |image6| image:: img/n3_g0_c8.svg
+.. |image7| image:: img/n3_g0_c9.svg
+.. |image8| image:: img/n3_g0_c10.svg
+.. |image9| image:: img/n3_g0_c11.svg
+.. |image10| image:: img/n3_g0_c12.svg
+.. |image11| image:: img/n3_g0_c13.svg
+.. |image12| image:: img/n3_g0_c17.svg
+.. |image13| image:: img/n3_g0_c19.svg
+.. |image14| image:: img/n3_g0_c20.svg
+.. |image15| image:: img/n3_g0_c24.svg
+.. |image16| image:: img/n3_g0_c25.svg
+.. |image17| image:: img/n3_g0_c26.svg
+.. |image18| image:: img/n3_g0_c27.svg
+.. |image19| image:: img/n3_g0_c33.svg
+.. |image20| image:: img/n3_g0_c34.svg
+.. |image21| image:: img/n3_g0_c40.svg
+.. |image22| image:: img/n3_g0_c41.svg
+.. |image23| image:: img/n3_g0_c48.svg

@@ -94,11 +94,7 @@ def make_md_table(title: str, df: pd.DataFrame,
         md_str += "\n"
 
     if outfile is not None:
-        with open(outfile, "w") as f:
-            if "md" in outfile:
-                f.write(md_str)
-            elif "rst" in outfile:
-                f.write(md_to_rst(md_str))
+        write_md_rst(md_str, outfile)
 
     return md_str
 
@@ -195,7 +191,12 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
 
     md_str += f"Notes: {entry['Notes']} \n \n"
 
-    md_str += f"![]({img_path})\n"
+    if outfile is None:
+        md_str += f"![]({img_path})\n"
+    else:
+        if str(outfile)[0] != "/":
+            outfile = Path(str(outfile)).absolute()
+        md_str += f"![]({img_path.relative_to(outfile.parent)})\n"
 
     md_str += "### Circuit Hamiltonian\n"
     md_str += "For scQubits and SQcircuit, default numerical values are "
@@ -216,11 +217,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
     md_str += f"$${h_cq}$$\n"
 
     if outfile is not None:
-        with open(outfile, "w") as f:
-            if "md" in outfile:
-                f.write(md_str)
-            elif "rst" in outfile:
-                f.write(md_to_rst(md_str))
+        write_md_rst(md_str, outfile)
 
     return md_str
 
@@ -274,7 +271,8 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
     df["Notes"] = gen_notes("circuit_notes.yaml", df)
 
     # Generate image of basegraph
-    img_path = Path(image_dir, f"basegraph_{graph_index}_{n_nodes}_nodes.svg")
+    fname = f"basegraph_{n_nodes}_nodes_i_{str(graph_index).zfill(3)}.svg"
+    img_path = Path(image_dir, fname)
     Path(img_dir).mkdir(exist_ok=True)
     viz.draw_basegraph(utils.get_basegraphs(n_nodes)[graph_index],
                        f"{n_nodes} Nodes, Basegraph {graph_index}",
@@ -284,21 +282,36 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
     # Header
     md_str = ""
     md_str += f"# {n_nodes} Nodes, Basegraph {graph_index}\n"
-    md_str += f"![]({img_path})\n"
+
+    # Add image
+    if outfile is None:
+        md_str += f"![]({img_path})\n"
+    else:
+        if str(outfile)[0] != "/":
+            outfile = Path(str(outfile)).absolute()
+        md_str += f"![]({img_path.relative_to(outfile.parent)})\n"
+
     md_str += "All unique qubits derived from the above base graph are "
     md_str += "shown below. Circuits with series linear elements or no "
     md_str += "no Josephson Junctions are excluded.\n"
 
     # Add each Qubit Individually
-    md_str += "\n".join((df.apply(lambda row: gen_qubit_page(row, img_dir),
+    if outfile is None:
+        temp = None
+    else:
+        temp = Path(Path(outfile).parent, "temp.rst")
+
+    print(temp, "temp")
+
+    md_str += "\n".join((df.apply(lambda row: "#"+gen_qubit_page(row, img_dir,
+                                                                 temp),
                                   axis=1)).values)
 
     if outfile is not None:
-        with open(outfile, "w") as f:
-            if "md" in outfile:
-                f.write(md_str)
-            elif "rst" in outfile:
-                f.write(md_to_rst(md_str))
+        write_md_rst(md_str, outfile)
+
+        # Delte temporary file
+        Path(temp).unlink()
 
     return md_str
 
@@ -323,36 +336,46 @@ def gen_basegraph_summary(max_nodes: int,
     """
     md_str = "# All Basegraphs\n"
     for n_nodes in range(2, max_nodes + 1):
-        md_str += "## {n_nodes} Nodes:\n"
+        md_str += f"## {n_nodes} Nodes:\n"
         basegraphs = utils.get_basegraphs(n_nodes)
         df = []
         for ig, G in enumerate(basegraphs):
             entry = {}
             entry["Nodes"] = n_nodes
-            entry["Basegraph"] = ig
+            entry["Index"] = ig
 
             # Make the image
-            img_path = Path(image_dir,
-                            f"basegraph_{n_nodes}_nodes_i_{ig}.svg")
+            fname = f"basegraph_{n_nodes}_nodes_i_{str(ig).zfill(3)}.svg"
+            img_path = Path(image_dir, fname)
             Path(img_dir).mkdir(exist_ok=True)
             viz.draw_basegraph(G, f"{n_nodes} Nodes, Basegraph {ig}",
                                img_path)
             plt.close()
-            entry["filename"] = img_path
+            if outfile is not None:
+                if str(outfile)[0] != "/":
+                    outfile = Path(str(outfile)).absolute()
+                entry["filename"] = img_path.relative_to(outfile.parent)
+            else:
+                entry["filename"] = img_path
+
             df.append(entry)
 
         df = pd.DataFrame(df)
         md_str += make_md_table("", df)[1:] + "\n"
 
     if outfile is not None:
-        with open(outfile, "w") as f:
-            if "md" in outfile:
-                f.write(md_str)
-            elif "rst" in outfile:
-                f.write(md_to_rst(md_str))
+        write_md_rst(md_str, outfile)
 
     return md_str
 
+
+def write_md_rst(md_str, outfile):
+    outfile = str(outfile)
+    with open(outfile, "w") as f:
+        if ".md" == outfile[-3:]:
+            f.write(md_str)
+        elif ".rst" == outfile[-4:]:
+            f.write(md_to_rst(md_str))
 
 if __name__ == "__main__":
 
@@ -366,9 +389,9 @@ if __name__ == "__main__":
 
     gen_basegraph_summary(5, img_dir, "source/Basegraph_Summary.rst")
 
-    # for n_nodes in [2, 3]:
-    #     basegraphs = utils.get_basegraphs(n_nodes)
-    #     for graph_index in range(len(basegraphs)):
-    #         fname = f"source/Basegraph_{graph_index}_Nodes_{n_nodes}.rst"
-    #         gen_basegraph_page(db, n_nodes, graph_index,
-    #                            img_dir, fname)
+    for n_nodes in [2, 3]:
+        basegraphs = utils.get_basegraphs(n_nodes)
+        for graph_index in range(len(basegraphs)):
+            fname = f"source/Basegraph_{graph_index}_Nodes_{n_nodes}.rst"
+            gen_basegraph_page(db, n_nodes, graph_index,
+                               img_dir, fname)

@@ -1,38 +1,36 @@
 All Basegraphs
 ==============
 
-{n_nodes} Nodes:
-----------------
+2 Nodes:
+--------
 
 .. list-table::
-   :widths: 24 17 31
    :header-rows: 1
 
    - 
 
       - Circuit
       - Nodes
-      - Basegraph
+      - Index
    - 
 
       - |image1|
       - 2
       - 0
 
-.. _n_nodes-nodes-1:
+.. _nodes-1:
 
-{n_nodes} Nodes:
-----------------
+3 Nodes:
+--------
 
 .. list-table::
-   :widths: 24 17 31
    :header-rows: 1
 
    - 
 
       - Circuit
       - Nodes
-      - Basegraph
+      - Index
    - 
 
       - |image2|
@@ -44,20 +42,19 @@ All Basegraphs
       - 3
       - 1
 
-.. _n_nodes-nodes-2:
+.. _nodes-2:
 
-{n_nodes} Nodes:
-----------------
+4 Nodes:
+--------
 
 .. list-table::
-   :widths: 24 17 31
    :header-rows: 1
 
    - 
 
       - Circuit
       - Nodes
-      - Basegraph
+      - Index
    - 
 
       - |image4|
@@ -89,20 +86,19 @@ All Basegraphs
       - 4
       - 5
 
-.. _n_nodes-nodes-3:
+.. _nodes-3:
 
-{n_nodes} Nodes:
-----------------
+5 Nodes:
+--------
 
 .. list-table::
-   :widths: 24 17 31
    :header-rows: 1
 
    - 
 
       - Circuit
       - Nodes
-      - Basegraph
+      - Index
    - 
 
       - |image10|
@@ -209,33 +205,33 @@ All Basegraphs
       - 5
       - 20
 
-.. |image1| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_2_nodes_i_0.svg
-.. |image2| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_3_nodes_i_0.svg
-.. |image3| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_3_nodes_i_1.svg
-.. |image4| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_0.svg
-.. |image5| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_1.svg
-.. |image6| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_2.svg
-.. |image7| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_3.svg
-.. |image8| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_4.svg
-.. |image9| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_4_nodes_i_5.svg
-.. |image10| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_0.svg
-.. |image11| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_1.svg
-.. |image12| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_2.svg
-.. |image13| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_3.svg
-.. |image14| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_4.svg
-.. |image15| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_5.svg
-.. |image16| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_6.svg
-.. |image17| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_7.svg
-.. |image18| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_8.svg
-.. |image19| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_9.svg
-.. |image20| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_10.svg
-.. |image21| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_11.svg
-.. |image22| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_12.svg
-.. |image23| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_13.svg
-.. |image24| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_14.svg
-.. |image25| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_15.svg
-.. |image26| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_16.svg
-.. |image27| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_17.svg
-.. |image28| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_18.svg
-.. |image29| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_19.svg
-.. |image30| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_5_nodes_i_20.svg
+.. |image1| image:: img/basegraph_2_nodes_i_000.svg
+.. |image2| image:: img/basegraph_3_nodes_i_000.svg
+.. |image3| image:: img/basegraph_3_nodes_i_001.svg
+.. |image4| image:: img/basegraph_4_nodes_i_000.svg
+.. |image5| image:: img/basegraph_4_nodes_i_001.svg
+.. |image6| image:: img/basegraph_4_nodes_i_002.svg
+.. |image7| image:: img/basegraph_4_nodes_i_003.svg
+.. |image8| image:: img/basegraph_4_nodes_i_004.svg
+.. |image9| image:: img/basegraph_4_nodes_i_005.svg
+.. |image10| image:: img/basegraph_5_nodes_i_000.svg
+.. |image11| image:: img/basegraph_5_nodes_i_001.svg
+.. |image12| image:: img/basegraph_5_nodes_i_002.svg
+.. |image13| image:: img/basegraph_5_nodes_i_003.svg
+.. |image14| image:: img/basegraph_5_nodes_i_004.svg
+.. |image15| image:: img/basegraph_5_nodes_i_005.svg
+.. |image16| image:: img/basegraph_5_nodes_i_006.svg
+.. |image17| image:: img/basegraph_5_nodes_i_007.svg
+.. |image18| image:: img/basegraph_5_nodes_i_008.svg
+.. |image19| image:: img/basegraph_5_nodes_i_009.svg
+.. |image20| image:: img/basegraph_5_nodes_i_010.svg
+.. |image21| image:: img/basegraph_5_nodes_i_011.svg
+.. |image22| image:: img/basegraph_5_nodes_i_012.svg
+.. |image23| image:: img/basegraph_5_nodes_i_013.svg
+.. |image24| image:: img/basegraph_5_nodes_i_014.svg
+.. |image25| image:: img/basegraph_5_nodes_i_015.svg
+.. |image26| image:: img/basegraph_5_nodes_i_016.svg
+.. |image27| image:: img/basegraph_5_nodes_i_017.svg
+.. |image28| image:: img/basegraph_5_nodes_i_018.svg
+.. |image29| image:: img/basegraph_5_nodes_i_019.svg
+.. |image30| image:: img/basegraph_5_nodes_i_020.svg

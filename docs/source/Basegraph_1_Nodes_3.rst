@@ -3,7 +3,7 @@
 
 |image1| All unique qubits derived from the above base graph are shown
 below. Circuits with series linear elements or no no Josephson Junctions
-are excluded. # n3_g1_c8 \| unique_key \| n_nodes \| graph_index \|
+are excluded. ## n3_g1_c8 \| unique_key \| n_nodes \| graph_index \|
 circuit \| edges \| ———- \| ——- \| ———– \| ——- \| —– \|
 \|n3_g1_c8|3|1|[(‘C’,), (‘J’,), (‘J’,)]|[(0, 1), (0, 2), (1, 2)]\|
 
@@ -46,7 +46,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c9
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -104,7 +104,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 Cp_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} Cp_{12} + C_{02} Cp_{12}}`$$
 
 n3_g1_c10
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -163,7 +163,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c11
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -221,7 +221,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c12
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -282,7 +282,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c13
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -344,7 +344,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c17
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -402,7 +402,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}`$$
 
 n3_g1_c19
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -462,7 +462,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}`$$
 
 n3_g1_c20
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -523,7 +523,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}`$$
 
 n3_g1_c24
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -583,7 +583,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c25
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -642,7 +642,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c26
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -704,7 +704,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c27
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -766,7 +766,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c33
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -827,7 +827,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c34
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -888,7 +888,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c40
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -952,7 +952,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c41
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1016,7 +1016,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c48
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1080,7 +1080,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c57
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1141,7 +1141,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c58
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1201,7 +1201,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 Cp_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} Cp_{12} + C_{02} Cp_{12}}`$$
 
 n3_g1_c59
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1262,7 +1262,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c60
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1322,7 +1322,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c61
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1362,7 +1362,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c62
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1403,7 +1403,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c66
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1463,7 +1463,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}`$$
 
 n3_g1_c67
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1522,7 +1522,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}`$$
 
 n3_g1_c68
-=========
+---------
 
 .. list-table::
    :header-rows: 1
@@ -1562,7 +1562,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}} + \frac{0.5 Cp_{02}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}} + \frac{0.5 C_{12}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}
 
 n3_g1_c69
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1603,7 +1603,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}} + \frac{0.5 Cp_{02}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}} + \frac{0.5 C_{12}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{12} + C_{01} Cp_{02} + C_{12} Cp_{02}}
 
 n3_g1_c73
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1665,7 +1665,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c74
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1726,7 +1726,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c75
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1767,7 +1767,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c76
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1808,7 +1808,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c81
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1867,7 +1867,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c82
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1908,7 +1908,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c83
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1949,7 +1949,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c89
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -1990,7 +1990,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c90
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2031,7 +2031,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c97
-=========
+---------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2072,7 +2072,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c122
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2133,7 +2133,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~E_{C_
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}`$$
 
 n3_g1_c123
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2193,7 +2193,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~+~\omeg
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}`$$
 
 n3_g1_c124
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2234,7 +2234,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c125
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2275,7 +2275,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c131
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2316,7 +2316,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c132
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2357,7 +2357,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c138
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2398,7 +2398,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c139
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2439,7 +2439,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c146
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2480,7 +2480,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{12}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}} + \frac{0.5 Cp_{01}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{02} C_{12} + C_{02} Cp_{01} + C_{12} Cp_{01}}
 
 n3_g1_c171
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2542,7 +2542,7 @@ E\_{J120}
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c172
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2603,7 +2603,7 @@ E\_{J020} :raw-latex:`\cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c173
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2644,7 +2644,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c174
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2685,7 +2685,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c179
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2744,7 +2744,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}`$$
 
 n3_g1_c180
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2785,7 +2785,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c181
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2826,7 +2826,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c187
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2867,7 +2867,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c188
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2908,7 +2908,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c195
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2949,7 +2949,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c229
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -2990,7 +2990,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c230
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3031,7 +3031,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\Phi_{2}^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c236
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3072,7 +3072,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c237
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3113,7 +3113,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c244
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3154,7 +3154,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\Phi_{1}^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c285
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3195,7 +3195,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c286
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3236,7 +3236,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c293
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3277,7 +3277,7 @@ Flux biases are included, but offset charges are ignored.
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
 n3_g1_c342
-==========
+----------
 
 .. list-table::
    :widths: 18 13 20 13 9
@@ -3317,70 +3317,70 @@ Flux biases are included, but offset charges are ignored.
 
 .. math:: q_{1}^{2} \cdot \left(\frac{0.5 C_{02}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + q_{2}^{2} \cdot \left(\frac{0.5 C_{01}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}} + \frac{0.5 C_{12}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}\right) + \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{020}\right)^{2}}{2 L_{020}} + \frac{\left(\Phi_{2} + \tilde{\Phi}_{120} + \tilde{\Phi}_{121} - \Phi_{1}\right)^{2}}{2 L_{120}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} - E_{J020} \cos{\left(\frac{\Phi_{2}}{\Phi_{o}} \right)} - E_{J120} \cos{\left(\frac{\Phi_{2} + \tilde{\Phi}_{120} - \Phi_{1}}{\Phi_{o}} \right)} + \frac{1.0 C_{12} q_{1} q_{2}}{C_{01} C_{02} + C_{01} C_{12} + C_{02} C_{12}}
 
-.. |image1| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_1_3_nodes.svg
-.. |image2| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c8.svg
-.. |image3| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c9.svg
-.. |image4| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c10.svg
-.. |image5| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c11.svg
-.. |image6| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c12.svg
-.. |image7| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c13.svg
-.. |image8| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c17.svg
-.. |image9| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c19.svg
-.. |image10| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c20.svg
-.. |image11| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c24.svg
-.. |image12| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c25.svg
-.. |image13| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c26.svg
-.. |image14| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c27.svg
-.. |image15| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c33.svg
-.. |image16| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c34.svg
-.. |image17| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c40.svg
-.. |image18| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c41.svg
-.. |image19| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c48.svg
-.. |image20| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c57.svg
-.. |image21| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c58.svg
-.. |image22| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c59.svg
-.. |image23| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c60.svg
-.. |image24| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c61.svg
-.. |image25| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c62.svg
-.. |image26| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c66.svg
-.. |image27| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c67.svg
-.. |image28| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c68.svg
-.. |image29| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c69.svg
-.. |image30| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c73.svg
-.. |image31| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c74.svg
-.. |image32| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c75.svg
-.. |image33| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c76.svg
-.. |image34| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c81.svg
-.. |image35| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c82.svg
-.. |image36| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c83.svg
-.. |image37| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c89.svg
-.. |image38| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c90.svg
-.. |image39| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c97.svg
-.. |image40| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c122.svg
-.. |image41| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c123.svg
-.. |image42| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c124.svg
-.. |image43| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c125.svg
-.. |image44| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c131.svg
-.. |image45| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c132.svg
-.. |image46| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c138.svg
-.. |image47| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c139.svg
-.. |image48| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c146.svg
-.. |image49| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c171.svg
-.. |image50| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c172.svg
-.. |image51| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c173.svg
-.. |image52| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c174.svg
-.. |image53| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c179.svg
-.. |image54| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c180.svg
-.. |image55| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c181.svg
-.. |image56| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c187.svg
-.. |image57| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c188.svg
-.. |image58| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c195.svg
-.. |image59| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c229.svg
-.. |image60| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c230.svg
-.. |image61| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c236.svg
-.. |image62| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c237.svg
-.. |image63| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c244.svg
-.. |image64| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c285.svg
-.. |image65| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c286.svg
-.. |image66| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c293.svg
-.. |image67| image:: /home/eweissler/src/sircuitenum/docs/source/img/n3_g1_c342.svg
+.. |image1| image:: img/basegraph_3_nodes_i_001.svg
+.. |image2| image:: img/n3_g1_c8.svg
+.. |image3| image:: img/n3_g1_c9.svg
+.. |image4| image:: img/n3_g1_c10.svg
+.. |image5| image:: img/n3_g1_c11.svg
+.. |image6| image:: img/n3_g1_c12.svg
+.. |image7| image:: img/n3_g1_c13.svg
+.. |image8| image:: img/n3_g1_c17.svg
+.. |image9| image:: img/n3_g1_c19.svg
+.. |image10| image:: img/n3_g1_c20.svg
+.. |image11| image:: img/n3_g1_c24.svg
+.. |image12| image:: img/n3_g1_c25.svg
+.. |image13| image:: img/n3_g1_c26.svg
+.. |image14| image:: img/n3_g1_c27.svg
+.. |image15| image:: img/n3_g1_c33.svg
+.. |image16| image:: img/n3_g1_c34.svg
+.. |image17| image:: img/n3_g1_c40.svg
+.. |image18| image:: img/n3_g1_c41.svg
+.. |image19| image:: img/n3_g1_c48.svg
+.. |image20| image:: img/n3_g1_c57.svg
+.. |image21| image:: img/n3_g1_c58.svg
+.. |image22| image:: img/n3_g1_c59.svg
+.. |image23| image:: img/n3_g1_c60.svg
+.. |image24| image:: img/n3_g1_c61.svg
+.. |image25| image:: img/n3_g1_c62.svg
+.. |image26| image:: img/n3_g1_c66.svg
+.. |image27| image:: img/n3_g1_c67.svg
+.. |image28| image:: img/n3_g1_c68.svg
+.. |image29| image:: img/n3_g1_c69.svg
+.. |image30| image:: img/n3_g1_c73.svg
+.. |image31| image:: img/n3_g1_c74.svg
+.. |image32| image:: img/n3_g1_c75.svg
+.. |image33| image:: img/n3_g1_c76.svg
+.. |image34| image:: img/n3_g1_c81.svg
+.. |image35| image:: img/n3_g1_c82.svg
+.. |image36| image:: img/n3_g1_c83.svg
+.. |image37| image:: img/n3_g1_c89.svg
+.. |image38| image:: img/n3_g1_c90.svg
+.. |image39| image:: img/n3_g1_c97.svg
+.. |image40| image:: img/n3_g1_c122.svg
+.. |image41| image:: img/n3_g1_c123.svg
+.. |image42| image:: img/n3_g1_c124.svg
+.. |image43| image:: img/n3_g1_c125.svg
+.. |image44| image:: img/n3_g1_c131.svg
+.. |image45| image:: img/n3_g1_c132.svg
+.. |image46| image:: img/n3_g1_c138.svg
+.. |image47| image:: img/n3_g1_c139.svg
+.. |image48| image:: img/n3_g1_c146.svg
+.. |image49| image:: img/n3_g1_c171.svg
+.. |image50| image:: img/n3_g1_c172.svg
+.. |image51| image:: img/n3_g1_c173.svg
+.. |image52| image:: img/n3_g1_c174.svg
+.. |image53| image:: img/n3_g1_c179.svg
+.. |image54| image:: img/n3_g1_c180.svg
+.. |image55| image:: img/n3_g1_c181.svg
+.. |image56| image:: img/n3_g1_c187.svg
+.. |image57| image:: img/n3_g1_c188.svg
+.. |image58| image:: img/n3_g1_c195.svg
+.. |image59| image:: img/n3_g1_c229.svg
+.. |image60| image:: img/n3_g1_c230.svg
+.. |image61| image:: img/n3_g1_c236.svg
+.. |image62| image:: img/n3_g1_c237.svg
+.. |image63| image:: img/n3_g1_c244.svg
+.. |image64| image:: img/n3_g1_c285.svg
+.. |image65| image:: img/n3_g1_c286.svg
+.. |image66| image:: img/n3_g1_c293.svg
+.. |image67| image:: img/n3_g1_c342.svg

@@ -3,7 +3,7 @@
 
 |image1| All unique qubits derived from the above base graph are shown
 below. Circuits with series linear elements or no no Josephson Junctions
-are excluded. # n2_g0_c1 \| unique_key \| n_nodes \| graph_index \|
+are excluded. ## n2_g0_c1 \| unique_key \| n_nodes \| graph_index \|
 circuit \| edges \| ———- \| ——- \| ———– \| ——- \| —– \|
 \|n2_g0_c1|2|0|[(‘J’,)]|[(0, 1)]\|
 
@@ -35,7 +35,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`$$
 
 n2_g0_c3
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -83,7 +83,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{
 :raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`$$
 
 n2_g0_c5
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -132,7 +132,7 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 :raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`$$
 
 n2_g0_c6
-========
+--------
 
 .. list-table::
    :header-rows: 1
@@ -180,8 +180,8 @@ $$:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J
 - E\_{J010} :raw-latex:`\cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)}` +
 :raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`$$
 
-.. |image1| image:: /home/eweissler/src/sircuitenum/docs/source/img/basegraph_0_2_nodes.svg
-.. |image2| image:: /home/eweissler/src/sircuitenum/docs/source/img/n2_g0_c1.svg
-.. |image3| image:: /home/eweissler/src/sircuitenum/docs/source/img/n2_g0_c3.svg
-.. |image4| image:: /home/eweissler/src/sircuitenum/docs/source/img/n2_g0_c5.svg
-.. |image5| image:: /home/eweissler/src/sircuitenum/docs/source/img/n2_g0_c6.svg
+.. |image1| image:: img/basegraph_2_nodes_i_000.svg
+.. |image2| image:: img/n2_g0_c1.svg
+.. |image3| image:: img/n2_g0_c3.svg
+.. |image4| image:: img/n2_g0_c5.svg
+.. |image5| image:: img/n2_g0_c6.svg
