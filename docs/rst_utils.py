@@ -112,7 +112,8 @@ def md_to_rst(md_str):
     """
     rst_str = pypandoc.convert_text(md_str, 'rst', 'md',
                                  extra_args=["--list-tables"])
-    # rst_str = rst_str.replace(r":raw-latex:", r".. math:: ")
+    rst_str = rst_str.replace(r":raw-latex:`", r".. math:: ")
+    rst_str = rst_str.replace(r"\end{align*}`", r"\end{align*}")
     return rst_str
 
 

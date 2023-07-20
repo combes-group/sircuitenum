@@ -6,7 +6,7 @@
 Welcome to sircuitenum's documentation!
 =======================================
 
-See example circuits
+On this page you can find documentation of the superconducting circuit enumeration package, as well as all unique qubits containing three nodes or fewer. Additionally displayed are :doc:`Basegraph_Summary` up to five nodes in size. These define the unique circuit topoligies used in the enumeration procedure.
 
 
 
@@ -18,7 +18,6 @@ Indices and tables
 * :ref:`search`
 
 .. toctree::
-
    Basegraph_Summary
    Basegraph_0_Nodes_2
    Basegraph_0_Nodes_3
