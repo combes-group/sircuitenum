@@ -28,9 +28,14 @@ n2_g0_c1
 
 Notes:
 
-|image2| ### Circuit Hamiltonian For scQubits and SQcircuit, default
-numerical values are given as :math:`E_C = 0.2` GHz, :math:`E_L = 1`
-GHz, :math:`E_J = 5` GHz, and :math:`E_{CJ} = 20` GHz.
+.. image:: img/n2_g0_c1.svg
+
+Circuit Hamiltonian
+~~~~~~~~~~~~~~~~~~~
+
+For scQubits and SQcircuit, default numerical values are given as
+:math:`E_C = 0.2` GHz, :math:`E_L = 1` GHz, :math:`E_J = 5` GHz, and
+:math:`E_{CJ} = 20` GHz.
 
 scQubits:
 ^^^^^^^^^
@@ -43,20 +48,15 @@ via a coupling capacitor.
 SQcircuit:
 ^^^^^^^^^^
 
-:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)
-
-\\ &\text{mode}~1:~~~~~~~~~~~\text{charge}~~~~~~~~~~~~~~~~n_{g_{1}}~=~0
-
-\\ &\text{parameters}:~~~~~~~~~~~E_{C_{11}}~=~80.0~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~
-\\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\end{align*}`
+:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)  \\ &\text{mode}~1:~~~~~~~~~~~\text{charge}~~~~~~~~~~~~~~~~n_{g_{1}}~=~0  \\ &\text{parameters}:~~~~~~~~~~~E_{C_{11}}~=~80.0~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~ \\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\end{align*}`
 
 CircuitQ:
 ^^^^^^^^^
 
 Nodes index from 0, with node 0 assigned to be ground. Flux biases are
-included, but offset charges are ignored. - E\_{J010}
-:raw-latex:`\cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)}` +
-:raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`
+included, but offset charges are ignored.
+
+.. math:: - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} + \frac{0.5 q_{1}^{2}}{C_{01}}
 
 n2_g0_c3
 --------
@@ -81,9 +81,16 @@ n2_g0_c3
 
 Notes: Transmon
 
-|image3| ### Circuit Hamiltonian For scQubits and SQcircuit, default
-numerical values are given as :math:`E_C = 0.2` GHz, :math:`E_L = 1`
-GHz, :math:`E_J = 5` GHz, and :math:`E_{CJ} = 20` GHz.
+.. image:: img/n2_g0_c3.svg
+
+.. _circuit-hamiltonian-1:
+
+Circuit Hamiltonian
+~~~~~~~~~~~~~~~~~~~
+
+For scQubits and SQcircuit, default numerical values are given as
+:math:`E_C = 0.2` GHz, :math:`E_L = 1` GHz, :math:`E_J = 5` GHz, and
+:math:`E_{CJ} = 20` GHz.
 
 .. _scqubits-1:
 
@@ -100,12 +107,7 @@ via a coupling capacitor.
 SQcircuit:
 ^^^^^^^^^^
 
-:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)
-
-\\ &\text{mode}~1:~~~~~~~~~~~\text{charge}~~~~~~~~~~~~~~~~n_{g_{1}}~=~0
-
-\\ &\text{parameters}:~~~~~~~~~~~E_{C_{11}}~=~0.792~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~
-\\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\end{align*}`
+:raw-latex:`\begin{align*} &\hat{H} =~E_{C_{11}}(\hat{n}_1-n_{g_{1}})^2~~-~E_{J_{1}}\cos(\hat{\varphi}_1)  \\ &\text{mode}~1:~~~~~~~~~~~\text{charge}~~~~~~~~~~~~~~~~n_{g_{1}}~=~0  \\ &\text{parameters}:~~~~~~~~~~~E_{C_{11}}~=~0.792~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~ \\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\end{align*}`
 
 .. _circuitq-1:
 
@@ -113,9 +115,9 @@ CircuitQ:
 ^^^^^^^^^
 
 Nodes index from 0, with node 0 assigned to be ground. Flux biases are
-included, but offset charges are ignored. - E\_{J010}
-:raw-latex:`\cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)}` +
-:raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`
+included, but offset charges are ignored.
+
+.. math:: - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} + \frac{0.5 q_{1}^{2}}{C_{01}}
 
 n2_g0_c5
 --------
@@ -140,9 +142,16 @@ n2_g0_c5
 
 Notes:
 
-|image4| ### Circuit Hamiltonian For scQubits and SQcircuit, default
-numerical values are given as :math:`E_C = 0.2` GHz, :math:`E_L = 1`
-GHz, :math:`E_J = 5` GHz, and :math:`E_{CJ} = 20` GHz.
+.. image:: img/n2_g0_c5.svg
+
+.. _circuit-hamiltonian-2:
+
+Circuit Hamiltonian
+~~~~~~~~~~~~~~~~~~~
+
+For scQubits and SQcircuit, default numerical values are given as
+:math:`E_C = 0.2` GHz, :math:`E_L = 1` GHz, :math:`E_J = 5` GHz, and
+:math:`E_{CJ} = 20` GHz.
 
 .. _scqubits-2:
 
@@ -159,12 +168,7 @@ via a coupling capacitor.
 SQcircuit:
 ^^^^^^^^^^
 
-:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J_{1}}\cos(\hat{\varphi}_1+\varphi_{\text{ext}_{1}})
-
-\\ &\text{mode}~1:~~~~~~~~~~~\text{harmonic}~~~~~~~~~~~\hat{\varphi}_1~=~\varphi_{zp_{1}}(\hat a_1+\hat a^\dagger_1)~~~~~~~~~~~\omega_1/2\pi~=~12.64905~~~~~~~~~~~\varphi_{zp_{1}}~=~2.51e+00
-
-\\ &\text{parameters}:~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~
-\\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\varphi_{\text{ext}_{1}}/2\pi~=~0.0~~~~~~~~~~~\end{align*}`
+:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J_{1}}\cos(\hat{\varphi}_1+\varphi_{\text{ext}_{1}})  \\ &\text{mode}~1:~~~~~~~~~~~\text{harmonic}~~~~~~~~~~~\hat{\varphi}_1~=~\varphi_{zp_{1}}(\hat a_1+\hat a^\dagger_1)~~~~~~~~~~~\omega_1/2\pi~=~12.64905~~~~~~~~~~~\varphi_{zp_{1}}~=~2.51e+00  \\ &\text{parameters}:~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~ \\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\varphi_{\text{ext}_{1}}/2\pi~=~0.0~~~~~~~~~~~\end{align*}`
 
 .. _circuitq-2:
 
@@ -173,9 +177,8 @@ CircuitQ:
 
 Nodes index from 0, with node 0 assigned to be ground. Flux biases are
 included, but offset charges are ignored.
-:raw-latex:`\frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}}`
-- E\_{J010} :raw-latex:`\cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)}` +
-:raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`
+
+.. math:: \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} + \frac{0.5 q_{1}^{2}}{C_{01}}
 
 n2_g0_c6
 --------
@@ -200,9 +203,16 @@ n2_g0_c6
 
 Notes: Fluxonium
 
-|image5| ### Circuit Hamiltonian For scQubits and SQcircuit, default
-numerical values are given as :math:`E_C = 0.2` GHz, :math:`E_L = 1`
-GHz, :math:`E_J = 5` GHz, and :math:`E_{CJ} = 20` GHz.
+.. image:: img/n2_g0_c6.svg
+
+.. _circuit-hamiltonian-3:
+
+Circuit Hamiltonian
+~~~~~~~~~~~~~~~~~~~
+
+For scQubits and SQcircuit, default numerical values are given as
+:math:`E_C = 0.2` GHz, :math:`E_L = 1` GHz, :math:`E_J = 5` GHz, and
+:math:`E_{CJ} = 20` GHz.
 
 .. _scqubits-3:
 
@@ -219,12 +229,7 @@ via a coupling capacitor.
 SQcircuit:
 ^^^^^^^^^^
 
-:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J_{1}}\cos(\hat{\varphi}_1+\varphi_{\text{ext}_{1}})
-
-\\ &\text{mode}~1:~~~~~~~~~~~\text{harmonic}~~~~~~~~~~~\hat{\varphi}_1~=~\varphi_{zp_{1}}(\hat a_1+\hat a^\dagger_1)~~~~~~~~~~~\omega_1/2\pi~=~1.25863~~~~~~~~~~~\varphi_{zp_{1}}~=~7.93e-01
-
-\\ &\text{parameters}:~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~
-\\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\varphi_{\text{ext}_{1}}/2\pi~=~0.0~~~~~~~~~~~\end{align*}`
+:raw-latex:`\begin{align*} &\hat{H} =~\omega_1\hat a^\dagger_1\hat a_1~~-~E_{J_{1}}\cos(\hat{\varphi}_1+\varphi_{\text{ext}_{1}})  \\ &\text{mode}~1:~~~~~~~~~~~\text{harmonic}~~~~~~~~~~~\hat{\varphi}_1~=~\varphi_{zp_{1}}(\hat a_1+\hat a^\dagger_1)~~~~~~~~~~~\omega_1/2\pi~=~1.25863~~~~~~~~~~~\varphi_{zp_{1}}~=~7.93e-01  \\ &\text{parameters}:~~~~~~~~~~~E_{J_{1}}~=~5.0~~~~~~~~~~~ \\ &\text{loops}:~~~~~~~~~~~~~~~~~~~~\varphi_{\text{ext}_{1}}/2\pi~=~0.0~~~~~~~~~~~\end{align*}`
 
 .. _circuitq-3:
 
@@ -233,12 +238,7 @@ CircuitQ:
 
 Nodes index from 0, with node 0 assigned to be ground. Flux biases are
 included, but offset charges are ignored.
-:raw-latex:`\frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}}`
-- E\_{J010} :raw-latex:`\cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)}` +
-:raw-latex:`\frac{0.5 q_{1}^{2}}{C_{01}}`
+
+.. math:: \frac{\left(\Phi_{1} + \tilde{\Phi}_{010}\right)^{2}}{2 L_{010}} - E_{J010} \cos{\left(\frac{\Phi_{1}}{\Phi_{o}} \right)} + \frac{0.5 q_{1}^{2}}{C_{01}}
 
 .. |image1| image:: img/basegraph_2_nodes_i_000.svg
-.. |image2| image:: img/n2_g0_c1.svg
-.. |image3| image:: img/n2_g0_c3.svg
-.. |image4| image:: img/n2_g0_c5.svg
-.. |image5| image:: img/n2_g0_c6.svg

@@ -110,8 +110,10 @@ def md_to_rst(md_str):
     Returns:
         str: converted markdown in rst
     """
-    return pypandoc.convert_text(md_str, 'rst', 'md',
+    rst_str = pypandoc.convert_text(md_str, 'rst', 'md',
                                  extra_args=["--list-tables"])
+    # rst_str = rst_str.replace(r":raw-latex:", r".. math:: ")
+    return rst_str
 
 
 def gen_qubit_page(entry: pd.Series, img_dir: str,
@@ -149,7 +151,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
     try:
         c_sq = pi.to_SQcircuit(entry.circuit, entry.edges)
         h_sq = c_sq.description(tp="ltx", _test=True).replace("---", "")
-        h_sq = r"\begin{align*} &" + h_sq + r"\end{align*}"
+        h_sq = r"\begin{align*} &" + h_sq.replace("\n", " ") + r"\end{align*}"
 
         # Insert newlines for mode/parameters
         inserts = [m.start() for m in re.finditer('text{mode}', h_sq)]
@@ -198,7 +200,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
             outfile = Path(str(outfile)).absolute()
         md_str += f"![]({img_path.relative_to(outfile.parent)})\n"
 
-    md_str += "### Circuit Hamiltonian\n"
+    md_str += "\n### Circuit Hamiltonian\n"
     md_str += "For scQubits and SQcircuit, default numerical values are "
     md_str += "given as $E_C = 0.2$ GHz, $E_L = 1$ GHz, $E_J = 5$ GHz, "
     md_str += "and $E_{CJ} = 20$ GHz.\n"
@@ -214,7 +216,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
     md_str += "\n#### CircuitQ:\n"
     md_str += "Nodes index from 0, with node 0 assigned to be ground. "
     md_str += "Flux biases are included, but offset charges are ignored.\n"
-    md_str += f"{h_cq}\n"
+    md_str += f"$${h_cq}$$\n"
 
     if outfile is not None:
         write_md_rst(md_str, outfile)
