@@ -226,8 +226,7 @@ def count_elems_mapped(circuit: list, **kwargs):
                                is the unique set in COMBINATION_DICT
 
     Returns:
-        list of length base, where each entry is the number
-        of that element present
+        dict: each entry is element -> number, i.e. "J" -> 2
     """
     default_elems = np.unique(np.concatenate(list(COMBINATION_DICT.values())))
     possible_elems = kwargs.get("possible_elems", default_elems)

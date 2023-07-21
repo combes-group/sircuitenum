@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 import re
 
-from sympy import latex, collect, expand_mul, Mul, Dummy, simplify
+from sympy import latex, collect, expand_mul, Mul, Dummy
 from sympy.core.add import Add
 from sympy.core.symbol import Symbol
 
@@ -111,7 +111,7 @@ def md_to_rst(md_str):
         str: converted markdown in rst
     """
     rst_str = pypandoc.convert_text(md_str, 'rst', 'md',
-                                 extra_args=["--list-tables"])
+                                    extra_args=["--list-tables"])
     rst_str = rst_str.replace(r":raw-latex:`", r".. math:: ")
     rst_str = rst_str.replace(r"\end{align*}`", r"\end{align*}")
     return rst_str
@@ -295,7 +295,7 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
         md_str += f"![]({img_path.relative_to(outfile.parent)})\n"
 
     md_str += "\nAll unique qubits derived from the above base graph are "
-    md_str += "shown below. Circuits with series linear elements or no "
+    md_str += "shown below. Circuits with series linear elements or "
     md_str += "no Josephson Junctions are excluded.\n"
 
     # Add each Qubit Individually
@@ -304,11 +304,24 @@ def gen_basegraph_page(db_file: str, n_nodes: int,
     else:
         temp = Path(Path(outfile).parent, "temp.rst")
 
-    print(temp, "temp")
+    qubit_pages = df.apply(lambda row: "\n#"+gen_qubit_page(row, img_dir,
+                                                            temp),
+                           axis=1).values
 
-    md_str += "\n".join((df.apply(lambda row: "\n#"+gen_qubit_page(row, img_dir,
-                                                                 temp),
-                                  axis=1)).values)
+    # Organize into number of Josephson Junctions
+    n_jj = np.array([utils.count_elems_mapped(x)["J"]
+                     for x in df.circuit.values])
+    order = np.argsort(n_jj)
+    qubit_pages = qubit_pages[order]
+    n_jj = n_jj[order]
+
+    # Add delimiters
+    qubit_pages[0] = f"\n## {n_jj[0]} Josephson Junction \n---\n" + qubit_pages[0]
+    for i in range(1, len(n_jj)):
+        if n_jj[i] != n_jj[i-1]:
+            qubit_pages[i] = f"\n## {n_jj[i]} Josephson Junctions \n---\n" + qubit_pages[i]
+
+    md_str += "\n---\n".join(qubit_pages)
 
     if outfile is not None:
         write_md_rst(md_str, outfile)
