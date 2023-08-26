@@ -256,6 +256,7 @@ def to_SCqubits(circuit: list, edges: list,
     """
     params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
                                                        utils.ELEM_DICT))
+    basis_completion = kwargs.get("basis_completion", "heuristic")
 
     # Build scqubits circuit yaml string
     circuit_yaml = "branches:"
@@ -282,7 +283,8 @@ def to_SCqubits(circuit: list, edges: list,
             circuit_yaml += "\n"
             circuit_yaml += f"- ['{e_str}', {edge[0]+1}, {edge[1]+1}, {val}]"
 
-    conv = scq.Circuit(circuit_yaml, from_file=False)
+    conv = scq.Circuit(circuit_yaml, from_file=False,
+                       basis_completion=basis_completion)
 
     # Set cutoff
     n_nodes = utils.get_num_nodes(edges)

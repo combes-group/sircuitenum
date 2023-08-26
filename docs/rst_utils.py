@@ -180,7 +180,7 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
         for q1 in q_list:
             for q2 in q_list:
                 qpos.append(q1*q2)
-        h_cq = str(latex(collect_expression(h_cq, q_list)))
+        h_cq = str(latex(utils.collect_expression(h_cq, q_list)))
     except:
         h_cq = "N/A"
 
@@ -223,26 +223,6 @@ def gen_qubit_page(entry: pd.Series, img_dir: str,
         write_md_rst(md_str, outfile)
 
     return md_str
-
-
-def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
-    """
-    Collects the terms in a sympy expression that
-    contain the specified symbols
-
-    Args:
-        expr (Add): Sympy expression from circuitq for hamiltonian
-        syms (list[Symbol]): list of symbols to expand/collect.
-                             intended to be list of q variables.
-
-    Returns:
-        Add: Modified expression with syms terms collected
-    """
-
-    m = [i for i in expr.atoms(Mul) if not any([i.has(x) for x in syms])]
-    reps = dict(zip(m, [Dummy() for i in m]))
-    return collect(expand_mul(expr.xreplace(reps)
-                              ).subs([(v, k) for k, v in reps.items()]), syms)
 
 
 def gen_basegraph_page(db_file: str, n_nodes: int,

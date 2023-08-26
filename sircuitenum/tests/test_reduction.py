@@ -32,6 +32,64 @@ NON_SERIES_3 += [
                 ]
 
 
+
+def test_convert_circuit_to_component_graph():
+
+    # Simple example
+    edges = [(0, 1)]
+    circuit = [("C",)]
+    G = red.convert_circuit_to_component_graph(circuit, edges)
+    exp_nodes = ["v0", "v1", "C0"]
+    exp_edges = [("v0", "C0"), ("C0", "v1")]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+    # Simple example with ground
+    edges = [(0, 1)]
+    circuit = [("C",)]
+    G = red.convert_circuit_to_component_graph(circuit, edges, ground_nodes = [0])
+    exp_nodes = ["GND", "v1", "C0"]
+    exp_edges = [("GND", "C0"), ("C0", "v1")]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+    # More complicated example
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("C",), ("L",), ("C", "L", "J")]
+    G = red.convert_circuit_to_component_graph(circuit, edges)
+    exp_nodes = ['v0', 'v1', 'v2',
+                 'C0', 'L0', 'CJL0']
+    exp_edges = [
+                 ('v0', 'C0'), ('v0', 'CJL0'),
+                 ('v1', 'C0'), ('v1', 'L0'),
+                 ('v2', 'L0'), ('v2', 'CJL0')
+                ]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+
+    # More complicated example with grounding
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("C",), ("L",), ("C", "L", "J")]
+    G = red.convert_circuit_to_component_graph(circuit, edges, ground_nodes = [0,2])
+    exp_nodes = ['GND', 'v1', 'C0', 'L0']
+    exp_edges = [
+                 ('GND', 'C0'),
+                 ('v1', 'C0'), ('v1', 'L0'),
+                 ('GND', 'L0')
+                ]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+
 def test_convert_circuit_to_port_graph():
 
     # Simple example
@@ -40,6 +98,17 @@ def test_convert_circuit_to_port_graph():
     G = red.convert_circuit_to_port_graph(circuit, edges)
     exp_nodes = ["v0_p0", "v1_p0", "C0_p0", "C0_p1"]
     exp_edges = [("v0_p0", "C0_p0"), ("C0_p0", "C0_p1"), ("C0_p1", "v1_p0")]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+    # Simple example with ground
+    edges = [(0, 1)]
+    circuit = [("C",)]
+    G = red.convert_circuit_to_port_graph(circuit, edges, ground_nodes=[0])
+    exp_nodes = ["v0_p0_GND", "v1_p0", "C0_p0", "C0_p1"]
+    exp_edges = [("v0_p0_GND", "C0_p0"), ("C0_p0", "C0_p1"), ("C0_p1", "v1_p0")]
     assert len(G.nodes) == len(exp_nodes)
     assert len(G.edges) == len(exp_edges)
     assert all(x in G.nodes for x in exp_nodes)
@@ -58,6 +127,29 @@ def test_convert_circuit_to_port_graph():
                  ('v2_p0', 'v2_p1'), ('v2_p0', 'L0_p1'), ('v2_p1', 'CJL0_p0'),
                  ('C0_p0', 'C0_p1'), ('L0_p0', 'L0_p1'), ('CJL0_p0', 'CJL0_p1')
                 ]
+    assert len(G.nodes) == len(exp_nodes)
+    assert len(G.edges) == len(exp_edges)
+    assert all(x in G.nodes for x in exp_nodes)
+    assert all(x in G.edges for x in exp_edges)
+
+
+    # More complicated example with ground
+    edges = [(0, 1), (1, 2), (2, 0)]
+    circuit = [("C",), ("L",), ("C", "L", "J")]
+    G = red.convert_circuit_to_port_graph(circuit, edges, ground_nodes=[0,2])
+    exp_nodes = ['v0_p0_GND', 'v0_p1_GND', 'v1_p0', 'v1_p1', 'v2_p0_GND',
+                 'v2_p1_GND', 'C0_p0', 'C0_p1', 'L0_p0', 'L0_p1']
+    exp_edges = [
+                 ('v0_p0_GND', 'C0_p0'),
+                 ('v1_p0', 'v1_p1'), ('v1_p0', 'C0_p1'), ('v1_p1', 'L0_p0'),
+                 ('v2_p0_GND', 'L0_p1'),
+                 ('C0_p0', 'C0_p1'), ('L0_p0', 'L0_p1')
+                ]
+    gnd_ports = ('v0_p0_GND', 'v0_p1_GND') + ('v2_p0_GND', 'v2_p1_GND')
+    for p1 in gnd_ports:
+        for p2 in gnd_ports:
+            if p1 < p2:
+                exp_edges.append((p1, p2))
     assert len(G.nodes) == len(exp_nodes)
     assert len(G.edges) == len(exp_edges)
     assert all(x in G.nodes for x in exp_nodes)
@@ -385,4 +477,5 @@ def test_jj_present():
 
 
 if __name__ == "__main__":
-    test_full_reduction_by_group()
+    test_convert_circuit_to_component_graph()
+    test_convert_circuit_to_port_graph()

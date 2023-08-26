@@ -25,7 +25,105 @@ def colors_match(n1_attrib, n2_attrib):
         return False
 
 
+def convert_circuit_to_component_graph(circuit: list, edges: list,
+                                       ground_nodes: list = [],
+                                       ground_color: int = -1,
+                                       comp_map: dict = utils.EDGE_COLOR_DICT):
+    """Encodes a circuit as a colored component graph -- see
+    Enumeration of Architectures with Perfect Matchings
+    Herber, Guo, Allison.
+
+    Assumes that all circuit elements are two port-simple
+    devices (i.e. symmetric)
+
+    Assumes component type isomorphism. This
+    means that different copies of the same component 
+    are considered identical.
+
+    Automatically removes any edges placed between labeled 
+    ground nodes.
+
+    Practically differs from port graphs in that each node
+    and device is represented by a single graph vertex, as
+    opposed to each port being a different vertex.
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        ground_nodes (list): optionally, a list of nodes that are grounded
+                             e.g. [0, 1]
+        ground_color int: color for ground nodes, default is -1
+        comp_map (dict): dictionary that maps components to colors for
+                         the colored graph. So it's consistent between
+                         different circuits.
+
+    Returns:
+        nx.Graph representation of the port graph
+    """
+
+    # Count the degree of each vertex to include as a component
+    edge_array = np.array(edges)
+    vert, counts = np.unique(edge_array, return_counts=True)
+
+    # Max degree is equal to number of vertices - 1 (fully connected)
+    # Always have this for consistency of coloring
+    max_deg = len(vert)-1
+
+    # Build the graph
+    # One vertex per node
+    v_labels = {}
+    G = nx.Graph()
+    for i in range(len(vert)):
+        if vert[i] in ground_nodes:
+            color = ground_color
+            label = f'GND'
+        else:
+            color = counts[i]
+            label = f'v{vert[i]}'
+
+        # In the case of multiple grounds
+        if label not in G.nodes:
+            G.add_node(label, color=color)
+        v_labels[vert[i]] = label
+
+    # Keep track of which copy of each device you're on
+    device_counts = {}
+    for d in comp_map:
+        device_counts[d] = 0
+
+    for i, c in enumerate(circuit):
+        # Get the device count
+        elem = ''.join(sorted(c))
+        copy = device_counts[elem]
+
+
+        # Add edges to connected components
+        # ignore edge if both are in ground nodes
+        ext = edges[i]
+        if ground_nodes:
+            if ext[0] in ground_nodes and ext[1] in ground_nodes:
+                continue
+        
+        # Add a node for the device
+        G.add_node(f"{elem}{copy}", color=max_deg+1+comp_map[elem])
+
+        edges_to_add = []
+        for p in range(len(ext)):
+            v = ext[p]
+            edges_to_add += [(f"{elem}{copy}", v_labels[v])]
+        G.add_edges_from(edges_to_add)
+
+        # Iterate device count
+        device_counts[elem] += 1
+
+    return G
+
+
 def convert_circuit_to_port_graph(circuit: list, edges: list,
+                                  ground_nodes: list = [],
+                                  ground_color: int = -1,
                                   comp_map: dict = utils.EDGE_COLOR_DICT):
     """Encodes a circuit as a colored port graph -- see
     Enumeration of Architectures with Perfect Matchings
@@ -38,14 +136,19 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
     means that ports within a device and different copies
     of the same component are considered identical.
 
+    Automatically removes any edges placed between ground nodes.
+
     Args:
         circuit (list): a list of element labels for the desired circuit
                         e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
+        ground_nodes (list): optionally, a list of nodes that are grounded
+                             e.g. [0, 1]
+        ground_color int: color for ground nodes, default is -1
         comp_map (dict): dictionary that maps components to colors for
                          the colored graph. So it's consistent between
-                        different circuits.
+                         different circuits.
 
     Returns:
         nx.Graph representation of the port graph
@@ -61,19 +164,48 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
 
     # Build the graph
     G = nx.Graph()
+    v_labels = {}
     for i in range(len(vert)):
+        n_ports = counts[i]
+        v_labels[i] = [""]*n_ports
         # Add a port for each connection
-        for p in range(counts[i]):
-            G.add_node(f'v{vert[i]}_p{p}', color=counts[i])
+        for p in range(n_ports):
+            if vert[i] in ground_nodes:
+                color = ground_color
+                label = f'v{vert[i]}_p{p}_GND'
+            else:
+                color = counts[i]
+                label = f'v{vert[i]}_p{p}'
+            G.add_node(label, color=color)
+            v_labels[vert[i]][p] = label
 
         # Add the internal connections
         edges_to_add = []
         for p0 in range(counts[i]):
             for p1 in range(counts[i]):
                 if p0 != p1 and p0 < p1:
-                    edges_to_add += [(f'v{vert[i]}_p{p0}',
-                                      f'v{vert[i]}_p{p1}')]
+                    edges_to_add += [(v_labels[vert[i]][p0],
+                                      v_labels[vert[i]][p1])]
         G.add_edges_from(edges_to_add)
+
+    # Add internal ground connections if there are multiple ground nodes
+    if len(ground_nodes) > 1:
+        edges_to_add = []
+        # Identify two different ground nodes
+        for v1 in ground_nodes:
+            i1 = np.where(vert == v1)[0][0]
+            for v2 in ground_nodes:
+                # v1 < v2 so we don't repeat
+                if v1 != v2 and v1 < v2:
+                    i2 = np.where(vert == v2)[0][0]
+                    for p1 in range(counts[i1]):
+                        for p2 in range(counts[i2]):
+                            label1 = f'v{v1}_p{p1}_GND'
+                            label2 = f'v{v2}_p{p2}_GND'
+                            edges_to_add += [(label1, label2)]
+        G.add_edges_from(edges_to_add)
+
+
 
     # Keep track of how many ports are taken on each node
     ports_taken = np.zeros(len(vert), dtype=int)
@@ -88,6 +220,12 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
         elem = ''.join(sorted(c))
         copy = device_counts[elem]
 
+        # external connections -- ignore if it is between two ground nodes
+        ext = edges[i]
+        if ground_nodes:
+            if ext[0] in ground_nodes and ext[1] in ground_nodes:
+                continue
+
         # Add two ports for each device
         G.add_node(f"{elem}{copy}_p0", color=max_deg+1+comp_map[elem])
         G.add_node(f"{elem}{copy}_p1", color=max_deg+1+comp_map[elem])
@@ -98,10 +236,9 @@ def convert_circuit_to_port_graph(circuit: list, edges: list,
         # internal
         edges_to_add = [(f"{elem}{copy}_p0", f"{elem}{copy}_p1")]
         # external
-        ext = edges[i]
         for p in range(len(ext)):
             v = ext[p]
-            edges_to_add += [(f"{elem}{copy}_p{p}", f"v{v}_p{ports_taken[v]}")]
+            edges_to_add += [(f"{elem}{copy}_p{p}", v_labels[v][ports_taken[v]])]
             ports_taken[v] += 1
         G.add_edges_from(edges_to_add)
 
@@ -183,9 +320,14 @@ def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):
     equiv_circuit = df['equiv_circuit'].values
 
     # The first graph is always unique
-    unique_graphs = [(convert_circuit_to_port_graph(df.iloc[i0]['circuit'],
+    # unique_graphs = [(convert_circuit_to_port_graph(df.iloc[i0]['circuit'],
+    #                                                 df.iloc[i0]['edges']),
+    #                   df.iloc[i0]['unique_key'])]
+
+    unique_graphs = [(convert_circuit_to_component_graph(df.iloc[i0]['circuit'],
                                                     df.iloc[i0]['edges']),
                       df.iloc[i0]['unique_key'])]
+
     in_non_iso_set[i0] = 1
     equiv_circuit[i0] = ""
 
@@ -197,7 +339,9 @@ def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):
         if to_consider[i]:
             # Compare port graph to all entries in unique set
             row = df.iloc[i]
-            g_new = convert_circuit_to_port_graph(
+            # g_new = convert_circuit_to_port_graph(
+            #     row['circuit'], row['edges'])
+            g_new = convert_circuit_to_component_graph(
                 row['circuit'], row['edges'])
             iso_flag = False
             for (g, uid) in unique_graphs:

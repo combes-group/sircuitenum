@@ -182,19 +182,22 @@ def black_or_white_text(color: tuple):
     return thresh > 0.729
 
 
-def draw_port_graph(circuit: list, edges: list, out="port_graph.png",
-                    node_size: float = 10000, scale: float = 6,
-                    font_size: int = 30):
+def draw_circuit_graph(circuit: list, edges: list, gtype: str = "component",
+                       out="circuit_graph.png",
+                       node_size: float = 10000, scale: float = 6,
+                       font_size: int = 30):
     """
-    Draw the port graph corresponding to the given circuit
+    Draw the port or component graph corresponding to the given circuit
 
     Args:
         circuit (list of str): a list of elements for the desired circuit
                                  (i.e., [[['C'],['C'],['L'],['C','J']])
         edges (list of tuples of ints): a list of edge connections for the
                              desired circuit (i.e., [(0,1),(1,2),(2,3),(3,0)])
+        gtype (str, optional): type of circuit graph to draw. Options are 'component'
+                               or 'port'
         out (str, optional): filename to save as, including extension.
-                                 Defaults to "port_graph.png".
+                                 Defaults to "circuit_graph.png".
         node_size (float, optional): size for tuning size of nodes in plot
         scale (float, optional): size for tuning overall spacing of nodes
         font_size (int, optional): text size for node labels
@@ -206,7 +209,10 @@ def draw_port_graph(circuit: list, edges: list, out="port_graph.png",
     # Get the layout and scale it
     fig = plt.figure()
     fig.set_size_inches(fig.get_size_inches()*scale)
-    G = red.convert_circuit_to_port_graph(circuit, edges)
+    if gtype == "component":
+        G = red.convert_circuit_to_component_graph(circuit, edges)
+    else:
+        G = red.convert_circuit_to_port_graph(circuit, edges)
     if nx.is_planar(G):
         pos = nx.planar_layout(G)
     else:

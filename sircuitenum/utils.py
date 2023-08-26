@@ -6,6 +6,11 @@ from pathlib import Path
 import networkx as nx
 import pandas as pd
 
+from sympy import collect, expand_mul, Mul, Dummy
+from sympy.core.add import Add
+from sympy.core.symbol import Symbol
+
+
 
 COMBINATION_LIST = """
 # Combination abbreviations(Base = 3):
@@ -542,6 +547,7 @@ def update_db_from_df(file: str, df: pd.DataFrame):
                     sql_str += f"{col} = '{val}' "
                     sql_str += f"WHERE unique_key = '{row['unique_key']}';"
             cur.execute(sql_str)
+        con.commit()
 
 
 def delete_circuit_data(file: str, n_nodes: int, indices: Union[list, str]):
@@ -789,3 +795,23 @@ def list_all_tables(db_file: str):
         tables = cursor_obj.execute("SELECT name FROM sqlite_master\
                                 WHERE type='table'").fetchall()
     return tables
+
+
+def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
+    """
+    Collects the terms in a sympy expression that
+    contain the specified symbols
+
+    Args:
+        expr (Add): Sympy expression from circuitq for hamiltonian
+        syms (list[Symbol]): list of symbols to expand/collect.
+                             intended to be list of q variables.
+
+    Returns:
+        Add: Modified expression with syms terms collected
+    """
+
+    m = [i for i in expr.atoms(Mul) if not any([i.has(x) for x in syms])]
+    reps = dict(zip(m, [Dummy() for i in m]))
+    return collect(expand_mul(expr.xreplace(reps)
+                              ).subs([(v, k) for k, v in reps.items()]), syms)

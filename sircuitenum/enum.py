@@ -9,6 +9,8 @@ __status__ = "Development"
 # -------------------------------------------------------------------
 import sqlite3
 import itertools
+import functools
+import sympy
 
 import networkx as nx
 import numpy as np
@@ -19,11 +21,12 @@ from tqdm import tqdm
 
 from sircuitenum import utils
 from sircuitenum import reduction as red
-
+from sircuitenum import qpackage_interface as pi
 
 # -------------------------------------------------------------------
 # Functions
 # -------------------------------------------------------------------
+
 
 def num_possible_circuits(base: int, n_nodes: int, quiet: bool = True):
     """ Calculates the number of possible circuits for a given number
@@ -215,6 +218,7 @@ def trim_graph_node(db_file: str, n_nodes: int,
     n_set = set(n_edges_in_graph)
     counts_to_consider = [x for x in itertools.product(range(max_edges+1),
                           repeat=base) if sum(x) in n_set]
+
     for edge_counts in tqdm(counts_to_consider):
 
         # Start from index 0 instead of the max one
@@ -228,34 +232,34 @@ def trim_graph_node(db_file: str, n_nodes: int,
             if sum(edge_counts) != n_edges_in_graph[graph_index]:
                 continue
 
-            # Load the graphs with the specified edges counts and graph index
-            filter_str = f"WHERE edge_counts = '{counts_str}' AND graph_index \
-                           = {graph_index}"
-            mapping = utils.COMBINATION_DICT
-            df = utils.get_circuit_data_batch(db_file, n_nodes,
-                                              elem_mapping=mapping,
-                                              filter_str=filter_str)
-            if df.empty:
-                print(n_nodes, edge_counts, graph_index)
-                print(utils.get_circuit_data_batch(db_file, n_nodes))
-                raise ValueError("Empty Dataframe when there shouldn't be")
+        # Load the graphs with the specified edges counts and graph index
+        filter_str = f"WHERE edge_counts = '{counts_str}' AND graph_index \
+                        = {graph_index}"
+        mapping = utils.COMBINATION_DICT
+        df = utils.get_circuit_data_batch(db_file, n_nodes,
+                                          elem_mapping=mapping,
+                                          filter_str=filter_str)
+        if df.empty:
+            print(n_nodes, edge_counts, graph_index)
+            print(utils.get_circuit_data_batch(db_file, n_nodes))
+            raise ValueError("Empty Dataframe when there shouldn't be")
 
-            # Mark up the set
-            red.full_reduction(df)
+        # Mark up the set
+        red.full_reduction(df)
 
-            # Find equivalent circuits for the series reduced circuits
-            equiv_cir = df['equiv_circuit'].values
-            yes_series = np.logical_not(df['no_series'].values)
-            for i in range(df.shape[0]):
-                if yes_series[i]:
-                    row = df.iloc[i]
-                    equiv_cir[i] = find_equiv_cir_series(db_file,
-                                                         row['circuit'],
-                                                         row['edges']
-                                                         )
+        # Find equivalent circuits for the series reduced circuits
+        equiv_cir = df['equiv_circuit'].values
+        yes_series = np.logical_not(df['no_series'].values)
+        for i in range(df.shape[0]):
+            if yes_series[i]:
+                row = df.iloc[i]
+                equiv_cir[i] = find_equiv_cir_series(db_file,
+                                                     row['circuit'],
+                                                     row['edges']
+                                                     )
 
-            # Update the table
-            utils.update_db_from_df(db_file, df)
+        # Update the table
+        utils.update_db_from_df(db_file, df)
 
 
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
@@ -304,12 +308,232 @@ def generate_all_graphs(db_file: str = "circuits.db",
         generate_and_trim(n, db_file=db_file, base=base)
 
 
+def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
+    """
+    Generate a Sympy Hamiltonian for the specified circuit
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        symmetric (bool, optional): Whether to set all capacitances equal.
+                                    Risks losing terms. Defaults to False.
+
+    Returns:
+        Sympy Add: Symbolic Hamiltonian where periodic modes are labeled by n
+                   and extended variables are labeled by Q.
+    """
+
+    # Make paramater dictionary to load into scQubits
+    elems = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 15.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 500.0}
+            }
+    params = utils.gen_param_dict(circuit, edges, elems)
+
+    if not symmetric:
+        # Set random capacitance value to avoid unintentionally
+        # deleting terms
+        for edge, comp in params:
+            if comp == "C":
+                param_range = (0.1, 1)
+                params[(edge, comp)] = (np.random.uniform(*param_range), "GHz")
+
+    obj = pi.to_SCqubits(circuit, edges, 10, params=params)
+
+    # Sympy Hamiltonian -- Expand all the trig
+    H = obj.sym_hamiltonian(return_expr=True)
+    H = sympy.expand_trig(sympy.nsimplify(H))
+
+    # List of variable types
+    q_list = [q for q in H.free_symbols
+              if "Q" in str(q)]
+    n_list = [q for q in H.free_symbols
+              if "n" in str(q) and "n_g" not in str(q)]
+    theta_list = [q for q in H.free_symbols
+                  if "θ" in str(q)]
+    ext_list = [q for q in H.free_symbols
+                if "_g" in str(q) or "Φ" in str(q)]
+
+    # Set all external parameters to 0
+    for ext in ext_list:
+        H = H.subs(ext, 0)
+
+    # Terms to group
+    # Q and n
+    combosQ = {}
+    for terms in itertools.product(q_list + n_list, repeat=2):
+        combo = functools.reduce(lambda x,y: x*y, terms)
+        indices = np.unique([str(x)[-1] for x in terms])
+        combosQ[combo] = "E_{C"+''.join(indices)+"}"
+
+    # Phase
+    combos = [functools.reduce(lambda x, y: x*y, z)
+              for z in itertools.product(theta_list, repeat=2)]
+    combos += [sympy.sin(z) for z in theta_list]
+    combos += [sympy.cos(z) for z in theta_list]
+    combos += [functools.reduce(lambda x, y: sympy.cos(x)*sympy.cos(y), z)
+               for z in itertools.product(theta_list, repeat=2)]
+    combos += [functools.reduce(lambda x, y: sympy.sin(x)*sympy.sin(y), z)
+               for z in itertools.product(theta_list, repeat=2)]
+
+    H = utils.collect_expression(H, combosQ.keys())
+    H = utils.collect_expression(H, combos)
+
+    # Replace number coefficients for charge terms
+    H = H.replace(lambda x: x.is_Mul,
+                  lambda x: sympy.Symbol(combosQ[x.as_coeff_Mul()[1]],
+                                         positive=True)*x.as_coeff_Mul()[1]
+                  if x.as_coeff_Mul()[1] in combosQ else x)
+
+    # If symmetric set all J's and L's equal to each other
+    if symmetric:
+        j_list = [j for j in H.free_symbols if "J" in str(j)]
+        for j in j_list:
+            H = H.subs(j, "J")
+        l_list = [L for L in H.free_symbols if "L" in str(L)]
+        for L in l_list:
+            H = H.subs(L, "L")
+
+    return H
+
+
+def categorize_hamiltonian(H: sympy.core.Add):
+
+    # Expand H to make searching easier
+    H_test = sympy.expand(H)
+
+    # List of variable types
+    q_list = [q for q in H.free_symbols
+                if "Q" in str(q)]
+    n_list = [q for q in H.free_symbols
+                if "n" in str(q) and "n_g" not in str(q)]
+    theta_list = [q for q in H.free_symbols
+                    if "θ" in str(q)]
+
+    # Information about the hamiltonian
+    info = {"n_modes": len(theta_list),
+            "periodic": [],
+            "extended": [],
+            "harmonic": []}
+
+    for type1, type2 in itertools.product(["periodic", "extended"], repeat=2):
+        for f in ["cos", "sin"]:
+            info[f"{f}_{type1[0]}"] = 0
+        for f1, f2 in itertools.product(["cos", "sin"], repeat=2):
+            if f1 == "sin" and f2 == "cos":
+                continue
+            if f1 == f2:
+                type_pair = sorted([type1, type2])
+                info[f"{f1}_{type_pair[0][0]}_{f2}_{type_pair[1][0]}"] = 0
+            else:
+                info[f"{f1}_{type1[0]}_{f2}_{type2[0]}"] = 0
+
+    # Categorize Modes:
+
+    types = {}
+    funcs = set()
+    [[funcs.add(f) for f in x.atoms(sympy.Function)]
+        for x in H_test.atoms(sympy.Mul)]
+
+    n_str = [str(n) for n in n_list]
+    q_str = [str(q) for q in q_list]
+    for th in theta_list:
+        if f"n{str(th)[-1]}" in n_str:
+            info["periodic"].append(str(th)[-1])
+            types[str(th)] = "periodic"
+        elif sympy.cos(th) in funcs or sympy.sin(th) in funcs:
+            info["extended"].append(str(th)[-1])
+            types[str(th)] = "extended"
+        else:
+            info["harmonic"].append(str(th)[-1])
+            types[str(th)] = "harmonic"
+
+    # Add counts
+    info["n_periodic"] = len(info["periodic"])
+    info["n_extended"] = len(info["extended"])
+    info["n_harmonic"] = len(info["harmonic"])
+
+    # Count the nonlinear terms
+    funcs = set(functools.reduce(lambda x, y: x*y, list(x.atoms(sympy.Function)))
+                for x in H_test.atoms(sympy.Mul) if len(x.atoms(sympy.Function)) > 0)
+    for th1 in theta_list:
+        type1 = types[str(th1)]
+        if type1 == "harmonic":
+            continue
+        for th2 in theta_list:
+            type2 = types[str(th2)]
+            if type2 == "harmonic":
+                continue
+
+            # plain cos
+            term = sympy.cos(th1)
+            if term in funcs:
+                info[f"cos_{type1[0]}"] += 1
+                funcs.remove(term)
+
+            # plain sin
+            term = sympy.sin(th1)
+            if term in funcs:
+                info[f"sin_{type1[0]}"] += 1
+                funcs.remove(term)
+
+            # cos cos
+            term1 = sympy.cos(th1)*sympy.cos(th2)
+            term2 = sympy.cos(th2)*sympy.cos(th1)
+            if term1 in funcs or term2 in funcs:
+                type_pair = sorted([type1, type2])
+                info[f"cos_{type_pair[0][0]}_cos_{type_pair[1][0]}"] += 1
+                funcs.remove(term1) if term1 in funcs else funcs.remove(term2)
+
+            # sin sin
+            term1 = sympy.sin(th1)*sympy.sin(th2)
+            term2 = sympy.sin(th2)*sympy.sin(th1)
+            if term1 in funcs or term2 in funcs:
+                type_pair = sorted([type1, type2])
+                info[f"sin_{type_pair[0][0]}_sin_{type_pair[1][0]}"] += 1
+                funcs.remove(term1) if term1 in funcs else funcs.remove(term2)
+
+            # cos sin
+            term = sympy.cos(th1)*sympy.sin(th2)
+            if term in funcs:
+                info[f"cos_{type1[0]}_sin_{type2[0]}"] += 1
+                funcs.remove(term)
+            term = sympy.cos(th2)*sympy.sin(th1)
+            if term in funcs:
+                info[f"cos_{type2[0]}_sin_{type1[0]}"] += 1
+                funcs.remove(term)
+
+    return info
+
+
+def refine_latex(latex_str):
+    """
+    Adds hats to operators, and removes cdots before
+    parenthesis
+
+    Args:
+        latex_str (str): string of the latex math
+
+    Returns:
+        str: copy of the latex_str with the modifications done
+    """
+    latex_str = latex_str.replace("Q_", r"\hat{Q}_")
+    latex_str = latex_str.replace("n_", r"\hat{n}_")
+    latex_str = latex_str.replace(r"θ", r"\hat{θ}")
+    latex_str = latex_str.replace(r"\cdot \left(", r"\left(")
+    return latex_str
+
+
 if __name__ == "__main__":
 
     # Simple command line interface
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("-u", "--db_file", type=str, default="circuits.db",
+    parser.add_argument("-f", "--db_file", type=str, default="circuits.db",
                         help="Database file to enumeration to")
     parser.add_argument("-b", "--base", type=int, default=7,
                         help="How many different types of edges to allow")
