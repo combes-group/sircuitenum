@@ -402,6 +402,21 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
 
 
 def categorize_hamiltonian(H: sympy.core.Add):
+    """
+    Categorizes a Hamiltonian according to the nonlinearities
+    present
+
+    Args:
+        H (sympy.core.Add): sympy Hamiltonian, generated
+                            from gen_hamiltonian
+
+    Returns:
+        info: Dictionary counting the nonlinearities present.
+              Considers every possibility of cos/sin and 
+              extended/periodic variables. Should be 4 choices
+              with one modes, 10 choices with two modes,
+              and 20 with three modes.
+    """
 
     # Expand H to make searching easier
     H_test = sympy.expand(H)
@@ -415,97 +430,83 @@ def categorize_hamiltonian(H: sympy.core.Add):
                     if "θ" in str(q)]
 
     # Information about the hamiltonian
-    info = {"n_modes": len(theta_list),
+    n_modes = len(theta_list)
+    info = {"n_modes": n_modes,
             "periodic": [],
             "extended": [],
             "harmonic": []}
 
-    for type1, type2 in itertools.product(["periodic", "extended"], repeat=2):
-        for f in ["cos", "sin"]:
-            info[f"{f}_{type1[0]}"] = 0
-        for f1, f2 in itertools.product(["cos", "sin"], repeat=2):
-            if f1 == "sin" and f2 == "cos":
-                continue
-            if f1 == f2:
-                type_pair = sorted([type1, type2])
-                info[f"{f1}_{type_pair[0][0]}_{f2}_{type_pair[1][0]}"] = 0
-            else:
-                info[f"{f1}_{type1[0]}_{f2}_{type2[0]}"] = 0
-
     # Categorize Modes:
-
     types = {}
     funcs = set()
     [[funcs.add(f) for f in x.atoms(sympy.Function)]
         for x in H_test.atoms(sympy.Mul)]
-
     n_str = [str(n) for n in n_list]
     q_str = [str(q) for q in q_list]
     for th in theta_list:
         if f"n{str(th)[-1]}" in n_str:
             info["periodic"].append(str(th)[-1])
-            types[str(th)] = "periodic"
+            types[str(th)] = "p"
         elif sympy.cos(th) in funcs or sympy.sin(th) in funcs:
             info["extended"].append(str(th)[-1])
-            types[str(th)] = "extended"
+            types[str(th)] = "e"
         else:
             info["harmonic"].append(str(th)[-1])
-            types[str(th)] = "harmonic"
+            types[str(th)] = "h"
 
     # Add counts
     info["n_periodic"] = len(info["periodic"])
     info["n_extended"] = len(info["extended"])
     info["n_harmonic"] = len(info["harmonic"])
 
+
+    # Products of sin/cos up to n_modes
+    for n in range(1, n_modes+1):
+        for type_combo in itertools.product(["p", "e"], repeat=n):
+            for func_combo in itertools.product(["cos", "sin"], repeat=n):
+                # Count the functions present
+                counts = {}
+                for combo in zip(func_combo, type_combo):
+                    if combo in counts:
+                        counts[combo] += 1
+                    else:
+                        counts[combo] = 1
+                # Add the field in the dictionary
+                combos = []
+                for combo in counts:
+                    combos += [combo]*counts[combo]
+                # Sort alphabetically for consistency
+                order = np.sort(["_".join(x) for x in combos])
+                info_str = "_".join(order)
+                info[info_str] = 0
+
     # Count the nonlinear terms
     funcs = set(functools.reduce(lambda x, y: x*y, list(x.atoms(sympy.Function)))
                 for x in H_test.atoms(sympy.Mul) if len(x.atoms(sympy.Function)) > 0)
-    for th1 in theta_list:
-        type1 = types[str(th1)]
-        if type1 == "harmonic":
-            continue
-        for th2 in theta_list:
-            type2 = types[str(th2)]
-            if type2 == "harmonic":
-                continue
-
-            # plain cos
-            term = sympy.cos(th1)
-            if term in funcs:
-                info[f"cos_{type1[0]}"] += 1
-                funcs.remove(term)
-
-            # plain sin
-            term = sympy.sin(th1)
-            if term in funcs:
-                info[f"sin_{type1[0]}"] += 1
-                funcs.remove(term)
-
-            # cos cos
-            term1 = sympy.cos(th1)*sympy.cos(th2)
-            term2 = sympy.cos(th2)*sympy.cos(th1)
-            if term1 in funcs or term2 in funcs:
-                type_pair = sorted([type1, type2])
-                info[f"cos_{type_pair[0][0]}_cos_{type_pair[1][0]}"] += 1
-                funcs.remove(term1) if term1 in funcs else funcs.remove(term2)
-
-            # sin sin
-            term1 = sympy.sin(th1)*sympy.sin(th2)
-            term2 = sympy.sin(th2)*sympy.sin(th1)
-            if term1 in funcs or term2 in funcs:
-                type_pair = sorted([type1, type2])
-                info[f"sin_{type_pair[0][0]}_sin_{type_pair[1][0]}"] += 1
-                funcs.remove(term1) if term1 in funcs else funcs.remove(term2)
-
-            # cos sin
-            term = sympy.cos(th1)*sympy.sin(th2)
-            if term in funcs:
-                info[f"cos_{type1[0]}_sin_{type2[0]}"] += 1
-                funcs.remove(term)
-            term = sympy.cos(th2)*sympy.sin(th1)
-            if term in funcs:
-                info[f"cos_{type2[0]}_sin_{type1[0]}"] += 1
-                funcs.remove(term)
+    # n = number of nonlinear terms
+    for n in range(1, n_modes+1):
+        # th_combo = list of variables
+        for th_combo in itertools.product(theta_list, repeat=n):
+            # Variable types
+            th_types = [types[str(th)] for th in th_combo]
+            # All different combinations of sin's and cos
+            # of the two thetas
+            for bar in range(n+1):
+                term = 1
+                # Cos terms
+                for i in range(bar):
+                    term *= sympy.cos(th_combo[i])
+                # Sin Terms
+                for i in range(bar, n):
+                    term *= sympy.sin(th_combo[i])
+                # Check if term was present
+                print(bar, term)
+                if term in funcs:
+                    info_str = ["_".join(x) for x in zip(["cos"]*bar, th_types[:bar])]
+                    info_str += ["_".join(x) for x in zip(["sin"]*(n-bar), th_types[bar:])]
+                    info_str = "_".join(np.sort(info_str))
+                    info[info_str] += 1
+                    funcs.remove(term)
 
     return info
 

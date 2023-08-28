@@ -293,6 +293,20 @@ def test_generate_all_graphs():
     os.remove(TEMP_FILE)
 
 
+
+
+
+def test_gen_hamiltonian():
+
+    raise NotImplementedError
+
+def test_categorize_hamiltonian():
+    
+    raise NotImplementedError
+
+
+
+
 def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
     """
     Helper function that tests whether every entry of
