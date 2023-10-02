@@ -475,6 +475,12 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
             gen_ham_row_(arg_set[0], arg_set[1])
 
 
+# Find the unique set of hamiltonian classes,
+# and assign each entry an "H_group"
+def find_unique_hams():
+    return
+
+
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
                       base: int = len(utils.COMBINATION_DICT),
                       n_workers: int = 1):
