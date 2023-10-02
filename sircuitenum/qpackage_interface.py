@@ -256,12 +256,17 @@ def to_SCqubits(circuit: list, edges: list,
     """
     params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
                                                        utils.ELEM_DICT))
+
+    # Add ground node by setting node = 0 in the yaml
+    ground_node = kwargs.get("ground_node", None)
+
     basis_completion = kwargs.get("basis_completion", "heuristic")
 
     # Build scqubits circuit yaml string
     circuit_yaml = "branches:"
     for elems, edge in zip(circuit, edges):
-        edge_str = "_".join([str(x+1) for x in edge])
+        edge_str = "_".join([str(x+1) if x != ground_node
+                             else "0" for x in edge])
         # Add all the elements
         for elem in elems:
             val = f"{elem}_{edge_str} = "
@@ -286,8 +291,9 @@ def to_SCqubits(circuit: list, edges: list,
     conv = scq.Circuit(circuit_yaml, from_file=False,
                        basis_completion=basis_completion)
 
-    # Set cutoff
+    # Set cutoff and count number of modes
     n_nodes = utils.get_num_nodes(edges)
+    n_modes = 0
     if not isinstance(cutoff, list):
         if n_nodes > 2:
             cutoff = [cutoff]*(n_nodes - 1)
@@ -299,16 +305,14 @@ def to_SCqubits(circuit: list, edges: list,
         elif mode_type == "extended":
             mode_str = "ext"
         for mode in conv.var_categories[mode_type]:
+            n_modes += 1
             exec(f"conv.cutoff_{mode_str}_{mode}={cutoff[mode-1]}")
 
     # Set truncation
-    if n_nodes > 2:
-        hier = [[x] for x in np.arange(n_nodes-1) + 1]
+    if n_modes > 1:
+        hier = [[x] for x in np.arange(n_modes) + 1]
         if not isinstance(trunc_num, list):
-            if n_nodes > 2:
-                trunc_num = [trunc_num]*(n_nodes - 1)
-            else:
-                hier = conv.system_hierarchy
+            trunc_num = [trunc_num]*(n_modes)
         conv.configure(system_hierarchy=hier,
                        subsystem_trunc_dims=trunc_num)
 

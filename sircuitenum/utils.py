@@ -6,6 +6,9 @@ from pathlib import Path
 import networkx as nx
 import pandas as pd
 
+from tqdm import tqdm
+from time import sleep
+
 from sympy import collect, expand_mul, Mul, Dummy
 from sympy.core.add import Add
 from sympy.core.symbol import Symbol
@@ -38,28 +41,25 @@ COMBINATION_DICT = {
     '0': ('C',),
     '1': ('J',),
     '2': ('L',),
-    '3': ('C', 'J'),
-    '4': ('C', 'L'),
+    '3': ('C', 'L'),
+    '4': ('C', 'J'),
     '5': ('J', 'L'),
     '6': ('C', 'J', 'L'),
 }
-
-
-COMBINATION_TO_CHAR = {}
-for c in COMBINATION_DICT:
-    COMBINATION_TO_CHAR[COMBINATION_DICT[c]] = c
-
 
 EDGE_COLOR_DICT = {
     'C': 0,
     'J': 1,
     'L': 2,
-    'CJ': 3,
-    'CL': 4,
+    'CL': 3,
+    'CJ': 4,
     'JL': 5,
     'CJL': 6,
 }
 
+COMBINATION_TO_CHAR = {}
+for c in COMBINATION_DICT:
+    COMBINATION_TO_CHAR[COMBINATION_DICT[c]] = c
 
 ELEM_DICT = {
     'C': {'default_unit': 'GHz', 'default_value': 0.2},
@@ -515,21 +515,28 @@ def write_df(file: str, df: pd.DataFrame, n_nodes: int, overwrite=False):
                         con, if_exists=if_exists, index=False)
 
 
-def update_db_from_df(file: str, df: pd.DataFrame):
+def update_db_from_df(file: str, df: pd.DataFrame,
+                      to_update: list,
+                      str_cols: list = [],
+                      float_cols: list = []):
     """
-    Updates the no_series, has_jj, in_non_iso_set, and
-    equiv_circuit columns for every entry in df
+    Updates the given columns listed in to_update
+    for entries within df.
+
+    Assumes all columns not listed as str cols or float cols are integers.
 
     Args:
         file (str, optional): Database file to write to.
         df (pd.Dataframe): dataframe that represents the circuit entries
+        to_update (list): columns to update
+        str_cols (list): columns that are string valued
+        float_cols (list): columns that are float valued
 
     Returns:
         None, writes the dataframe info to the database
 
     """
 
-    to_update = ["no_series", "has_jj", "in_non_iso_set", "equiv_circuit"]
     n_fields = len(to_update)
 
     with sqlite3.connect(file) as con:
@@ -539,8 +546,12 @@ def update_db_from_df(file: str, df: pd.DataFrame):
             sql_str = f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
             for i, col in enumerate(to_update):
                 val = row[col]
-                if col != "equiv_circuit":
+                if col not in str_cols and col not in float_cols:
                     val = int(val)
+                elif col in str_cols:
+                    val = str(val).replace("'", "")
+                else:
+                    val = float(val)
                 if i < n_fields - 1:
                     sql_str += f"{col} = '{val}', "
                 else:

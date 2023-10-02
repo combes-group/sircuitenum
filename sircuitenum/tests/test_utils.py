@@ -199,10 +199,10 @@ def test_encoding_to_components():
     components = utils.encoding_to_components("261")
     assert components == [("L",), ("C", "J", "L"), ("J",)]
 
-    components = utils.encoding_to_components("234")
+    components = utils.encoding_to_components("243")
     assert components == [("L",), ("C", "J"), ("C", "L")]
 
-    components = utils.encoding_to_components("2345")
+    components = utils.encoding_to_components("2435")
     assert components == [("L",), ("C", "J"), ("C", "L"), ("J", "L")]
 
 
@@ -212,11 +212,11 @@ def test_components_to_encoding():
     assert encoding == "261"
 
     encoding = utils.components_to_encoding([("L",), ("C", "J"), ("C", "L")])
-    assert encoding == "234"
+    assert encoding == "243"
 
     encoding = utils.components_to_encoding([("L",), ("C", "J"), ("C", "L"),
                                              ("J", "L")])
-    assert encoding == "2345"
+    assert encoding == "2435"
 
 
 def test_count_elems():
@@ -454,10 +454,14 @@ def test_update_db_from_df():
     if Path(TEMP_FILE).exists():
         os.remove(TEMP_FILE)
 
+    to_update = ["no_series", "has_jj",
+                 "in_non_iso_set", "equiv_circuit"]
+    str_cols = ["equiv_circuit"]
+
     df = write_test_df()
     df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     df2['in_non_iso_set'] = 1
-    utils.update_db_from_df(TEMP_FILE, df2)
+    utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     assert np.all(df3['in_non_iso_set'] == 1)
@@ -570,14 +574,17 @@ def test_get_unique_qubits():
 
     if Path(TEMP_FILE).exists():
         os.remove(TEMP_FILE)
-
+    to_update = ["no_series", "has_jj",
+                 "in_non_iso_set", "equiv_circuit"]
+    str_cols = ["equiv_circuit"]
+   
     write_test_df()
     df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     winner = df2.iloc[3]['unique_key']
     df2.at[winner, 'in_non_iso_set'] = 1
     df2.at[winner, 'no_series'] = 1
     df2.at[winner, 'has_jj'] = 1
-    utils.update_db_from_df(TEMP_FILE, df2)
+    utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_unique_qubits(TEMP_FILE, 3)
     assert df3.shape[0] == 1
@@ -599,7 +606,7 @@ def test_get_equiv_circuits_uid():
     df2.at[winner, 'no_series'] = 1
     df2.at[winner, 'has_jj'] = 1
     df2.at[other, 'equiv_circuit'] = winner
-    utils.update_db_from_df(TEMP_FILE, df2)
+    utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_equiv_circuits_uid(TEMP_FILE, winner)
     assert df3.shape[0] == 2
@@ -623,7 +630,7 @@ def test_get_equiv_circuits():
     df2.at[uid, 'no_series'] = 1
     df2.at[uid, 'has_jj'] = 1
     df2.at[other, 'equiv_circuit'] = uid
-    utils.update_db_from_df(TEMP_FILE, df2)
+    utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_equiv_circuits(TEMP_FILE, winner.circuit,
                                    winner.edges)

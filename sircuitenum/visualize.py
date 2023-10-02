@@ -403,7 +403,7 @@ def draw_circuit_diagram(circuit: list, edges: list,
     elif layout == 'spring':
         pos = nx.spring_layout(G)
     elif layout == 'fixed' and graph_index is not None:
-        pos = G_POS[str(G.number_of_nodes())][graph_index]
+        pos = G_POS[G.number_of_nodes()][graph_index]
     else:
         raise ValueError("must specify layout for graph and include\
                           graph_index if using fixed layout")

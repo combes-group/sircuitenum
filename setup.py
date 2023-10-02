@@ -46,6 +46,8 @@ setup(
                     'scqubits',
                     'schemdraw',
                     'scikit-image',
+                    'pandarallel',
+                    'func_timeout',
 
                     # test dependencies
                     'flake8',

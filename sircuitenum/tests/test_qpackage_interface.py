@@ -276,6 +276,12 @@ def test_to_SCqubits():
     for i in range(1, 5):
         assert 1 - abs(ev[i]/good_vals[i]) <= 0.025
 
+    # Case that broke with the truncation mode setting
+    # This is just to test there is no error
+    circuit, edges = ([('C',), ('J',)], [(0, 2), (1, 2)])
+    obj = pi.to_SCqubits(circuit, edges, 10,
+                         params=utils.gen_param_dict(circuit, edges, elems))
+
 
 def test_to_CircuitQ():
 

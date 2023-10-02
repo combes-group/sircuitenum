@@ -2,6 +2,7 @@ import os
 import itertools
 from pathlib import Path
 
+import sympy as sy
 import numpy as np
 import pandas as pd
 
@@ -93,6 +94,9 @@ def test_generate_for_specific_graph():
 
 def test_delete_table():
 
+    if Path(TEMP_FILE).exists():
+        os.remove(TEMP_FILE)
+
     # Generate 2 node circuits
     enum.generate_graphs_node(TEMP_FILE, 2, 7)
     # Should be one table in the file
@@ -119,7 +123,6 @@ def test_find_equiv_cir_series():
     # be reduced
     edges = [(0, 2), (2, 1), (0, 1)]
     circuit = [("L",), ("L",), ("L",)]
-    breakpoint()
     uid = enum.find_equiv_cir_series(TEMP_FILE, circuit, edges)
     c, e = red.remove_series_elems(circuit, edges)
     c2, e2 = utils.get_circuit_data(TEMP_FILE, uid)
@@ -200,7 +203,7 @@ def test_generate_all_graphs():
     if Path(TEMP_FILE).exists():
         os.remove(TEMP_FILE)
 
-    # Generate all the 2 and 3 node circuits
+    # Generate all the 2, 3, and 4 node circuits
     enum.generate_all_graphs(TEMP_FILE, 2, 4, base=3)
 
     # Test the 2 nodes I/O
@@ -250,6 +253,7 @@ def test_generate_all_graphs():
     df_equality_check(df_untrimmed, df_untrimmed_good)
     df_equality_check(df_trimmed, df_trimmed_good)
 
+
     # Test the accuracy
     df2 = utils.get_unique_qubits(TEMP_FILE, n_nodes=2)
     df3 = utils.get_unique_qubits(TEMP_FILE, n_nodes=3)
@@ -292,19 +296,109 @@ def test_generate_all_graphs():
                                          df4.edges.values)
     os.remove(TEMP_FILE)
 
-
-
+    ## TODO: Compare parallel vs. not parallel generation for 3 nodes
 
 
 def test_gen_hamiltonian():
 
-    raise NotImplementedError
+    # Transmon
+    edges = [(0, 1)]
+    circuit = [("J", "C")]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} - J_{1 2} \\cos{\\left(θ_{1} \\right)}"
+
+
+
+    # Fluxoinium
+    edges = [(0, 1)]
+    circuit = [("J", "L")]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    assert sy.latex(H, order="grlex") == "C_{1} Q_{1}^{2} + \\frac{L_{1 2} θ_{1}^{2}}{2} - J_{1 2} \\cos{\\left(θ_{1} \\right)}"
+
+
+    # Zero-Pi
+    edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
+    circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} + C_{12} Q_{2} n_{1} + C_{2} Q_{2}^{2} + C_{3} Q_{3}^{2} + θ_{2}^{2} \\cdot \\left(2 L_{1 4} + 2 L_{2 3}\\right) + θ_{2} θ_{3} \\left(- 2 L_{1 4} + 2 L_{2 3}\\right) + θ_{3}^{2} \\left(\\frac{L_{1 4}}{2} + \\frac{L_{2 3}}{2}\\right) + \\left(- J_{1 2} - J_{3 4}\\right) \\cos{\\left(θ_{1} \\right)} \\cos{\\left(θ_{3} \\right)} + \\left(J_{1 2} - J_{3 4}\\right) \\sin{\\left(θ_{1} \\right)} \\sin{\\left(θ_{3} \\right)}"
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)
+    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} + C_{2} Q_{2}^{2} + C_{3} Q_{3}^{2} - 2 J \\cos{\\left(θ_{1} \\right)} \\cos{\\left(θ_{3} \\right)} + 4 L θ_{2}^{2} + L θ_{3}^{2}"
 
 def test_categorize_hamiltonian():
+
+    # Transmon
+    edges = [(0, 1)]
+    circuit = [("J", "C")]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    info = enum.categorize_hamiltonian(H)
+    assert info['n_modes'] == 1
+    assert info['n_periodic'] == 1
+    assert info['n_extended'] == 0
+    assert info['n_harmonic'] == 0
+    assert info["periodic"] == ["1"]
+    assert info["extended"] == []
+    assert info["harmonic"] == []
+    for k in info:
+        if "sin" in k or "cos" in k:
+            if k == "cos_p":
+                assert info[k] == 1
+            else:
+                assert info[k] == 0
+
+    # Fluxoinium
+    edges = [(0, 1)]
+    circuit = [("J", "L")]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    info = enum.categorize_hamiltonian(H)
+    assert info['n_modes'] == 1
+    assert info['n_periodic'] == 0
+    assert info['n_extended'] == 1
+    assert info['n_harmonic'] == 0
+    assert info["periodic"] == []
+    assert info["extended"] == ["1"]
+    assert info["harmonic"] == []
+    for k in info:
+        if "sin" in k or "cos" in k:
+            if k == "cos_e":
+                assert info[k] == 1
+            else:
+                assert info[k] == 0
+
+    # Zero-Pi
+    edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
+    circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    info = enum.categorize_hamiltonian(H)
+    assert info['n_modes'] == 3
+    assert info['n_periodic'] == 1
+    assert info['n_extended'] == 1
+    assert info['n_harmonic'] == 1
+    assert info["periodic"] == ["1"]
+    assert info["extended"] == ["3"]
+    assert info["harmonic"] == ["2"]
+    for k in info:
+        if "sin" in k or "cos" in k:
+            if k in ["cos_e_cos_p", "sin_e_sin_p"]:
+                assert info[k] == 1
+            else:
+                assert info[k] == 0
     
-    raise NotImplementedError
-
-
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)
+    info = enum.categorize_hamiltonian(H)
+    assert info['n_modes'] == 3
+    assert info['n_periodic'] == 1
+    assert info['n_extended'] == 1
+    assert info['n_harmonic'] == 1
+    assert info["periodic"] == ["1"]
+    assert info["extended"] == ["3"]
+    assert info["harmonic"] == ["2"]
+    for k in info:
+        if "sin" in k or "cos" in k:
+            if k == "cos_e_cos_p":
+                assert info[k] == 1
+            else:
+                assert info[k] == 0
+    
 
 
 def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
@@ -332,3 +426,5 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
 if __name__ == "__main__":
     # test_generate_graphs_node()
     test_generate_all_graphs()
+    # test_gen_hamiltonian()
+    # test_categorize_hamiltonian()
