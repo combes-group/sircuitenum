@@ -366,7 +366,8 @@ def gen_ham_row_(uid, db_file):
         return
 
     # Set values
-    to_update = ["H", "H_sym", "coord_transform", "H_class", "H_class_sym"]
+    to_update = ["H", "H_sym", "coord_transform", "H_class", "H_class_sym",
+                 "nonlinearity_counts", "nonlinearity_counts_sym"]
     df.at[uid, "H"] = H_str
     df.at[uid, "H_sym"] = H_sym_str
     df.at[uid, "coord_transform"] = str(trans)
@@ -381,6 +382,17 @@ def gen_ham_row_(uid, db_file):
             df.at[uid, col+"_sym"] = info_sym[col]
             to_update.append(col+"_sym")
 
+    # Add nonlinearity counts
+    nonlinearity_cols = [x for x in df.columns if "sin_" in x or "cos_" in x]
+    nonlinearity_cols_sym = [x for x in nonlinearity_cols if "_sym" in x]
+    nonlinearity_cols = [x for x in nonlinearity_cols if "_sym" not in x]
+    nonlinearity_counts = "".join([str(int(x)) for x in
+                                   df[nonlinearity_cols].loc[uid].values])
+    nonlinearity_counts_sym = "".join([str(int(x)) for x in
+                                       df[nonlinearity_cols_sym].loc[uid].values])
+    df.at[uid, "nonlinearity_counts"] = nonlinearity_counts
+    df.at[uid, "nonlinearity_counts_sym"] = nonlinearity_counts_sym
+
     # Update value in database
     utils.update_db_from_df(db_file, df, to_update,
                             str_cols=["H", "H_sym", "periodic",
@@ -388,7 +400,9 @@ def gen_ham_row_(uid, db_file):
                                       "coord_transform",
                                       "periodic_sym", "extended_sym",
                                       "harmonic_sym",
-                                      "H_class", "H_class_sym"])
+                                      "H_class", "H_class_sym",
+                                      "nonlinearity_counts",
+                                      "nonlinearity_counts_sym"])
 
 
 # Sometimes it doesn't work and hangs :(
@@ -428,7 +442,8 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
         new_cols += gen_func_combos_(n_nodes-1).keys()
         new_cols += [x+"_sym" for x in new_cols]
         new_cols = ["H", "H_sym", "coord_transform",
-                    "H_class", "H_class_sym"] + new_cols
+                    "H_class", "H_class_sym", "nonlinearity_counts",
+                    "nonlinearity_counts_sym"] + new_cols
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
         for col in new_cols:
             sql_str = f"ALTER TABLE {table_name}\n"
