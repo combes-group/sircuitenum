@@ -15,6 +15,7 @@ import functools
 import traceback
 
 import sympy as sym
+from sympy.parsing.latex import parse_latex
 
 import networkx as nx
 import numpy as np
@@ -23,6 +24,7 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 from func_timeout import func_timeout, FunctionTimedOut
+from multiprocessing import Pool
 
 from sircuitenum import utils
 from sircuitenum import reduction as red
@@ -319,7 +321,6 @@ def trim_graph_node(db_file: str, n_nodes: int,
     # estimates and better parallel performance
     np.random.shuffle(args)
     if n_workers > 1:
-        from multiprocessing import Pool
         pool = Pool(processes=n_workers)
         for _ in tqdm(pool.imap_unordered(reduce_individual_set_, args),
                       total=sum(1 for _ in args)):
@@ -443,7 +444,8 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
         new_cols += [x+"_sym" for x in new_cols]
         new_cols = ["H", "H_sym", "coord_transform",
                     "H_class", "H_class_sym", "nonlinearity_counts",
-                    "nonlinearity_counts_sym"] + new_cols
+                    "nonlinearity_counts_sym",
+                    "H_group", "H_group_sym"] + new_cols
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
         for col in new_cols:
             sql_str = f"ALTER TABLE {table_name}\n"
@@ -465,9 +467,8 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
     # Go through all the circuits and update rows with info
     args = list(zip(unique_keys, [db_file]*len(unique_keys)))
     if n_workers > 1:
-        from multiprocessing import Pool
         pool = Pool(processes=n_workers)
-        for stuff in tqdm(pool.imap_unordered(timed_out_, args),
+        for _ in tqdm(pool.imap_unordered(timed_out_, args),
                           total=sum(1 for _ in args)):
             pass
     else:
@@ -477,8 +478,186 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
 
 # Find the unique set of hamiltonian classes,
 # and assign each entry an "H_group"
-def find_unique_hams():
+def unique_hams_for_count_(args):
+
+    db_file, n_nodes, nl_cnt, symmetric, mapping = args
+
+    if symmetric:
+        col_name = "nonlinearity_counts_sym"
+    else:
+        col_name = "nonlinearity_counts"
+
+    filter_str = f"WHERE {col_name} LIKE '{nl_cnt}'"
+    df = utils.get_circuit_data_batch(db_file, n_nodes,
+                                      elem_mapping=mapping,
+                                      filter_str=filter_str)
+
+    # Catch the obviously same ones, i.e.
+    # the H_str is the exact same
+    if symmetric:
+        l_str_vec = df["H_class_sym"].values
+        assert df["nonlinearity_counts_sym"].unique().size == 1
+        nl_cnt = df["nonlinearity_counts_sym"].iloc[0]
+    else:
+        l_str_vec = df["H_class"].values
+        assert df["nonlinearity_counts"].unique().size == 1
+        nl_cnt = df["nonlinearity_counts"].iloc[0]
+
+    unique_str, index, inv = np.unique(l_str_vec, return_index=True,
+                                       return_inverse=True)
+
+    reduced = []
+    groups = []
+    # Examine every row in the set
+    group_n = 1
+    for l_str in unique_str:
+
+        is_dup = False
+
+        # Make the string parsable by sympy
+        l_str = l_str.replace("\\hat{Q}", "Q")
+        l_str = l_str.replace("\\hat{n}", "n")
+        l_str = l_str.replace("\\hat{θ}", "F")
+        l_str = l_str.replace("\\hat{𝜑}", "p")
+
+        H_base = parse_latex(l_str)
+
+        # Get the Phase and Charge terms
+        q_list = [q for q in H_base.free_symbols if "Q" in str(q)]
+        n_list = [q for q in H_base.free_symbols if "n" in str(q)]
+        f_list = [q for q in H_base.free_symbols if "F" in str(q)]
+        p_list = [q for q in H_base.free_symbols if "p" in str(q)]
+
+        # Alternative A, B, C terms
+        q_list_alt = np.array([sym.Symbol(f"Q_{chr(ord('A') + int(n))}")
+                               for n in range(len(q_list))])
+        n_list_alt = np.array([sym.Symbol(f"n_{chr(ord('A') + int(n))}")
+                               for n in range(len(n_list))])
+        f_list_alt = np.array([sym.Symbol(f"F_{chr(ord('A') + int(n))}")
+                               for n in range(len(f_list))])
+        p_list_alt = np.array([sym.Symbol(f"p_{chr(ord('A') + int(n))}")
+                               for n in range(len(p_list))])
+
+        # Possible assignments of 1, 2, 3 -> A, B, C
+        q_ass = itertools.permutations(range(len(q_list)), len(q_list))
+        n_ass = itertools.permutations(range(len(n_list)), len(n_list))
+        f_ass = itertools.permutations(range(len(f_list)), len(f_list))
+        p_ass = itertools.permutations(range(len(p_list)), len(p_list))
+
+        # Try every permutation of A, B, C -> 1, 2, 3
+        for combo in itertools.product(q_ass, n_ass, f_ass, p_ass):
+
+            # Make it a list for indexing
+            combo = [list(x) for x in combo]
+
+            # Test out the specific permutation
+            H_test = H_base.copy()
+
+            # Replace 1, 2, 3 with A, B, C
+            if combo[0]:
+                for x1, x2 in zip(q_list, q_list_alt[combo[0]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[1]:
+                for x1, x2 in zip(n_list, n_list_alt[combo[1]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[2]:
+                for x1, x2 in zip(f_list, f_list_alt[combo[2]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[3]:
+                for x1, x2 in zip(p_list, p_list_alt[combo[3]]):
+                    H_test = H_test.subs(x1, x2)
+
+            # Check if this permutation is in the reduced set already
+            for i, H_ref in enumerate(reduced):
+
+                if H_ref is None:
+                    continue
+
+                if H_test - H_ref == 0:
+                    is_dup = True
+                    dup_group = groups[i]
+                    break
+            if is_dup:
+                break
+        if is_dup:
+            reduced.append(None)
+            groups.append(dup_group)
+        if not is_dup:
+            reduced.append(H_test)
+            groups.append(nl_cnt + f"_{group_n}")
+            group_n += 1
+
+    # Assign groups to the whole dataframe
+    groups = np.array(groups)
+    group_col = groups[inv]
+    if symmetric:
+        group_col_name = "H_group_sym"
+        df[group_col_name] = group_col
+    else:
+        group_col_name = "H_group"
+        df[group_col_name] = group_col
+
+    utils.update_db_from_df(db_file, df,
+                            to_update=[group_col_name],
+                            str_cols=[group_col_name]
+                            )
+
     return
+
+
+def assign_H_groups(db_file: str, n_nodes: int,
+                    n_workers: int = 1):
+
+    # Get the unique nonlinearity counts strings
+    with sqlite3.connect(db_file) as con:
+        cur = con.cursor()
+        table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
+        sql_str = f"SELECT DISTINCT nonlinearity_counts\
+                    FROM {table_name}\
+                    WHERE in_non_iso_set LIKE 1\
+                    AND has_jj LIKE 1"
+        sql_str_sym = f"SELECT DISTINCT nonlinearity_counts_sym\
+                        FROM {table_name}\
+                        WHERE in_non_iso_set LIKE 1\
+                        AND has_jj LIKE 1"
+        unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
+        unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
+
+    # Shuffle for accurate runtime estimates
+    np.random.shuffle(unique_nl_str)
+    np.random.shuffle(unique_nl_str_sym)
+
+    # Make the pool if we're parallel
+    if n_workers > 1:
+        pool = Pool(processes=n_workers)
+
+    # Do non-symmetric first
+    # args are db_file, n_nodes, nl_cnt, symmetric, mapping
+    n_entries = len(unique_nl_str)
+    print("Full Hamiltonians...")
+    args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
+                    unique_nl_str, [False]*n_entries,
+                    [utils.COMBINATION_DICT]*n_entries))
+    if n_workers > 1:
+        for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
+                      total=sum(1 for _ in args)):
+            pass
+    else:
+        for arg_set in args:
+            unique_hams_for_count_(args)
+    # Now do symmetric
+    print("Symmetric Hamiltonians...")
+    n_entries = len(unique_nl_str_sym)
+    args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
+                    unique_nl_str_sym, [True]*n_entries,
+                    [utils.COMBINATION_DICT]*n_entries))
+    if n_workers > 1:
+        for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
+                      total=sum(1 for _ in args)):
+            pass
+    else:
+        for arg_set in args:
+            unique_hams_for_count_(args)
 
 
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
@@ -507,6 +686,8 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     print("Appending Hamiltonians to " + str(n_nodes) + " node circuits.")
     add_hamiltonians_to_table(db_file=db_file, n_nodes=n_nodes,
                               n_workers=n_workers)
+    print("Categorizing Hamiltonians for " + str(n_nodes) + " node circuits.")
+    assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers)
     return True
 
 

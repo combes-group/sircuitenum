@@ -1,4 +1,5 @@
 import sqlite3
+import itertools
 
 from typing import Union
 import numpy as np
@@ -9,6 +10,7 @@ import pandas as pd
 from tqdm import tqdm
 from time import sleep
 
+import sympy as sym
 from sympy import collect, expand_mul, Mul, Dummy
 from sympy.core.add import Add
 from sympy.core.symbol import Symbol
