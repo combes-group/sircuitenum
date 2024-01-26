@@ -496,11 +496,11 @@ def unique_hams_for_count_(args):
     # the H_str is the exact same
     if symmetric:
         l_str_vec = df["H_class_sym"].values
-        assert df["nonlinearity_counts_sym"].unique().size == 1
+        assert len(df["nonlinearity_counts_sym"].unique()) == 1
         nl_cnt = df["nonlinearity_counts_sym"].iloc[0]
     else:
         l_str_vec = df["H_class"].values
-        assert df["nonlinearity_counts"].unique().size == 1
+        assert len(df["nonlinearity_counts"].unique()) == 1
         nl_cnt = df["nonlinearity_counts"].iloc[0]
 
     unique_str, index, inv = np.unique(l_str_vec, return_index=True,
@@ -623,6 +623,11 @@ def assign_H_groups(db_file: str, n_nodes: int,
         unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
         unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
 
+    # Filter out none values from circuits that timed out in 
+    # quantization
+    unique_nl_str = [x for x in unique_nl_str if x is not None]
+    unique_nl_str_sym = [x for x in unique_nl_str_sym if x is not None]
+
     # Shuffle for accurate runtime estimates
     np.random.shuffle(unique_nl_str)
     np.random.shuffle(unique_nl_str_sym)
@@ -644,7 +649,7 @@ def assign_H_groups(db_file: str, n_nodes: int,
             pass
     else:
         for arg_set in args:
-            unique_hams_for_count_(args)
+            unique_hams_for_count_(arg_set)
     # Now do symmetric
     print("Symmetric Hamiltonians...")
     n_entries = len(unique_nl_str_sym)
@@ -657,7 +662,7 @@ def assign_H_groups(db_file: str, n_nodes: int,
             pass
     else:
         for arg_set in args:
-            unique_hams_for_count_(args)
+            unique_hams_for_count_(arg_set)
 
 
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
@@ -718,14 +723,17 @@ def generate_all_graphs(db_file: str = "circuits.db",
 
 def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
     """
-    Generate a Sympy Hamiltonian for the specified circuit
+    Generate a Sympy Hamiltonian for the specified circuit.
+
+    NOTE: External fluxes/charges are not supported right now
 
     Args:
         circuit (list): a list of element labels for the desired circuit
                         e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
-        symmetric (bool, optional): Whether to set all capacitances equal.
+        symmetric (bool, optional): Whether to set all capacitances,
+                                    inductances, and Josephson energies equal.
                                     Risks losing terms. Defaults to False.
 
     Returns:
@@ -784,7 +792,6 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
         indices = np.unique([str(x)[-1] for x in terms])
         combosQ[combo] = "E_{C"+''.join(indices)+"}"
 
-    # Phase -- TODO: Generalize to more products
     combos = []
     for num_terms in range(1, n_modes + 1):
         # Straight products
@@ -810,15 +817,8 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
                             for z in itertools.product(theta_list,
                                                        repeat=2)]))
 
-        # combos += [sym.sin(z) for z in theta_list]
-        # combos += [sym.cos(z) for z in theta_list]
-        # combos += [functools.reduce(lambda x, y: sym.cos(x)*sym.cos(y), z)
-        #         for z in itertools.product(theta_list, repeat=2)]
-        # combos += [functools.reduce(lambda x, y: sym.sin(x)*sym.sin(y), z)
-        #         for z in itertools.product(theta_list, repeat=2)]
-
-    H = utils.collect_expression(H, combosQ.keys())
-    H = utils.collect_expression(H, combos)
+    all_combos = combos + list(combosQ.keys())
+    H = utils.collect_expression(H, all_combos)
 
     # Replace number coefficients for charge terms
     H_final = H.copy()
@@ -850,11 +850,10 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
             H_final = H_final.subs(L, sym.Symbol("E_L", positive=True))
 
     # Generate the H_class which has all coefficients removed
-    H_class = sym.expand_trig(sym.simplify(H_final))
-    H_class = utils.collect_expression(H_class, combosQ.keys())
-    H_class = utils.collect_expression(H_class, combos)
-    H_class = H_final.copy()
     all_combos = combos + list(combosQ.keys())
+    H_class = sym.expand_trig(sym.simplify(H_final))
+    H_class = utils.collect_expression(H_class, all_combos)
+    H_class = H_final.copy()
     for combo in all_combos:
         H_class = H_class.replace(lambda x: x.is_Mul
                                   # Dividing removes all the terms in combo
@@ -866,7 +865,6 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
                                            for sym in x.free_symbols
                                            if sym in all_combos]),
                                   lambda x: -combo if str(x)[0] == "-" else combo)
-    # H_class = sym.expand_trig(sym.nsimplify(H_class))
 
     # Replace theta with \varphi for periodic modes
     for n_term in n_list:
@@ -994,6 +992,7 @@ def categorize_hamiltonian(H: sym.core.Add):
 
     return info
 
+
 def refine_latex(latex_str):
     """
     Adds hats to operators, and removes cdots before
@@ -1028,6 +1027,8 @@ if __name__ == "__main__":
                         help="Max number of nodes to generate circuits for")
     parser.add_argument("-w", "--workers", type=int, default=1,
                         help="Number of workers to use")
+    parser.add_argument("-r", "--resume", type=bool, default=False,
+                        help="Resume a run that stopped midway")
 
     args = parser.parse_args()
 

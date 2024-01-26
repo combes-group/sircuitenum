@@ -1,5 +1,6 @@
 import sqlite3
 import itertools
+import functools
 
 from typing import Union
 import numpy as np
@@ -819,6 +820,7 @@ def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
         expr (Add): Sympy expression from circuitq for hamiltonian
         syms (list[Symbol]): list of symbols to expand/collect.
                              intended to be list of q variables.
+        simplify_terms (bool): whether to simplify the individual terms
 
     Returns:
         Add: Modified expression with syms terms collected
@@ -826,5 +828,117 @@ def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
 
     m = [i for i in expr.atoms(Mul) if not any([i.has(x) for x in syms])]
     reps = dict(zip(m, [Dummy() for i in m]))
-    return collect(expand_mul(expr.xreplace(reps)
-                              ).subs([(v, k) for k, v in reps.items()]), syms)
+    expanded = expand_mul(expr.xreplace(reps))
+    expanded = expanded.subs([(v, k) for k, v in reps.items()])
+    return collect(expanded, syms, func=sym.ratsimp)
+    # return collect(expanded, syms)
+
+
+def collect_H_terms(H: Add, zero_ext: bool = True, periodic_charge: str = "n",
+                    extended_charge: str = "Q", periodic_phase: str = "θ",
+                    extended_phase: str = "θ", ext_charge: str = "ng",
+                    ext_flux: str = "_{ext}") -> Add:
+    """
+    Groups terms in the Hamiltonian.
+
+    Default settings are for scQubits Hamiltonians.
+
+    Args:
+        H (Add): Hamiltonian
+        zero_ext (bool, optional): Whether to zero all gate voltages/external
+                                   fluxes. Defaults to True.
+        periodic_charge (str, optional): symbol used for periodic charges.
+                                         Defaults to "n".
+        extended_charge (str, optional): symbol used for extended charges.
+                                         Defaults to "Q".
+        periodic_phase (str, optional): symbol used for periodic phases.
+                                        Defaults to "θ".
+        extended_phase (str, optional): symbol used for extended phases.
+                                         Defaults to "θ".
+        ext_charge (str, optional): symbol used in external charges.
+                                    Defaults to "ng".
+        ext_flux (str, optional): symbol used in external fluxes.
+                                   Defaults to "_{ext}"
+
+    Returns:
+        Add: Hamiltonian with terms grouped
+    """
+
+    # List of variable types
+    q_list = [q for q in H.free_symbols
+              if extended_charge in str(q)]
+    n_list = [q for q in H.free_symbols
+              if periodic_charge in str(q) and
+              ext_charge not in str(q)]
+    theta_list = [th for th in H.free_symbols
+                  if (periodic_phase in str(th) or
+                      extended_phase in str(th)) and
+                  ext_flux not in str(th)]
+    ext_list = [q for q in H.free_symbols
+                if ext_charge in str(q) or
+                ext_flux in str(q)]
+    print(ext_list)
+    n_modes = len(theta_list)
+
+    # Set all external parameters to 0
+    if zero_ext:
+        for ext in ext_list:
+            H = H.subs(ext, 0)
+
+    # Terms to group
+    # Q and n
+    combosQ = {}
+    for terms in itertools.product(q_list + n_list, repeat=2):
+        combo = functools.reduce(lambda x, y: x*y, terms)
+        indices = np.unique([str(x)[-1] for x in terms])
+        combosQ[combo] = "E_{C"+''.join(indices)+"}"
+
+    # Phase
+    combos = []
+    for num_terms in range(1, n_modes + 1):
+        # Straight products
+        combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                            for z in itertools.product(theta_list,
+                                                       repeat=num_terms)]))
+        # Trig products
+        # Encoding signals cos or sin
+        for encoding in itertools.product([0, 1], repeat=num_terms):
+            # Modes is which num_terms modes are being considered
+            for modes in itertools.combinations(range(n_modes), num_terms):
+                trig_prod = 1
+                for i, term in enumerate(encoding):
+                    if term:
+                        trig_prod *= sym.cos(theta_list[modes[i]])
+                    else:
+                        trig_prod *= sym.sin(theta_list[modes[i]])
+                combos += [trig_prod]
+
+    # Explicitly add theta squared terms if only one mode
+    if n_modes == 1:
+        combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                            for z in itertools.product(theta_list,
+                                                       repeat=2)]))
+
+    H = collect_expression(H, list(combosQ.keys()) + combos)
+
+    return H, combos, combosQ
+
+
+def zero_start_edges(edges):
+    """
+    Helper function to convert a list of edges from 1
+    indexing to 0 indexing of the nodes
+
+    Args:
+        edges (list of tuples of ints): a list of edge connections for the
+                                        desired circuit
+                                        (i.e., [(0,1),(1,2),(2,3),(3,0)])
+
+    Returns:
+         list[tuple[int]]: edges modified to have zero as the lowest
+                           index
+    """
+    min_node = min([min(edge) for edge in edges])
+    if min_node > 0:
+        edges = [(edge[0] - min_node, edge[1] - min_node) for edge in edges]
+    return edges

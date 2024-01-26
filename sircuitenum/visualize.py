@@ -45,9 +45,9 @@ G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                 2: np.array([0.5, np.sqrt(3)/2]),
                 3: np.array([0., 0.])},
                {0: np.array([0., 0.]),
-                1: np.array([1., 1.]),
-                2: np.array([1., 0.]),
-                3: np.array([0., 1.])},
+                1: np.array([1., 0.]),
+                2: np.array([0., -1.]),
+                3: np.array([1., -1.])},
                {0: np.array([-0.5, np.sqrt(3)/2]),
                 1: np.array([1., 0.]),
                 2: np.array([0.5, np.sqrt(3)/2]),
@@ -378,20 +378,39 @@ def draw_circuit_diagram(circuit: list, edges: list,
                       Spring seems to produce prettier circuits, but it often
                       results in overlapping elements, even for planar graphs.
         spread (float): fraction of edge length to fan out parallel components
-        graph_index (int): Required for fixed layout. base graph index.
+        graph_index (int): Graph number for fixed layout. Can also infer from edges.
 
     Returns:
         None: displays plot if out == ""
     """
+
+    edges = utils.zero_start_edges(edges)
 
     elem_dict = {
         'C': {'default_unit': 'GHz', 'default_value': 0.2},
         'L': {'default_unit': 'GHz', 'default_value': 1.0},
         'J': {'default_unit': 'GHz', 'default_value': 5.0},
         }
+
+    # Get rid of any labels on elements
+    new_circuit = []
+    for elems in circuit:
+        new_elems = []
+        for elem in elems:
+            for base_elem in elem_dict:
+                if base_elem in elem:
+                    new_elems.append(base_elem)
+                    continue
+        new_circuit.append(tuple(new_elems))
+    circuit = new_circuit
+
     params = utils.gen_param_dict(circuit, edges, elem_dict)
     G = utils.convert_circuit_to_graph(circuit, edges,
                                        params=params)
+
+    # Get graph index
+    if graph_index is None and layout == "fixed":
+        graph_index = utils.edges_to_graph_index(edges)
 
     # Get layout of vertices
     if layout == 'planar':
@@ -402,11 +421,8 @@ def draw_circuit_diagram(circuit: list, edges: list,
             pos = nx.spring_layout(G)
     elif layout == 'spring':
         pos = nx.spring_layout(G)
-    elif layout == 'fixed' and graph_index is not None:
+    elif layout == 'fixed':
         pos = G_POS[G.number_of_nodes()][graph_index]
-    else:
-        raise ValueError("must specify layout for graph and include\
-                          graph_index if using fixed layout")
 
     # Scale
     scaled_pos = {}
