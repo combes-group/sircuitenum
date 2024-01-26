@@ -831,17 +831,18 @@ def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
     expanded = expand_mul(expr.xreplace(reps))
     expanded = expanded.subs([(v, k) for k, v in reps.items()])
     return collect(expanded, syms, func=sym.ratsimp)
-    # return collect(expanded, syms)
 
 
-def collect_H_terms(H: Add, zero_ext: bool = True, periodic_charge: str = "n",
-                    extended_charge: str = "Q", periodic_phase: str = "θ",
-                    extended_phase: str = "θ", ext_charge: str = "ng",
-                    ext_flux: str = "_{ext}") -> Add:
+def collect_H_terms(H: Add, zero_ext: bool = True, 
+                    periodic_charge="n", periodic_phase="θ",
+                    extended_charge="q", extended_phase="φ",
+                    ext_charge: str = "ng", ext_flux: str = "_{ext}",
+                    no_coeff: bool = False) -> Add:
     """
     Groups terms in the Hamiltonian.
 
-    Default settings are for scQubits Hamiltonians.
+    Default settings are for our operator convention --
+    not Scqubits (q -> Q and \varphi -> \theta).
 
     Args:
         H (Add): Hamiltonian
@@ -859,6 +860,8 @@ def collect_H_terms(H: Add, zero_ext: bool = True, periodic_charge: str = "n",
                                     Defaults to "ng".
         ext_flux (str, optional): symbol used in external fluxes.
                                    Defaults to "_{ext}"
+        no_coef (bool, optional): Remove all the coefficients,
+                                  only leaving operators.
 
     Returns:
         Add: Hamiltonian with terms grouped
@@ -877,7 +880,6 @@ def collect_H_terms(H: Add, zero_ext: bool = True, periodic_charge: str = "n",
     ext_list = [q for q in H.free_symbols
                 if ext_charge in str(q) or
                 ext_flux in str(q)]
-    print(ext_list)
     n_modes = len(theta_list)
 
     # Set all external parameters to 0
@@ -919,7 +921,25 @@ def collect_H_terms(H: Add, zero_ext: bool = True, periodic_charge: str = "n",
                             for z in itertools.product(theta_list,
                                                        repeat=2)]))
 
-    H = collect_expression(H, list(combosQ.keys()) + combos)
+    all_combos = list(combosQ.keys()) + combos
+    H = collect_expression(H, all_combos)
+
+    if no_coeff:
+        H_class = H.copy()
+        for combo in all_combos:
+            H_class = H_class.replace(lambda x: x.is_Mul
+                                      # Dividing removes all the terms in combo
+                                      and all([sym not in combo.free_symbols
+                                               for sym in
+                                               (x/combo).free_symbols])
+                                      # And all theta/n terms in x are also in
+                                      # combo
+                                      and all([sym in combo.free_symbols
+                                               for sym in x.free_symbols
+                                               if sym in all_combos]),
+                                      lambda x: -combo if str(x)[0] == "-"
+                                      else combo)
+        H = H_class
 
     return H, combos, combosQ
 

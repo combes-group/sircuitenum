@@ -304,25 +304,26 @@ def test_gen_hamiltonian():
     # Transmon
     edges = [(0, 1)]
     circuit = [("J", "C")]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
-    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} - J_{1 2} \\cos{\\left(θ_{1} \\right)}"
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
+    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{θ}_{1} \\right)} + \\frac{\\hat{n}_{1}^{2}}{2 C_{1} + 2 C_{J}}'
 
 
 
     # Fluxoinium
     edges = [(0, 1)]
     circuit = [("J", "L")]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
-    assert sy.latex(H, order="grlex") == "C_{1} Q_{1}^{2} + \\frac{L_{1 2} θ_{1}^{2}}{2} - J_{1 2} \\cos{\\left(θ_{1} \\right)}"
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
+    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{φ}_{1} \\right)} + \\frac{\\hat{φ}_{1}^{2}}{2 L_{1}} + \\frac{\\hat{q}_{1}^{2}}{2 C_{J}}'
 
 
     # Zero-Pi
     edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
     circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
-    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} + C_{12} Q_{2} n_{1} + C_{2} Q_{2}^{2} + C_{3} Q_{3}^{2} + θ_{2}^{2} \\cdot \\left(2 L_{1 4} + 2 L_{2 3}\\right) + θ_{2} θ_{3} \\left(- 2 L_{1 4} + 2 L_{2 3}\\right) + θ_{3}^{2} \\left(\\frac{L_{1 4}}{2} + \\frac{L_{2 3}}{2}\\right) + \\left(- J_{1 2} - J_{3 4}\\right) \\cos{\\left(θ_{1} \\right)} \\cos{\\left(θ_{3} \\right)} + \\left(J_{1 2} - J_{3 4}\\right) \\sin{\\left(θ_{1} \\right)} \\sin{\\left(θ_{3} \\right)}"
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)
-    assert sy.latex(H, order="grlex") == "C_{1} n_{1}^{2} + C_{2} Q_{2}^{2} + C_{3} Q_{3}^{2} - 2 J \\cos{\\left(θ_{1} \\right)} \\cos{\\left(θ_{3} \\right)} + 4 L θ_{2}^{2} + L θ_{3}^{2}"
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
+    assert sy.latex(H, order="grlex") == '\\left(- E_{J_1} - E_{J_2}\\right) \\cos{\\left(\\hat{θ}_{1} \\right)} \\cos{\\left(\\hat{φ}_{3} \\right)} + \\left(E_{J_1} - E_{J_2}\\right) \\sin{\\left(\\hat{θ}_{1} \\right)} \\sin{\\left(\\hat{φ}_{3} \\right)} + \\frac{\\hat{n}_{1}^{2} \\left(C_{1} + C_{2}\\right)}{8 C_{1} C_{2} + 4 C_{1} C_{J} + 4 C_{2} C_{J}} + \\frac{\\hat{n}_{1} \\hat{q}_{2} \\left(C_{1} - C_{2}\\right)}{8 C_{1} C_{2} + 4 C_{1} C_{J} + 4 C_{2} C_{J}} + \\frac{\\hat{q}_{2}^{2} \\left(C_{1} + C_{2} + 2 C_{J}\\right)}{32 C_{1} C_{2} + 16 C_{1} C_{J} + 16 C_{2} C_{J}} + \\frac{\\hat{φ}_{2}^{2} \\cdot \\left(2 L_{1} + 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{2} \\hat{φ}_{3} \\cdot \\left(2 L_{1} - 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{3}^{2} \\left(L_{1} + L_{2}\\right)}{2 L_{1} L_{2}} + \\frac{\\hat{q}_{3}^{2}}{4 C_{J}}'
+
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)[0]
+    assert sy.latex(H, order="grlex") == '- 2 E_{J} \\cos{\\left(\\hat{θ}_{1} \\right)} \\cos{\\left(\\hat{φ}_{3} \\right)} + \\frac{\\hat{n}_{1}^{2}}{4 C + 4 C_{J}} + \\frac{4 \\hat{φ}_{2}^{2}}{L} + \\frac{\\hat{φ}_{3}^{2}}{L} + \\frac{\\hat{q}_{3}^{2}}{4 C_{J}} + \\frac{\\hat{q}_{2}^{2}}{16 C}'
 
 def test_categorize_hamiltonian():
 
@@ -425,6 +426,7 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
 
 if __name__ == "__main__":
     # test_generate_graphs_node()
-    test_generate_all_graphs()
+    # test_generate_all_graphs()
     # test_gen_hamiltonian()
     # test_categorize_hamiltonian()
+    test_find_equiv_cir_series()

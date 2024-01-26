@@ -3,6 +3,15 @@ from sircuitenum import utils
 import sympy as sym
 import numpy as np
 
+PERIODIC_CHARGE = "n"
+PERIODIC_PHASE = "θ"
+EXTENDED_CHARGE = "q"
+EXTENDED_PHASE = "φ"
+NODE_CHARGE = "q"
+NODE_PHASE = "ϕ"
+EXT_CHARGE = "n_g"
+EXT_PHASE = "_{ext}"
+
 
 def gen_cap_mat(circuit, edges):
     """
@@ -146,7 +155,7 @@ def gen_junc_pot(circuit, edges, flux_vars, cob=None):
 
 def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
-                     return_mats=False):
+                     return_mats=False, return_vars=False):
     """
     Performs a symbolic circuit quantization for the given circuit.
 
@@ -176,6 +185,8 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                                         transformed coord that are frozen.
         return_mats (bool, optional): optionally return the capacitance and
                                         inductance matrices
+        return_vars (bool, optional): optionally return the sympy variables
+                                      used to construct H
 
     Returns:
         Hamiltonian or Hamiltonian, Capacitance Matrix, Inductance Matrix
@@ -187,14 +198,14 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     th_str = ""
     for n in range(1, n_nodes+1):
         if cob is None:
-            th_str += "\hat{ϕ}_{"+str(n)+"}, "
-            Q_str += "\hat{q}_{"+str(n)+"}, "
+            th_str += "\hat{" + NODE_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + NODE_CHARGE + "}_{"+str(n)+"}, "
         elif n in periodic:
-            th_str += "\hat{θ}_{"+str(n)+"}, "
-            Q_str += "\hat{n}_{"+str(n)+"}, "
+            th_str += "\hat{" + PERIODIC_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + PERIODIC_CHARGE + "}_{"+str(n)+"}, "
         else:
-            th_str += "\hat{φ}_{"+str(n)+"}, "
-            Q_str += "\hat{q}_{"+str(n)+"}, "
+            th_str += "\hat{" + EXTENDED_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + EXTENDED_CHARGE + "}_{"+str(n)+"}, "
 
     Q_vec = sym.Matrix(sym.symbols(Q_str[:-1]))
     th_vec = sym.Matrix(sym.symbols(th_str[:-1]))
@@ -258,7 +269,14 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
         H = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
                                   extended_charge="q", extended_phase="φ")[0]
+
+    to_return = (H,)
+
     if return_mats:
-        return H, C_mat, L_mat
-    else:
-        return H
+        to_return = to_return + (C_mat, L_mat)
+    if return_vars:
+        to_return = to_return + (Q_vec, th_vec)
+    if (not return_mats) and (not return_vars):
+        to_return = to_return[0]
+
+    return to_return

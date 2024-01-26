@@ -29,6 +29,7 @@ from multiprocessing import Pool
 from sircuitenum import utils
 from sircuitenum import reduction as red
 from sircuitenum import qpackage_interface as pi
+from sircuitenum import quantize
 
 
 import sys
@@ -61,9 +62,6 @@ def exit_after(s):
             return result
         return inner
     return outer
-
-
-
 
 # -------------------------------------------------------------------
 # Functions
@@ -330,9 +328,74 @@ def trim_graph_node(db_file: str, n_nodes: int,
             reduce_individual_set_(arg_set)
 
 
-def gen_ham_row_(uid, db_file):
+def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
+    """
+    Generate a Sympy Hamiltonian for the specified circuit.
 
-    # uid, db_file = args[0], args[1]
+    NOTE: External fluxes/charges are not supported right now
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        symmetric (bool, optional): Whether to set all capacitances,
+                                    inductances, and Josephson energies equal.
+                                    Risks losing terms. Defaults to False.
+
+    Returns:
+        (Sympy Add, np.array, Sympy Add):
+                   1) Symbolic Hamiltonian where periodic modes are labeled by
+                      n and extended variables are labeled by q.
+                   2) Coordinate transformation matrix (new in terms of node
+                      variables)
+                   3) Hamiltonian "class" that has all constants removed.
+    """
+
+    elems = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 15.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 500.0}
+            }
+    params = utils.gen_param_dict(circuit, edges, elems)
+
+    if not symmetric:
+        # Set random values to avoid unintentionally
+        # deleting terms
+        for edge, comp in params:
+            if comp in ["C", "L"]:
+                param_range = (0.1, 1)
+            else:
+                param_range = (1, 20)
+            params[(edge, comp)] = (np.random.uniform(*param_range), "GHz")
+
+    # Use scQubits to get a transformation Matrix
+    obj = pi.to_SCqubits(circuit, edges, params=params)
+
+    # Get symbolic Hamiltonian
+    Z = sym.Matrix(obj.transformation_matrix)
+    var_class = obj.var_categories | {"frozen": [utils.get_num_nodes(edges)]}
+
+    # Un-symmetrize the edges if that's what's requested
+    if not symmetric:
+        new_circuit = []
+        counts = {"J": 0, "L": 0, "C": 0}
+        for elems in circuit:
+            new_elems = []
+            for elem in elems:
+                new_elems.append(f"{elem}_{counts[elem] + 1}")
+                counts[elem] += 1
+            new_circuit.append(new_elems)
+        circuit = new_circuit
+
+    H = quantize.quantize_circuit(circuit, edges, cob=Z, **var_class)
+    H_class = utils.collect_H_terms(H, no_coeff=True)[0]
+
+    return H, obj.transformation_matrix, H_class
+
+
+def gen_ham_row_(uid, db_file):
 
     # Load the graphs with the specified edges counts and graph index
     filter_str = f"WHERE unique_key LIKE '{uid}'"
@@ -515,11 +578,11 @@ def unique_hams_for_count_(args):
         is_dup = False
 
         # Make the string parsable by sympy
-        l_str = l_str.replace("\\hat{Q}", "Q")
-        l_str = l_str.replace("\\hat{n}", "n")
-        l_str = l_str.replace("\\hat{θ}", "F")
-        l_str = l_str.replace("\\hat{𝜑}", "p")
-
+        l_str = l_str.replace("\\hat{" + quantize.EXTENDED_CHARGE + "}", "Q")
+        l_str = l_str.replace("\\hat{" + quantize.PERIODIC_CHARGE + "}", "n")
+        l_str = l_str.replace("\\hat{" + quantize.EXTENDED_PHASE + "}", "F")
+        l_str = l_str.replace("\\hat{" + quantize.PERIODIC_PHASE + "}", "p")
+        
         H_base = parse_latex(l_str)
 
         # Get the Phase and Charge terms
@@ -606,8 +669,16 @@ def unique_hams_for_count_(args):
 
 
 def assign_H_groups(db_file: str, n_nodes: int,
-                    n_workers: int = 1):
+                    n_workers: int = 1) -> None:
+    """
+    Assigns Hamiltonians in the database into groups
+    based on the functional form of their Hamiltonian
 
+    Args:
+        db_file (str): path to database file
+        n_nodes (int): number of nodes to examine
+        n_workers (int, optional): Number of workers to use. Defaults to 1.
+    """
     # Get the unique nonlinearity counts strings
     with sqlite3.connect(db_file) as con:
         cur = con.cursor()
@@ -639,6 +710,7 @@ def assign_H_groups(db_file: str, n_nodes: int,
     # Do non-symmetric first
     # args are db_file, n_nodes, nl_cnt, symmetric, mapping
     n_entries = len(unique_nl_str)
+
     print("Full Hamiltonians...")
     args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
                     unique_nl_str, [False]*n_entries,
@@ -650,6 +722,7 @@ def assign_H_groups(db_file: str, n_nodes: int,
     else:
         for arg_set in args:
             unique_hams_for_count_(arg_set)
+
     # Now do symmetric
     print("Symmetric Hamiltonians...")
     n_entries = len(unique_nl_str_sym)
@@ -663,6 +736,148 @@ def assign_H_groups(db_file: str, n_nodes: int,
     else:
         for arg_set in args:
             unique_hams_for_count_(arg_set)
+
+
+def gen_func_combos_(n_modes: int) -> dict:
+    """
+    Helper function that generates all combinations of sin/cos
+    given a maximum power
+
+    Args:
+        n_modes (int): Number of modes in the circuit (i.e. max power)
+
+    Returns:
+        dict: dictionary with combos as keys and 0 as values
+    """
+    info = {}
+    for n in range(1, n_modes+1):
+        for type_combo in itertools.product(["p", "e"], repeat=n):
+            for func_combo in itertools.product(["cos", "sin"], repeat=n):
+                # Count the functions present
+                counts = {}
+                for combo in zip(func_combo, type_combo):
+                    if combo in counts:
+                        counts[combo] += 1
+                    else:
+                        counts[combo] = 1
+                # Add the field in the dictionary
+                combos = []
+                for combo in counts:
+                    combos += [combo]*counts[combo]
+                # Sort alphabetically for consistency
+                order = np.sort(["_".join(x) for x in combos])
+                info_str = "_".join(order)
+                info[info_str] = 0
+    return info
+
+
+def categorize_hamiltonian(H: sym.core.Add):
+    """
+    Categorizes a Hamiltonian according to the nonlinearities
+    present.
+
+    Assumes frozen and free modes have already been removed.
+
+    Args:
+        H (sympy.core.Add): sympy Hamiltonian, generated
+                            from gen_hamiltonian
+
+    Returns:
+        info: Dictionary counting the nonlinearities present.
+              Considers every possibility of cos/sin and 
+              extended/periodic variables. Should be 4 choices
+              with one modes, 10 choices with two modes,
+              and 20 with three modes.
+    """
+
+    # Expand H to make searching easier
+    H_test = sym.expand(H)
+
+    # List of variable types
+    theta_list = [th for th in H.free_symbols
+                  if (quantize.PERIODIC_PHASE in str(th) or
+                      quantize.EXTENDED_PHASE in str(th) or
+                      quantize.NODE_PHASE in str(th))
+                  and quantize.EXT_PHASE not in str(th)]
+
+    # Information about the hamiltonian
+    n_modes = len(theta_list)
+    info = {"n_modes": n_modes,
+            "periodic": [],
+            "extended": [],
+            "harmonic": []}
+
+    # Categorize Modes:
+    types = {}
+    funcs = set()
+    [[funcs.add(f) for f in x.atoms(sym.Function)]
+        for x in H_test.atoms(sym.Mul)]
+    for th in theta_list:
+        mode_num = "".join([x for x in str(th) if x.isnumeric()])
+        if quantize.PERIODIC_PHASE in str(th):
+            info["periodic"].append(mode_num)
+            types[str(th)] = "p"
+        elif sym.cos(th) in funcs or sym.sin(th) in funcs:
+            info["extended"].append(mode_num)
+            types[str(th)] = "e"
+        else:
+            info["harmonic"].append(mode_num)
+            types[str(th)] = "h"
+
+    # Add counts
+    info["n_periodic"] = len(info["periodic"])
+    info["n_extended"] = len(info["extended"])
+    info["n_harmonic"] = len(info["harmonic"])
+
+    # Products of sin/cos up to n_modes
+    info.update(gen_func_combos_(n_modes))
+
+    # Count the nonlinear terms
+    funcs = set(functools.reduce(lambda x, y: x*y, list(x.atoms(sym.Function)))
+                for x in H_test.atoms(sym.Mul) if len(x.atoms(sym.Function)) > 0)
+    # n = number of nonlinear terms
+    for n in range(1, n_modes+1):
+        # th_combo = list of variables
+        for th_combo in itertools.product(theta_list, repeat=n):
+            # Variable types
+            th_types = [types[str(th)] for th in th_combo]
+            # All different combinations of sin's and cos
+            # of the two thetas
+            for bar in range(n+1):
+                term = 1
+                # Cos terms
+                for i in range(bar):
+                    term *= sym.cos(th_combo[i])
+                # Sin Terms
+                for i in range(bar, n):
+                    term *= sym.sin(th_combo[i])
+                # Check if term was present
+                if term in funcs:
+                    info_str = ["_".join(x) for x in
+                                zip(["cos"]*bar, th_types[:bar])]
+                    info_str += ["_".join(x) for x in
+                                 zip(["sin"]*(n-bar), th_types[bar:])]
+                    info_str = "_".join(np.sort(info_str))
+                    info[info_str] += 1
+                    funcs.remove(term)
+
+    return info
+
+
+def refine_latex(latex_str):
+    """
+    Adds hats to operators, and removes cdots before
+    parenthesis
+
+    Args:
+        latex_str (str): string of the latex math
+
+    Returns:
+        str: copy of the latex_str with the modifications done
+    """
+    latex_str = latex_str.replace(r"\cdot \left(", r"\left(")
+    return latex_str
+
 
 
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
@@ -719,297 +934,6 @@ def generate_all_graphs(db_file: str = "circuits.db",
 
     for n in range(n_nodes_start, n_nodes_stop+1):
         generate_and_trim(n, db_file=db_file, base=base, n_workers=n_workers)
-
-
-def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
-    """
-    Generate a Sympy Hamiltonian for the specified circuit.
-
-    NOTE: External fluxes/charges are not supported right now
-
-    Args:
-        circuit (list): a list of element labels for the desired circuit
-                        e.g. [["J"],["L", "J"], ["C"]]
-        edges (list): a list of edge connections for the desired circuit
-                        e.g. [(0,1), (0,2), (1,2)]
-        symmetric (bool, optional): Whether to set all capacitances,
-                                    inductances, and Josephson energies equal.
-                                    Risks losing terms. Defaults to False.
-
-    Returns:
-        (Sympy Add, np.array, Sympy Add):
-                   1) Symbolic Hamiltonian where periodic modes are labeled by
-                      n and extended variables are labeled by Q.
-                   2) Coordinate transformation matrix (new in terms of node
-                      variables)
-                   3) Hamiltonian "class" that has all constants removed.
-    """
-
-    elems = {
-            'C': {'default_unit': 'GHz', 'default_value': 0.2},
-            'L': {'default_unit': 'GHz', 'default_value': 1.0},
-            'J': {'default_unit': 'GHz', 'default_value': 15.0},
-            'CJ': {'default_unit': 'GHz', 'default_value': 500.0}
-            }
-    params = utils.gen_param_dict(circuit, edges, elems)
-
-    if not symmetric:
-        # Set random values to avoid unintentionally
-        # deleting terms
-        for edge, comp in params:
-            if comp in ["C", "L"]:
-                param_range = (0.1, 1)
-            else:
-                param_range = (1, 20)
-            params[(edge, comp)] = (np.random.uniform(*param_range), "GHz")
-
-    obj = pi.to_SCqubits(circuit, edges, params=params)
-
-    # Sympy Hamiltonian -- Expand all the trig
-    H = obj.sym_hamiltonian(return_expr=True)
-    H = sym.expand_trig(sym.nsimplify(H))
-
-    # List of variable types
-    q_list = [q for q in H.free_symbols
-              if "Q" in str(q)]
-    n_list = [q for q in H.free_symbols
-              if "n" in str(q) and "n_g" not in str(q)]
-    theta_list = [q for q in H.free_symbols
-                  if "θ" in str(q)]
-    ext_list = [q for q in H.free_symbols
-                if "_g" in str(q) or "Φ" in str(q)]
-    n_modes = len(theta_list)
-
-    # Set all external parameters to 0
-    for ext in ext_list:
-        H = H.subs(ext, 0)
-
-    # Terms to group
-    # Q and n
-    combosQ = {}
-    for terms in itertools.product(q_list + n_list, repeat=2):
-        combo = functools.reduce(lambda x, y: x*y, terms)
-        indices = np.unique([str(x)[-1] for x in terms])
-        combosQ[combo] = "E_{C"+''.join(indices)+"}"
-
-    combos = []
-    for num_terms in range(1, n_modes + 1):
-        # Straight products
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=num_terms)]))
-        # Trig products
-        # Encoding signals cos or sin
-        for encoding in itertools.product([0, 1], repeat=num_terms):
-            # Modes is which num_terms modes are being considered
-            for modes in itertools.combinations(range(n_modes), num_terms):
-                trig_prod = 1
-                for i, term in enumerate(encoding):
-                    if term:
-                        trig_prod *= sym.cos(theta_list[modes[i]])
-                    else:
-                        trig_prod *= sym.sin(theta_list[modes[i]])
-                combos += [trig_prod]
-
-    # Explicitly add theta squared terms if only one mode
-    if n_modes == 1:
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=2)]))
-
-    all_combos = combos + list(combosQ.keys())
-    H = utils.collect_expression(H, all_combos)
-
-    # Replace number coefficients for charge terms
-    H_final = H.copy()
-    for q in combosQ:
-        H_final = H_final.replace(lambda x: x.is_Mul
-                                  and all([sym not in q.free_symbols
-                                           for sym in (x/q).free_symbols]),
-                                  lambda x: sym.Symbol(combosQ[q],
-                                                       positive=True)*q)
-
-    # Replace the J, L expressions with E_J, E_L
-    j_list = [j for j in H_final.free_symbols if "J" in str(j)]
-    l_list = [L for L in H_final.free_symbols if "L" in str(L)]
-    # Replace J, L with E_J, E_L
-    if not symmetric:
-        for j in j_list:
-            H_final = H_final.subs(j, sym.Symbol("E_{J"+f"{str(j)[-3:].replace('_','')}"+"}",
-                                   positive=True))
-        for L in l_list:
-            H_final = H_final.subs(L, sym.Symbol("E_{L"+f"{str(L)[-3:].replace('_','')}"+"}",
-                                   positive=True))
-    # If symmetric set all E_J's and E_L's equal to each other
-    if symmetric:
-        j_list = [j for j in H_final.free_symbols if "J" in str(j)]
-        for j in j_list:
-            H_final = H_final.subs(j, sym.Symbol("E_J", positive=True))
-        l_list = [L for L in H.free_symbols if "L" in str(L)]
-        for L in l_list:
-            H_final = H_final.subs(L, sym.Symbol("E_L", positive=True))
-
-    # Generate the H_class which has all coefficients removed
-    all_combos = combos + list(combosQ.keys())
-    H_class = sym.expand_trig(sym.simplify(H_final))
-    H_class = utils.collect_expression(H_class, all_combos)
-    H_class = H_final.copy()
-    for combo in all_combos:
-        H_class = H_class.replace(lambda x: x.is_Mul
-                                  # Dividing removes all the terms in combo
-                                  and all([sym not in combo.free_symbols
-                                           for sym in (x/combo).free_symbols])
-                                  # And all theta/n terms in x are also in
-                                  # combo
-                                  and all([sym in combo.free_symbols
-                                           for sym in x.free_symbols
-                                           if sym in all_combos]),
-                                  lambda x: -combo if str(x)[0] == "-" else combo)
-
-    # Replace theta with \varphi for periodic modes
-    for n_term in n_list:
-        mode_num = str(n_term)[-1]
-        matching_thetas = [th for th in theta_list
-                           if f"θ{mode_num}" in str(th)]
-        for th in matching_thetas:
-            new_var = sym.Symbol(f"𝜑{mode_num}")
-            H_final = H_final.replace(th, new_var)
-            H_class = H_class.replace(th, new_var)
-
-    return H_final, obj.transformation_matrix, H_class
-
-
-def gen_func_combos_(n_modes):
-    info = {}
-    for n in range(1, n_modes+1):
-        for type_combo in itertools.product(["p", "e"], repeat=n):
-            for func_combo in itertools.product(["cos", "sin"], repeat=n):
-                # Count the functions present
-                counts = {}
-                for combo in zip(func_combo, type_combo):
-                    if combo in counts:
-                        counts[combo] += 1
-                    else:
-                        counts[combo] = 1
-                # Add the field in the dictionary
-                combos = []
-                for combo in counts:
-                    combos += [combo]*counts[combo]
-                # Sort alphabetically for consistency
-                order = np.sort(["_".join(x) for x in combos])
-                info_str = "_".join(order)
-                info[info_str] = 0
-    return info
-
-
-def categorize_hamiltonian(H: sym.core.Add):
-    """
-    Categorizes a Hamiltonian according to the nonlinearities
-    present
-
-    Args:
-        H (sympy.core.Add): sympy Hamiltonian, generated
-                            from gen_hamiltonian
-
-    Returns:
-        info: Dictionary counting the nonlinearities present.
-              Considers every possibility of cos/sin and 
-              extended/periodic variables. Should be 4 choices
-              with one modes, 10 choices with two modes,
-              and 20 with three modes.
-    """
-
-    # Expand H to make searching easier
-    H_test = sym.expand(H)
-
-    # List of variable types
-    n_list = [q for q in H.free_symbols
-              if "n" in str(q) and "n_g" not in str(q)]
-    theta_list = [q for q in H.free_symbols
-                  if "θ" in str(q) or "𝜑" in str(q)]
-
-    # Information about the hamiltonian
-    n_modes = len(theta_list)
-    info = {"n_modes": n_modes,
-            "periodic": [],
-            "extended": [],
-            "harmonic": []}
-
-    # Categorize Modes:
-    types = {}
-    funcs = set()
-    [[funcs.add(f) for f in x.atoms(sym.Function)]
-        for x in H_test.atoms(sym.Mul)]
-    n_str = [str(n) for n in n_list]
-    for th in theta_list:
-        if f"n{str(th)[-1]}" in n_str:
-            info["periodic"].append(str(th)[-1])
-            types[str(th)] = "p"
-        elif sym.cos(th) in funcs or sym.sin(th) in funcs:
-            info["extended"].append(str(th)[-1])
-            types[str(th)] = "e"
-        else:
-            info["harmonic"].append(str(th)[-1])
-            types[str(th)] = "h"
-
-    # Add counts
-    info["n_periodic"] = len(info["periodic"])
-    info["n_extended"] = len(info["extended"])
-    info["n_harmonic"] = len(info["harmonic"])
-
-
-    # Products of sin/cos up to n_modes
-    info.update(gen_func_combos_(n_modes))
-
-    # Count the nonlinear terms
-    funcs = set(functools.reduce(lambda x, y: x*y, list(x.atoms(sym.Function)))
-                for x in H_test.atoms(sym.Mul) if len(x.atoms(sym.Function)) > 0)
-    # n = number of nonlinear terms
-    for n in range(1, n_modes+1):
-        # th_combo = list of variables
-        for th_combo in itertools.product(theta_list, repeat=n):
-            # Variable types
-            th_types = [types[str(th)] for th in th_combo]
-            # All different combinations of sin's and cos
-            # of the two thetas
-            for bar in range(n+1):
-                term = 1
-                # Cos terms
-                for i in range(bar):
-                    term *= sym.cos(th_combo[i])
-                # Sin Terms
-                for i in range(bar, n):
-                    term *= sym.sin(th_combo[i])
-                # Check if term was present
-                if term in funcs:
-                    info_str = ["_".join(x) for x in
-                                zip(["cos"]*bar, th_types[:bar])]
-                    info_str += ["_".join(x) for x in
-                                 zip(["sin"]*(n-bar), th_types[bar:])]
-                    info_str = "_".join(np.sort(info_str))
-                    info[info_str] += 1
-                    funcs.remove(term)
-
-    return info
-
-
-def refine_latex(latex_str):
-    """
-    Adds hats to operators, and removes cdots before
-    parenthesis
-
-    Args:
-        latex_str (str): string of the latex math
-
-    Returns:
-        str: copy of the latex_str with the modifications done
-    """
-    latex_str = latex_str.replace("Q_", r"\hat{Q}_")
-    latex_str = latex_str.replace("n_", r"\hat{n}_")
-    latex_str = latex_str.replace(r"θ", r"\hat{θ}")
-    latex_str = latex_str.replace(r"𝜑", r"\hat{𝜑}")
-    latex_str = latex_str.replace(r"\cdot \left(", r"\left(")
-    return latex_str
 
 
 if __name__ == "__main__":
