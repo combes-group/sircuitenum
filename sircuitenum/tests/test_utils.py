@@ -581,13 +581,13 @@ def test_get_unique_qubits():
     write_test_df()
     df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     winner = df2.iloc[3]['unique_key']
-    df2.at[winner, 'in_non_iso_set'] = 1
-    df2.at[winner, 'no_series'] = 1
-    df2.at[winner, 'has_jj'] = 1
+    df2.at[winner, 'in_non_iso_set'] = True
+    df2.at[winner, 'no_series'] = True
+    df2.at[winner, 'has_jj'] = True
     utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_unique_qubits(TEMP_FILE, 3)
-    assert df3.shape[0] == 1
+    assert df3.shape[0] == True
     assert df3.iloc[0]['unique_key'] == winner
 
     os.remove(TEMP_FILE)
@@ -602,9 +602,9 @@ def test_get_equiv_circuits_uid():
     df2 = utils.get_circuit_data_batch(TEMP_FILE, 3)
     winner = df2.iloc[3]['unique_key']
     other = df2.iloc[1]['unique_key']
-    df2.at[winner, 'in_non_iso_set'] = 1
-    df2.at[winner, 'no_series'] = 1
-    df2.at[winner, 'has_jj'] = 1
+    df2.at[winner, 'in_non_iso_set'] = True
+    df2.at[winner, 'no_series'] = True
+    df2.at[winner, 'has_jj'] = True
     df2.at[other, 'equiv_circuit'] = winner
     to_update = ["no_series", "has_jj",
                  "in_non_iso_set", "equiv_circuit"]
@@ -630,9 +630,9 @@ def test_get_equiv_circuits():
     winner = df2.iloc[3]
     uid = winner['unique_key']
     other = df2.iloc[1]['unique_key']
-    df2.at[uid, 'in_non_iso_set'] = 1
-    df2.at[uid, 'no_series'] = 1
-    df2.at[uid, 'has_jj'] = 1
+    df2.at[uid, 'in_non_iso_set'] = True
+    df2.at[uid, 'no_series'] = True
+    df2.at[uid, 'has_jj'] = True
     df2.at[other, 'equiv_circuit'] = uid
     to_update = ["no_series", "has_jj",
                  "in_non_iso_set", "equiv_circuit"]

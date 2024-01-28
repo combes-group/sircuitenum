@@ -48,6 +48,7 @@ setup(
                     'scikit-image',
                     'pandarallel',
                     'func_timeout',
+                    'antlr4-python3-runtime',
 
                     # test dependencies
                     'flake8',

@@ -355,9 +355,10 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
         obj = pi.to_SCqubits(circuit, edges, params=params, sym_cir=True,
                              initiate_sym_calc=False)
 
-        # Get symbolic Hamiltonian
+        # Get symbolic Hamiltonian and add final free mode
+        # as a given
         cob, var_class = obj.variable_transformation_matrix()
-        var_class["free"] = [utils.get_num_nodes(edges)]
+        var_class["free"] += [utils.get_num_nodes(edges)]
 
     elif var_class is None:
         raise ValueError("Must include variable classification with cob matrix")
@@ -923,6 +924,7 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     print("Circuits Generated for " +
           str(n_nodes) + " node circuits.")
     print("Now Trimming.")
+    # Max 10 workers because this is fast and db conflicts
     trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base,
                     n_workers=n_workers)
     print("Finished trimming " + str(n_nodes) + " node circuits.")
@@ -930,6 +932,7 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     add_hamiltonians_to_table(db_file=db_file, n_nodes=n_nodes,
                               n_workers=n_workers)
     print("Categorizing Hamiltonians for " + str(n_nodes) + " node circuits.")
+    # Max 10 workers because this is fast and db conflicts
     assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers)
     return True
 
@@ -977,7 +980,7 @@ if __name__ == "__main__":
                         help="Min number of nodes to generate circuits for")
     parser.add_argument("-p", "--stop", type=int, default=4,
                         help="Max number of nodes to generate circuits for")
-    parser.add_argument("-w", "--workers", type=int, default=1,
+    parser.add_argument("-w", "--workers", type=int, default=8,
                         help="Number of workers to use")
     parser.add_argument("-r", "--resume", type=bool, default=False,
                         help="Resume a run that stopped midway")

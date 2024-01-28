@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from sircuitenum import reduction as red
-from sircuitenum import enum
+from sircuitenum import enumerate as enum
 from sircuitenum import utils
 
 

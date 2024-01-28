@@ -542,11 +542,12 @@ def update_db_from_df(file: str, df: pd.DataFrame,
 
     n_fields = len(to_update)
 
-    with sqlite3.connect(file) as con:
+    with sqlite3.connect(file, timeout=5000) as con:
         cur = con.cursor()
+        sql_str = ""
         for _, row in df.iterrows():
             n_nodes = row['n_nodes']
-            sql_str = f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
+            sql_str += f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
             for i, col in enumerate(to_update):
                 val = row[col]
                 if col not in str_cols and col not in float_cols:
@@ -559,8 +560,19 @@ def update_db_from_df(file: str, df: pd.DataFrame,
                     sql_str += f"{col} = '{val}', "
                 else:
                     sql_str += f"{col} = '{val}' "
-                    sql_str += f"WHERE unique_key = '{row['unique_key']}';"
-            cur.execute(sql_str)
+                    sql_str += f"WHERE unique_key = '{row['unique_key']}';\n"
+        
+        written = False
+        while not written:
+            try:
+                cur.executescript(sql_str)
+                written = True
+            except sqlite3.OperationalError:
+                # Database is locked, wait random amount
+                # of time and try again
+                # print("Write Conflict")
+                sleep(np.abs(np.random.random()))
+
         con.commit()
 
 
@@ -653,10 +665,21 @@ def get_circuit_data_batch(db_file: str, n_nodes: int,
     """
 
     table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-    connection_obj = sqlite3.connect(db_file)
+    connection_obj = sqlite3.connect(db_file, timeout=5000)
     query = "SELECT * FROM {table} {filter_str}".format(
         table=table_name, filter_str=filter_str)
-    df = pd.read_sql_query(query, connection_obj)
+
+    read = False
+    while not read:
+        try:
+            df = pd.read_sql_query(query, connection_obj)
+            read = True
+        except pd.errors.DatabaseError:
+            # Database is locked, wait random amount
+            # of time and try again
+            # print("Read Conflict")
+            sleep(np.abs(np.random.random()))
+
     connection_obj.commit()
     connection_obj.close()
 

@@ -6,7 +6,8 @@ import sympy as sy
 import numpy as np
 import pandas as pd
 
-from sircuitenum import enum, utils
+from sircuitenum import enumerate as enum
+from sircuitenum import utils
 from sircuitenum import reduction as red
 
 import numpy.random
@@ -422,6 +423,19 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
                     assert all(x in v1 for x in v2)
                 else:
                     assert v1 == v2
+
+
+def test_group_hamiltonian():
+    
+    
+    # Generate all the 3 node circuits and check that
+    # there's 22 H classes
+    enum.generate_all_graphs(TEMP_FILE, 3, 3, base=7,
+                             n_workers=4)
+    df = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    assert df.H_class.unique().size == 22
+    assert df.H_class_sym.unique().size == 22
+    os.remove(TEMP_FILE)
 
 
 if __name__ == "__main__":
