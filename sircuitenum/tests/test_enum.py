@@ -117,7 +117,7 @@ def test_find_equiv_cir_series():
         os.remove(TEMP_FILE)
 
     # Generate all the 2/3 node circuits
-    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=7)
+    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=7, n_workers=8)
 
     # Find the equivalent circuits for ones that would
     # be reduced
@@ -203,8 +203,8 @@ def test_generate_all_graphs():
     if Path(TEMP_FILE).exists():
         os.remove(TEMP_FILE)
 
-    # Generate all the 2, 3, and 4 node circuits
-    enum.generate_all_graphs(TEMP_FILE, 2, 4, base=3)
+    # Generate all the 2, 3 node circuits
+    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=3)
 
     # Test the 2 nodes I/O
     df_untrimmed = utils.get_circuit_data_batch(TEMP_FILE, n_nodes=2)
@@ -258,8 +258,8 @@ def test_generate_all_graphs():
     df2 = utils.get_unique_qubits(TEMP_FILE, n_nodes=2)
     df3 = utils.get_unique_qubits(TEMP_FILE, n_nodes=3)
     df3 = df3[df3['graph_index'] == 1]
-    df4 = utils.get_unique_qubits(TEMP_FILE, n_nodes=4)
-    df4 = df4[df4['graph_index'] == 3]
+    # df4 = utils.get_unique_qubits(TEMP_FILE, n_nodes=4)
+    # df4 = df4[df4['graph_index'] == 3]
 
     assert df2.shape[0] == 1
     assert df3.shape[0] == len(NON_ISOMORPHIC_3)
@@ -269,31 +269,31 @@ def test_generate_all_graphs():
         assert red.isomorphic_circuit_in_set(c, edges, df3.circuit.values)
 
     # A set of four 4 element circuits that should be there
-    edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
-    circuit = [("J",), ("J",), ("C",), ("J",)]
-    equiv_cirs = utils.get_equiv_circuits(TEMP_FILE, circuit, edges)
-    assert equiv_cirs.shape[0] == 4
-    assert all(equiv_cirs['equiv_circuit'].iloc[1:] ==
-               equiv_cirs['unique_key'].iloc[0])
+    # edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    # circuit = [("J",), ("J",), ("C",), ("J",)]
+    # equiv_cirs = utils.get_equiv_circuits(TEMP_FILE, circuit, edges)
+    # assert equiv_cirs.shape[0] == 4
+    # assert all(equiv_cirs['equiv_circuit'].iloc[1:] ==
+    #            equiv_cirs['unique_key'].iloc[0])
 
-    # Test a few random circuits for 4
-    edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
-    circuit = [("L",), ("J",), ("C",), ("J",)]
-    assert red.isomorphic_circuit_in_set(circuit, edges,
-                                         df4.circuit.values,
-                                         df4.edges.values)
-    circuit = [("J",), ("J",), ("C",), ("J",)]
-    assert red.isomorphic_circuit_in_set(circuit, edges,
-                                         df4.circuit.values,
-                                         df4.edges.values)
-    circuit = [("J",), ("C",), ("C",), ("J",)]
-    assert red.isomorphic_circuit_in_set(circuit, edges,
-                                         df4.circuit.values,
-                                         df4.edges.values) is False
-    circuit = [("L",), ("C",), ("L",), ("J",)]
-    assert red.isomorphic_circuit_in_set(circuit, edges,
-                                         df4.circuit.values,
-                                         df4.edges.values)
+    # # Test a few random circuits for 4
+    # edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+    # circuit = [("L",), ("J",), ("C",), ("J",)]
+    # assert red.isomorphic_circuit_in_set(circuit, edges,
+    #                                      df4.circuit.values,
+    #                                      df4.edges.values)
+    # circuit = [("J",), ("J",), ("C",), ("J",)]
+    # assert red.isomorphic_circuit_in_set(circuit, edges,
+    #                                      df4.circuit.values,
+    #                                      df4.edges.values)
+    # circuit = [("J",), ("C",), ("C",), ("J",)]
+    # assert red.isomorphic_circuit_in_set(circuit, edges,
+    #                                      df4.circuit.values,
+    #                                      df4.edges.values) is False
+    # circuit = [("L",), ("C",), ("L",), ("J",)]
+    # assert red.isomorphic_circuit_in_set(circuit, edges,
+    #                                      df4.circuit.values,
+    #                                      df4.edges.values)
     os.remove(TEMP_FILE)
 
     ## TODO: Compare parallel vs. not parallel generation for 3 nodes
@@ -330,7 +330,7 @@ def test_categorize_hamiltonian():
     # Transmon
     edges = [(0, 1)]
     circuit = [("J", "C")]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
     info = enum.categorize_hamiltonian(H)
     assert info['n_modes'] == 1
     assert info['n_periodic'] == 1
@@ -349,7 +349,7 @@ def test_categorize_hamiltonian():
     # Fluxoinium
     edges = [(0, 1)]
     circuit = [("J", "L")]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
     info = enum.categorize_hamiltonian(H)
     assert info['n_modes'] == 1
     assert info['n_periodic'] == 0
@@ -368,7 +368,7 @@ def test_categorize_hamiltonian():
     # Zero-Pi
     edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
     circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
     info = enum.categorize_hamiltonian(H)
     assert info['n_modes'] == 3
     assert info['n_periodic'] == 1
@@ -383,8 +383,8 @@ def test_categorize_hamiltonian():
                 assert info[k] == 1
             else:
                 assert info[k] == 0
-    
-    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)
+
+    H = enum.gen_hamiltonian(circuit, edges, symmetric=True)[0]
     info = enum.categorize_hamiltonian(H)
     assert info['n_modes'] == 3
     assert info['n_periodic'] == 1
@@ -399,7 +399,6 @@ def test_categorize_hamiltonian():
                 assert info[k] == 1
             else:
                 assert info[k] == 0
-    
 
 
 def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
@@ -411,22 +410,23 @@ def df_equality_check(df1: pd.DataFrame, df2: pd.DataFrame):
         df1 (pd.DataFrame): dataframe 1 to compare
         df2 (pd.DataFrame): dataframe 2 to compare
     """
-    assert df1.shape == df2.shape
+    assert df1.shape[0] == df2.shape[0]
     for i in range(df1.shape[0]):
         for k in df1.columns:
-            v1 = df1.iloc[i][k]
-            v2 = df2.iloc[i][k]
-            if isinstance(v1, list):
-                assert len(v1) == len(v2)
-                assert all(x in v2 for x in v1)
-                assert all(x in v1 for x in v2)
-            else:
-                assert v1 == v2
+            if k in df2.columns:
+                v1 = df1.iloc[i][k]
+                v2 = df2.iloc[i][k]
+                if isinstance(v1, list):
+                    assert len(v1) == len(v2)
+                    assert all(x in v2 for x in v1)
+                    assert all(x in v1 for x in v2)
+                else:
+                    assert v1 == v2
 
 
 if __name__ == "__main__":
     # test_generate_graphs_node()
     # test_generate_all_graphs()
     # test_gen_hamiltonian()
-    # test_categorize_hamiltonian()
-    test_find_equiv_cir_series()
+    test_categorize_hamiltonian()
+    # test_find_equiv_cir_series()

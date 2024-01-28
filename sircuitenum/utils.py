@@ -811,28 +811,6 @@ def list_all_tables(db_file: str):
     return tables
 
 
-def collect_expression(expr: Add, syms: list[Symbol]) -> Add:
-    """
-    Collects the terms in a sympy expression that
-    contain the specified symbols
-
-    Args:
-        expr (Add): Sympy expression from circuitq for hamiltonian
-        syms (list[Symbol]): list of symbols to expand/collect.
-                             intended to be list of q variables.
-        simplify_terms (bool): whether to simplify the individual terms
-
-    Returns:
-        Add: Modified expression with syms terms collected
-    """
-
-    m = [i for i in expr.atoms(Mul) if not any([i.has(x) for x in syms])]
-    reps = dict(zip(m, [Dummy() for i in m]))
-    expanded = expand_mul(expr.xreplace(reps))
-    expanded = expanded.subs([(v, k) for k, v in reps.items()])
-    return collect(expanded, syms, func=sym.ratsimp)
-
-
 def collect_H_terms(H: Add, zero_ext: bool = True, 
                     periodic_charge="n", periodic_phase="θ",
                     extended_charge="q", extended_phase="φ",
@@ -897,6 +875,7 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
 
     # Phase
     combos = []
+    combos_trig = []
     for num_terms in range(1, n_modes + 1):
         # Straight products
         combos += list(set([functools.reduce(lambda x, y: x*y, z)
@@ -913,7 +892,7 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                         trig_prod *= sym.cos(theta_list[modes[i]])
                     else:
                         trig_prod *= sym.sin(theta_list[modes[i]])
-                combos += [trig_prod]
+                combos_trig += [trig_prod]
 
     # Explicitly add theta squared terms if only one mode
     if n_modes == 1:
@@ -921,27 +900,31 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                             for z in itertools.product(theta_list,
                                                        repeat=2)]))
 
-    all_combos = list(combosQ.keys()) + combos
-    H = collect_expression(H, all_combos)
+    H = collect(H, list(combosQ.keys()) + combos, func=sym.ratsimp)
+    H = collect(H, combos_trig)
 
     if no_coeff:
-        H_class = H.copy()
-        for combo in all_combos:
-            H_class = H_class.replace(lambda x: x.is_Mul
-                                      # Dividing removes all the terms in combo
-                                      and all([sym not in combo.free_symbols
-                                               for sym in
-                                               (x/combo).free_symbols])
-                                      # And all theta/n terms in x are also in
-                                      # combo
-                                      and all([sym in combo.free_symbols
-                                               for sym in x.free_symbols
-                                               if sym in all_combos]),
-                                      lambda x: -combo if str(x)[0] == "-"
-                                      else combo)
-        H = H_class
+        H = remove_coeff_(H, list(combosQ.keys()) + combos + combos_trig)
 
-    return H, combos, combosQ
+    return H, combos+combos_trig, combosQ
+
+
+def remove_coeff_(H, all_combos):
+    H_class = H.copy()
+    for combo in all_combos:
+        H_class = H_class.replace(lambda x: x.is_Mul
+                                  # Dividing removes all the terms in combo
+                                  and all([sym not in combo.free_symbols
+                                           for sym in
+                                           (x/combo).free_symbols])
+                                  # And all theta/n terms in x are also in
+                                  # combo
+                                  and all([sym in combo.free_symbols
+                                           for sym in x.free_symbols
+                                           if sym in all_combos]),
+                                  lambda x: -combo if str(x)[0] == "-"
+                                  else combo)
+    return H_class
 
 
 def zero_start_edges(edges):

@@ -606,6 +606,10 @@ def test_get_equiv_circuits_uid():
     df2.at[winner, 'no_series'] = 1
     df2.at[winner, 'has_jj'] = 1
     df2.at[other, 'equiv_circuit'] = winner
+    to_update = ["no_series", "has_jj",
+                 "in_non_iso_set", "equiv_circuit"]
+    str_cols = ["equiv_circuit"]
+
     utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_equiv_circuits_uid(TEMP_FILE, winner)
@@ -630,6 +634,9 @@ def test_get_equiv_circuits():
     df2.at[uid, 'no_series'] = 1
     df2.at[uid, 'has_jj'] = 1
     df2.at[other, 'equiv_circuit'] = uid
+    to_update = ["no_series", "has_jj",
+                 "in_non_iso_set", "equiv_circuit"]
+    str_cols = ["equiv_circuit"]
     utils.update_db_from_df(TEMP_FILE, df2, to_update, str_cols)
 
     df3 = utils.get_equiv_circuits(TEMP_FILE, winner.circuit,

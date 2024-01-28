@@ -155,7 +155,9 @@ def gen_junc_pot(circuit, edges, flux_vars, cob=None):
 
 def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
-                     return_mats=False, return_vars=False):
+                     return_mats=False, return_vars=False,
+                     return_H_class: bool = False,
+                     return_combos: bool = False):
     """
     Performs a symbolic circuit quantization for the given circuit.
 
@@ -187,6 +189,10 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                                         inductance matrices
         return_vars (bool, optional): optionally return the sympy variables
                                       used to construct H
+        return_H_class(bool, optional): optionally return the Hamiltonian with
+                                        all coefficients removed
+        return_combos(bool, optional): optionally return the combination of
+                                       variables present
 
     Returns:
         Hamiltonian or Hamiltonian, Capacitance Matrix, Inductance Matrix
@@ -221,6 +227,8 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
         C_mat = sym.transpose(cob)*C_mat*cob
         L_mat = sym.transpose(cob)*L_mat*cob
         if Cv is not None:
+            if V is None:
+                raise ValueError("Provide Voltages for Coupling Capacitors")
             Qv = sym.transpose(cob)*Cv*V
     elif Cv is not None:
         Qv = Cv*V
@@ -248,35 +256,50 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                 L_mat.col_del(n-n_deleted)
                 n_deleted += 1
     try:
-        C_inv = C_mat.inv()
+        if C_mat.shape[0] == 1:
+            C_inv = C_mat.inv()
+        else:
+            # Check for the weird all 0 issue
+            C_inv = sym.inv_quick(C_mat)
+            if C_inv == sym.zeros(rows=C_inv.shape[0],
+                                  cols=C_inv.shape[1]):
+                C_inv = C_mat.inv()
     except Exception as exc:
         print(exc)
+        print("circuit:", circuit)
+        print("edges:", edges)
         print("C_mat_full:", C_mat_full)
         print("C_mat:", C_mat)
         return C_mat_full, L_mat_full
 
+    # Explicitly subtract out constant terms from coupling
     C_terms = sym.Rational(1, 2)*sym.transpose(Q_vec - Qv)*C_inv*(Q_vec - Qv)
+    C_terms += -sym.Rational(1, 2)*sym.transpose(Qv)*C_inv*Qv
     L_terms = sym.Rational(1, 2)*sym.transpose(th_vec)*L_mat*th_vec
 
     # Combine terms and group terms in H
     H = C_terms[0] + L_terms[0] + J_terms
     H = sym.expand_trig(sym.expand(sym.nsimplify(H)))
     if cob is None:
-        H = utils.collect_H_terms(H, zero_ext=False,
+        H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="ϕ")[0]
+                                  extended_charge="q", extended_phase="ϕ")
     else:
-        H = utils.collect_H_terms(H, zero_ext=False,
+        H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="φ")[0]
+                                  extended_charge="q", extended_phase="φ")
 
     to_return = (H,)
 
+    if return_H_class:
+        to_return = to_return + (utils.remove_coeff_(H, list(combosQ)+combos),)
+    if return_combos:
+        to_return = to_return + (list(combosQ)+combos,)
     if return_mats:
         to_return = to_return + (C_mat, L_mat)
     if return_vars:
         to_return = to_return + (Q_vec, th_vec)
-    if (not return_mats) and (not return_vars):
+    if len(to_return) == 1:
         to_return = to_return[0]
 
     return to_return

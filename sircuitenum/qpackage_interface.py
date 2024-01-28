@@ -256,6 +256,8 @@ def to_SCqubits(circuit: list, edges: list,
     """
     params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
                                                        utils.ELEM_DICT))
+    sym_cir = kwargs.get("sym_cir", False)
+    initiate_sym_calc = kwargs.get("initiate_sym_calc", True)
 
     # Add ground node by setting node = 0 in the yaml
     ground_node = kwargs.get("ground_node", None)
@@ -288,8 +290,13 @@ def to_SCqubits(circuit: list, edges: list,
             circuit_yaml += "\n"
             circuit_yaml += f"- ['{e_str}', {edge[0]+1}, {edge[1]+1}, {val}]"
 
-    conv = scq.Circuit(circuit_yaml, from_file=False,
-                       basis_completion=basis_completion)
+    if sym_cir:
+        return scq.SymbolicCircuit.from_yaml(circuit_yaml, from_file=False,
+                                             basis_completion=basis_completion,
+                                             initiate_sym_calc=initiate_sym_calc)
+    else:
+        conv = scq.Circuit(circuit_yaml, from_file=False,
+                           basis_completion=basis_completion)
 
     # Set cutoff and count number of modes
     n_nodes = utils.get_num_nodes(edges)

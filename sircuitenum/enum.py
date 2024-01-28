@@ -31,38 +31,6 @@ from sircuitenum import reduction as red
 from sircuitenum import qpackage_interface as pi
 from sircuitenum import quantize
 
-
-import sys
-import threading
-from time import sleep
-try:
-    import thread
-except ImportError:
-    import _thread as thread
-
-def quit_function(fn_name):
-    # print to stderr, unbuffered in Python 2.
-    print('{0} took too long'.format(fn_name), file=sys.stderr)
-    sys.stderr.flush() # Python 3 stderr is likely buffered.
-    thread.interrupt_main() # raises KeyboardInterrupt
-
-def exit_after(s):
-    '''
-    use as decorator to exit process if 
-    function takes longer than s seconds
-    '''
-    def outer(fn):
-        def inner(*args, **kwargs):
-            timer = threading.Timer(s, quit_function, args=[fn.__name__])
-            timer.start()
-            try:
-                result = fn(*args, **kwargs)
-            finally:
-                timer.cancel()
-            return result
-        return inner
-    return outer
-
 # -------------------------------------------------------------------
 # Functions
 # -------------------------------------------------------------------
@@ -328,9 +296,12 @@ def trim_graph_node(db_file: str, n_nodes: int,
             reduce_individual_set_(arg_set)
 
 
-def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
+def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
+                    cob: sym.Matrix = None, var_class: dict = None,
+                    return_combos: bool = False):
     """
     Generate a Sympy Hamiltonian for the specified circuit.
+    Uses scqubits to come up with an appropriate variable transformation.
 
     NOTE: External fluxes/charges are not supported right now
 
@@ -342,6 +313,15 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
         symmetric (bool, optional): Whether to set all capacitances,
                                     inductances, and Josephson energies equal.
                                     Risks losing terms. Defaults to False.
+        cob (sym.Matrix, optional): Optionally give a variable transformation
+                                    instead of using the Z transformation matrix
+                                    from scqubits.
+        var_class (dict, optional): If you give a variable transformation, also
+                                    give a dictionary like scqubits var_categories
+                                    with keys "free", "frozen", "periodic", and
+                                    "extended" that classify the variables.
+        return_combos(bool, optional): optionally return the combination of
+                                       variables present
 
     Returns:
         (Sympy Add, np.array, Sympy Add):
@@ -370,12 +350,17 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
                 param_range = (1, 20)
             params[(edge, comp)] = (np.random.uniform(*param_range), "GHz")
 
-    # Use scQubits to get a transformation Matrix
-    obj = pi.to_SCqubits(circuit, edges, params=params)
+    if cob is None:
+        # Use scQubits to get a transformation Matrix
+        obj = pi.to_SCqubits(circuit, edges, params=params, sym_cir=True,
+                             initiate_sym_calc=False)
 
-    # Get symbolic Hamiltonian
-    Z = sym.Matrix(obj.transformation_matrix)
-    var_class = obj.var_categories | {"frozen": [utils.get_num_nodes(edges)]}
+        # Get symbolic Hamiltonian
+        cob, var_class = obj.variable_transformation_matrix()
+        var_class["free"] = [utils.get_num_nodes(edges)]
+
+    elif var_class is None:
+        raise ValueError("Must include variable classification with cob matrix")
 
     # Un-symmetrize the edges if that's what's requested
     if not symmetric:
@@ -389,13 +374,30 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False):
             new_circuit.append(new_elems)
         circuit = new_circuit
 
-    H = quantize.quantize_circuit(circuit, edges, cob=Z, **var_class)
-    H_class = utils.collect_H_terms(H, no_coeff=True)[0]
+    H, H_class, all_combos = quantize.quantize_circuit(circuit, edges,
+                                                       cob=sym.Matrix(cob),
+                                                       **var_class,
+                                                       return_H_class=True,
+                                                       return_combos=True)
+    to_return = (H, cob, H_class)
+    if return_combos:
+        to_return = to_return + (all_combos,)
+    return to_return
 
-    return H, obj.transformation_matrix, H_class
 
+def gen_ham_row_(uid: str, db_file: str):
+    """
+    Helper function to generate the Hamiltonian for the given uid
+    in the given db file.
 
-def gen_ham_row_(uid, db_file):
+    Args:
+        uid (str): circuit unique key
+        db_file (str): database file
+
+    Raises:
+        ValueError: Error with circuit database
+        kbi: Keyboard interrupt
+    """
 
     # Load the graphs with the specified edges counts and graph index
     filter_str = f"WHERE unique_key LIKE '{uid}'"
@@ -404,19 +406,35 @@ def gen_ham_row_(uid, db_file):
     df = utils.get_circuit_data_batch(db_file, n_nodes,
                                       elem_mapping=mapping,
                                       filter_str=filter_str)
+
     if df.shape[0] > 1:
         raise ValueError("Multiple Circuits on Unique Key")
     entry = df.iloc[0]
 
     # Generate the Hamiltonian
     try:
-        H, trans, H_class = gen_hamiltonian(entry.circuit, entry.edges,
-                                            symmetric=False)
+        H, trans, H_class, all_combos = gen_hamiltonian(entry.circuit,
+                                                        entry.edges,
+                                                        symmetric=False,
+                                                        return_combos=True)
         H_str = refine_latex(sym.latex(H))
         info = categorize_hamiltonian(H)
-        H_sym, trans, H_class_sym = gen_hamiltonian(entry.circuit,
-                                                    entry.edges,
-                                                    symmetric=True)
+
+        # Symmetrize the Hamiltonian
+        C = sym.Symbol("C", positive=True, real=True)
+        EJ = sym.Symbol("E_{J}", positive=True, real=True)
+        L = sym.Symbol("L", positive=True, real=True)
+        H_sym = H.copy()
+        for s in H.free_symbols:
+            if "C_" in str(s) and "J" not in str(s):
+                H_sym = H_sym.subs(s, C)
+            elif "L_" in str(s):
+                H_sym = H_sym.subs(s, L)
+            elif "E_{J" in str(s):
+                H_sym = H_sym.subs(s, EJ)
+
+        # Zero out terms to get the H_class
+        H_class_sym = utils.remove_coeff_(H_sym, all_combos)
         H_sym_str = refine_latex(sym.latex(H_sym))
         info_sym = categorize_hamiltonian(H_sym)
     except KeyboardInterrupt as kbi:
@@ -470,12 +488,13 @@ def gen_ham_row_(uid, db_file):
 
 
 # Sometimes it doesn't work and hangs :(
-# 10 Minute Timeout
+# 30 Minute Timeout
 def timed_out_(args):
+    timeout_min = 30
     try:
-        return func_timeout(10*60, gen_ham_row_, args)
+        return func_timeout(60*timeout_min, gen_ham_row_, args)
     except FunctionTimedOut:
-        print(f"Could not complete {args[0]}")
+        print(f"Could not complete {args[0]} ({timeout_min} min timout)")
     except Exception as e:
         raise e
 
@@ -879,10 +898,9 @@ def refine_latex(latex_str):
     return latex_str
 
 
-
 def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
                       base: int = len(utils.COMBINATION_DICT),
-                      n_workers: int = 1):
+                      n_workers: int = 1, resume: bool = False):
     """ Generates circuits for all graphs for a given number of nodes
         Then trims identical circuits from database.
         Stores circuits in sql database
@@ -893,7 +911,12 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
         base (int): The number of possible edges. By default this is 7:
                         (i.e., J, C, I, JI, CI, JC, JCI)
         n_workers (int): The number of workers to use. Default 1.
+        resume (bool): Resuming a run or not
     """
+    
+    if resume:
+        determine_progress(db_file)
+
     print("----------------------------------------")
     print('Starting generating ' + str(n_nodes) + ' node circuits.')
     generate_graphs_node(db_file, n_nodes, base)
@@ -911,11 +934,15 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     return True
 
 
+def determine_progress(db_file):
+    return
+
+
 def generate_all_graphs(db_file: str = "circuits.db",
                         n_nodes_start: int = 2,
                         n_nodes_stop: int = 4,
                         base: int = len(utils.COMBINATION_DICT),
-                        n_workers: int = 1):
+                        n_workers: int = 1, resume: bool = False):
     """ Generates all circuits with numbers of nodes between
         `n_nodes_start` and `n_nodes_stop`, then removes identical
         circuits the generated circuits.
@@ -933,7 +960,8 @@ def generate_all_graphs(db_file: str = "circuits.db",
     """
 
     for n in range(n_nodes_start, n_nodes_stop+1):
-        generate_and_trim(n, db_file=db_file, base=base, n_workers=n_workers)
+        generate_and_trim(n, db_file=db_file, base=base, n_workers=n_workers,
+                          resume=resume)
 
 
 if __name__ == "__main__":
@@ -957,4 +985,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     generate_all_graphs(args.db_file, args.start, args.stop, args.base,
-                        n_workers=args.workers)
+                        n_workers=args.workers, resume=args.resume)
