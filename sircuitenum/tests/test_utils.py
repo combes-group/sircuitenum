@@ -200,10 +200,10 @@ def test_encoding_to_components():
     assert components == [("L",), ("C", "J", "L"), ("J",)]
 
     components = utils.encoding_to_components("243")
-    assert components == [("L",), ("C", "J"), ("C", "L")]
+    assert components == [("L",), ("J", "L"), ("C", "L")]
 
     components = utils.encoding_to_components("2435")
-    assert components == [("L",), ("C", "J"), ("C", "L"), ("J", "L")]
+    assert components == [("L",), ("J", "L"), ("C", "L"), ("C", "J")]
 
 
 def test_components_to_encoding():
@@ -212,11 +212,11 @@ def test_components_to_encoding():
     assert encoding == "261"
 
     encoding = utils.components_to_encoding([("L",), ("C", "J"), ("C", "L")])
-    assert encoding == "243"
+    assert encoding == "253"
 
     encoding = utils.components_to_encoding([("L",), ("C", "J"), ("C", "L"),
                                              ("J", "L")])
-    assert encoding == "2435"
+    assert encoding == "2534"
 
 
 def test_count_elems():

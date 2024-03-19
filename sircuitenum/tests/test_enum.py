@@ -306,7 +306,7 @@ def test_gen_hamiltonian():
     edges = [(0, 1)]
     circuit = [("J", "C")]
     H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
-    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{θ}_{1} \\right)} + \\frac{\\hat{n}_{1}^{2}}{2 C_{1} + 2 C_{J}}'
+    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{θ}_{1} \\right)} + \\frac{\\hat{n}_{1}^{2}}{2 C_{1} + 2 C_{J_1}}'
 
 
 
@@ -314,17 +314,17 @@ def test_gen_hamiltonian():
     edges = [(0, 1)]
     circuit = [("J", "L")]
     H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
-    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{φ}_{1} \\right)} + \\frac{\\hat{φ}_{1}^{2}}{2 L_{1}} + \\frac{\\hat{q}_{1}^{2}}{2 C_{J}}'
+    assert sy.latex(H, order="grlex") == '- E_{J_1} \\cos{\\left(\\hat{φ}_{1} \\right)} + \\frac{\\hat{φ}_{1}^{2}}{2 L_{1}} + \\frac{\\hat{q}_{1}^{2}}{2 C_{J_1}}'
 
 
     # Zero-Pi
     edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
     circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
     H = enum.gen_hamiltonian(circuit, edges, symmetric=False)[0]
-    assert sy.latex(H, order="grlex") == '\\left(- E_{J_1} - E_{J_2}\\right) \\cos{\\left(\\hat{θ}_{1} \\right)} \\cos{\\left(\\hat{φ}_{3} \\right)} + \\left(E_{J_1} - E_{J_2}\\right) \\sin{\\left(\\hat{θ}_{1} \\right)} \\sin{\\left(\\hat{φ}_{3} \\right)} + \\frac{\\hat{n}_{1}^{2} \\left(C_{1} + C_{2}\\right)}{8 C_{1} C_{2} + 4 C_{1} C_{J} + 4 C_{2} C_{J}} + \\frac{\\hat{n}_{1} \\hat{q}_{2} \\left(C_{1} - C_{2}\\right)}{8 C_{1} C_{2} + 4 C_{1} C_{J} + 4 C_{2} C_{J}} + \\frac{\\hat{q}_{2}^{2} \\left(C_{1} + C_{2} + 2 C_{J}\\right)}{32 C_{1} C_{2} + 16 C_{1} C_{J} + 16 C_{2} C_{J}} + \\frac{\\hat{φ}_{2}^{2} \\cdot \\left(2 L_{1} + 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{2} \\hat{φ}_{3} \\cdot \\left(2 L_{1} - 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{3}^{2} \\left(L_{1} + L_{2}\\right)}{2 L_{1} L_{2}} + \\frac{\\hat{q}_{3}^{2}}{4 C_{J}}'
-
+    assert sy.latex(H, order="grlex") == '\\left(- E_{J_1} - E_{J_2}\\right) \\cos{\\left(\\hat{θ}_{1} \\right)} \\cos{\\left(\\hat{φ}_{3} \\right)} + \\left(E_{J_1} - E_{J_2}\\right) \\sin{\\left(\\hat{θ}_{1} \\right)} \\sin{\\left(\\hat{φ}_{3} \\right)} + \\frac{\\hat{n}_{1}^{2} \\left(C_{1} C_{J_1} + C_{1} C_{J_2} + C_{2} C_{J_1} + C_{2} C_{J_2}\\right)}{8 C_{1} C_{2} C_{J_1} + 8 C_{1} C_{2} C_{J_2} + 8 C_{1} C_{J_1} C_{J_2} + 8 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{n}_{1} \\hat{q}_{2} \\left(C_{1} C_{J_1} + C_{1} C_{J_2} - C_{2} C_{J_1} - C_{2} C_{J_2}\\right)}{8 C_{1} C_{2} C_{J_1} + 8 C_{1} C_{2} C_{J_2} + 8 C_{1} C_{J_1} C_{J_2} + 8 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{n}_{1} \\hat{q}_{3} \\left(- C_{1} C_{J_1} + C_{1} C_{J_2} - C_{2} C_{J_1} + C_{2} C_{J_2}\\right)}{4 C_{1} C_{2} C_{J_1} + 4 C_{1} C_{2} C_{J_2} + 4 C_{1} C_{J_1} C_{J_2} + 4 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{q}_{2}^{2} \\left(C_{1} C_{J_1} + C_{1} C_{J_2} + C_{2} C_{J_1} + C_{2} C_{J_2} + 4 C_{J_1} C_{J_2}\\right)}{32 C_{1} C_{2} C_{J_1} + 32 C_{1} C_{2} C_{J_2} + 32 C_{1} C_{J_1} C_{J_2} + 32 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{q}_{2} \\hat{q}_{3} \\left(- C_{1} C_{J_1} + C_{1} C_{J_2} + C_{2} C_{J_1} - C_{2} C_{J_2}\\right)}{8 C_{1} C_{2} C_{J_1} + 8 C_{1} C_{2} C_{J_2} + 8 C_{1} C_{J_1} C_{J_2} + 8 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{q}_{3}^{2} \\cdot \\left(4 C_{1} C_{2} + C_{1} C_{J_1} + C_{1} C_{J_2} + C_{2} C_{J_1} + C_{2} C_{J_2}\\right)}{8 C_{1} C_{2} C_{J_1} + 8 C_{1} C_{2} C_{J_2} + 8 C_{1} C_{J_1} C_{J_2} + 8 C_{2} C_{J_1} C_{J_2}} + \\frac{\\hat{φ}_{2}^{2} \\cdot \\left(2 L_{1} + 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{2} \\hat{φ}_{3} \\cdot \\left(2 L_{1} - 2 L_{2}\\right)}{L_{1} L_{2}} + \\frac{\\hat{φ}_{3}^{2} \\left(L_{1} + L_{2}\\right)}{2 L_{1} L_{2}}'
     H = enum.gen_hamiltonian(circuit, edges, symmetric=True)[0]
     assert sy.latex(H, order="grlex") == '- 2 E_{J} \\cos{\\left(\\hat{θ}_{1} \\right)} \\cos{\\left(\\hat{φ}_{3} \\right)} + \\frac{\\hat{n}_{1}^{2}}{4 C + 4 C_{J}} + \\frac{4 \\hat{φ}_{2}^{2}}{L} + \\frac{\\hat{φ}_{3}^{2}}{L} + \\frac{\\hat{q}_{3}^{2}}{4 C_{J}} + \\frac{\\hat{q}_{2}^{2}}{16 C}'
+
 
 def test_categorize_hamiltonian():
 
@@ -430,9 +430,17 @@ def test_group_hamiltonian():
     
     # Generate all the 3 node circuits and check that
     # there's 22 H classes
-    enum.generate_all_graphs(TEMP_FILE, 3, 3, base=7,
+    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=7,
                              n_workers=4)
-    df = utils.get_circuit_data_batch(TEMP_FILE, 3)
+    df = utils.get_unique_qubits(TEMP_FILE, 3)
+    assert df.H_class.unique().size == 22
+    assert df.H_class_sym.unique().size == 22
+    os.remove(TEMP_FILE)
+
+    
+    enum.generate_all_graphs(TEMP_FILE, 2, 3, base=5,
+                             n_workers=4)
+    df = utils.get_unique_qubits(TEMP_FILE, 3)
     assert df.H_class.unique().size == 22
     assert df.H_class_sym.unique().size == 22
     os.remove(TEMP_FILE)
@@ -441,6 +449,7 @@ def test_group_hamiltonian():
 if __name__ == "__main__":
     # test_generate_graphs_node()
     # test_generate_all_graphs()
-    # test_gen_hamiltonian()
-    test_categorize_hamiltonian()
+    test_gen_hamiltonian()
+    # test_categorize_hamiltonian()
     # test_find_equiv_cir_series()
+    # test_group_hamiltonian()

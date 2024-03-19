@@ -41,7 +41,8 @@ def gen_cap_mat(circuit, edges):
             if "C" in elem:
                 C[elem] = sym.Symbol(elem, positive=True, real=True)
             elif "J" in elem:
-                CJ[elem] = sym.Symbol("C_{J}", positive=True, real=True)
+                suffix = elem.replace("J", "")
+                CJ[elem] = sym.Symbol("C_{J" + suffix + "}", positive=True, real=True)
 
     # Fill in capacitance values
     for edge, elems in zip(edges, circuit):
@@ -228,7 +229,7 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
         L_mat = sym.transpose(cob)*L_mat*cob
         if Cv is not None:
             if V is None:
-                raise ValueError("Provide Voltages for Coupling Capacitors")
+                raise ValueError("Provide Voltages for Coupling Cbapacitors")
             Qv = sym.transpose(cob)*Cv*V
     elif Cv is not None:
         Qv = Cv*V

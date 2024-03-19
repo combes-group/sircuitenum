@@ -514,6 +514,7 @@ def full_reduction_by_group(df: pd.DataFrame):
     by_basegraph = df.groupby("graph_index")
     for graph_index in by_basegraph.indices:
         subset1 = by_basegraph.get_group(graph_index)
+        print(subset1)
         by_edge_counts = subset1.groupby("edge_counts")
         for edge_counts in by_edge_counts.indices:
             subset2 = by_edge_counts.get_group(edge_counts).copy()

@@ -183,7 +183,7 @@ def black_or_white_text(color: tuple):
 
 
 def draw_circuit_graph(circuit: list, edges: list, gtype: str = "component",
-                       out="circuit_graph.png",
+                       out="",
                        node_size: float = 10000, scale: float = 6,
                        font_size: int = 30):
     """
@@ -354,8 +354,8 @@ def draw_all_qubits(file: str, n_nodes: int, out_dir: str,
 
 
 def draw_circuit_diagram(circuit: list, edges: list,
-                         out: str = "circuit_diagram.png",
-                         scale: float = 4.0, layout: str = 'planar',
+                         out: str = "",
+                         scale: float = 4.0, layout: str = 'fixed',
                          spread: float = 2/5, graph_index: int = None):
     """
     Draws the circuit diagram using schemdraw.

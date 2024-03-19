@@ -24,9 +24,9 @@ COMBINATION_LIST = """
 # 1 : 1 = Josephson Junction
 # 2 : 2 = Inductor
 # Extended(Base = 7):
-# 3 : 3 = Capacitor | Josephson Junction
-# 4 : 4 = Capacitor | Inductor
-# 5 : 5 = Inductor  | Josephson Junction
+# 3 : 3 = Capacitor | Inductor
+# 4 : 4 = Inductor  | Josephson Junction
+# 5 : 5 = Capacitor | Josephson Junction
 # 6 : 6 = Capacitor | Inductor  | Josephson Junction
 # Extended Classical(Base = 15):            //  NOT IMPLEMENTED
 # 7 : 7 = Resistor
@@ -45,8 +45,8 @@ COMBINATION_DICT = {
     '1': ('J',),
     '2': ('L',),
     '3': ('C', 'L'),
-    '4': ('C', 'J'),
-    '5': ('J', 'L'),
+    '4': ('J', 'L'),
+    '5': ('C', 'J'),
     '6': ('C', 'J', 'L'),
 }
 
@@ -544,10 +544,10 @@ def update_db_from_df(file: str, df: pd.DataFrame,
 
     with sqlite3.connect(file, timeout=5000) as con:
         cur = con.cursor()
-        sql_str = ""
+        # sql_str = ""
         for _, row in df.iterrows():
             n_nodes = row['n_nodes']
-            sql_str += f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
+            sql_str = f"UPDATE CIRCUITS_{n_nodes}_NODES SET "
             for i, col in enumerate(to_update):
                 val = row[col]
                 if col not in str_cols and col not in float_cols:
@@ -562,16 +562,16 @@ def update_db_from_df(file: str, df: pd.DataFrame,
                     sql_str += f"{col} = '{val}' "
                     sql_str += f"WHERE unique_key = '{row['unique_key']}';\n"
         
-        written = False
-        while not written:
-            try:
-                cur.executescript(sql_str)
-                written = True
-            except sqlite3.OperationalError:
-                # Database is locked, wait random amount
-                # of time and try again
-                # print("Write Conflict")
-                sleep(np.abs(np.random.random()))
+            written = False
+            while not written:
+                try:
+                    cur.executescript(sql_str)
+                    written = True
+                except sqlite3.OperationalError:
+                    # Database is locked, wait random amount
+                    # of time and try again
+                    print("Write Conflict")
+                    sleep(np.abs(np.random.random()))
 
         con.commit()
 
@@ -669,16 +669,18 @@ def get_circuit_data_batch(db_file: str, n_nodes: int,
     query = "SELECT * FROM {table} {filter_str}".format(
         table=table_name, filter_str=filter_str)
 
-    read = False
-    while not read:
-        try:
-            df = pd.read_sql_query(query, connection_obj)
-            read = True
-        except pd.errors.DatabaseError:
-            # Database is locked, wait random amount
-            # of time and try again
-            # print("Read Conflict")
-            sleep(np.abs(np.random.random()))
+    df = pd.read_sql_query(query, connection_obj)
+
+    # read = False
+    # while not read:
+    #     try:
+    #         df = pd.read_sql_query(query, connection_obj)
+    #         read = True
+    #     except pd.errors.DatabaseError:
+    #         # Database is locked, wait random amount
+    #         # of time and try again
+    #         print("Read Conflict")
+    #         sleep(np.abs(np.random.random()))
 
     connection_obj.commit()
     connection_obj.close()
@@ -731,9 +733,7 @@ def get_equiv_circuits_uid(db_file: str, unique_key: str):
     filt_str = f"WHERE equiv_circuit LIKE '{unique_key}'\
                  OR unique_key LIKE '{unique_key}'"
     for tbl in tables:
-        start = tbl[0].find("_") + 1
-        end = start + 1
-        n_nodes = int(tbl[0][start:end])
+        n_nodes = int([n for n in tbl if n.isdigit()][0])
         entries.append(get_circuit_data_batch(db_file, n_nodes,
                                               filter_str=filt_str))
 
@@ -831,8 +831,23 @@ def list_all_tables(db_file: str):
         cursor_obj = connection_obj.cursor()
         tables = cursor_obj.execute("SELECT name FROM sqlite_master\
                                 WHERE type='table'").fetchall()
-    return tables
+    return [x[0] for x in tables]
 
+
+def list_all_columns(db_file: str, table_name: str):
+    """
+    Lists all the tables in the database file
+
+    Args:
+        db_file (str): file to examine
+        table_name (str): table to get 
+    """
+    with sqlite3.connect(db_file, uri=True) as connection_obj:
+        cursor_obj = connection_obj.cursor()
+        info = cursor_obj.execute(f"PRAGMA table_info('{table_name}')").fetchall()
+        cols = [x[1] for x in info]
+
+    return cols
 
 def collect_H_terms(H: Add, zero_ext: bool = True, 
                     periodic_charge="n", periodic_phase="θ",

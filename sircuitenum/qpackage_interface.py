@@ -289,7 +289,7 @@ def to_SCqubits(circuit: list, edges: list,
 
             circuit_yaml += "\n"
             circuit_yaml += f"- ['{e_str}', {edge[0]+1}, {edge[1]+1}, {val}]"
-
+    # print(circuit_yaml)
     if sym_cir:
         return scq.SymbolicCircuit.from_yaml(circuit_yaml, from_file=False,
                                              basis_completion=basis_completion,

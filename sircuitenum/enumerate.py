@@ -87,7 +87,7 @@ def generate_for_specific_graph(base: int, graph: nx.Graph,
     if return_vals:
         data = []
     num_configs = np.power(base, n_edges)
-    for i in tqdm(range(num_configs)):
+    for i in range(num_configs):
         circuit = list(np.base_repr(i, base).zfill(n_edges))
         c_dict = utils.circuit_entry_dict(circuit, graph_index,
                                           n_nodes, i, base)
@@ -182,7 +182,7 @@ def generate_graphs_node(db_file: str, n_nodes: int,
 
     all_graphs = utils.get_basegraphs(n_nodes)
     data = []
-    for graph_index, G in tqdm(enumerate(all_graphs)):
+    for graph_index, G in tqdm(enumerate(all_graphs), total=len(all_graphs)):
         data.append(generate_for_specific_graph(base, G,
                                                 graph_index,
                                                 cursor_obj,
@@ -298,7 +298,7 @@ def trim_graph_node(db_file: str, n_nodes: int,
 
 def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
                     cob: sym.Matrix = None, var_class: dict = None,
-                    return_combos: bool = False):
+                    return_combos: bool = False, basis_completion: str = "heuristic"):
     """
     Generate a Sympy Hamiltonian for the specified circuit.
     Uses scqubits to come up with an appropriate variable transformation.
@@ -320,8 +320,9 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
                                     give a dictionary like scqubits var_categories
                                     with keys "free", "frozen", "periodic", and
                                     "extended" that classify the variables.
-        return_combos(bool, optional): optionally return the combination of
-                                       variables present
+        return_combos (bool, optional): optionally return the combination of
+                                        variables present
+        basis_completion (str, optional): basis completion option for scqubits
 
     Returns:
         (Sympy Add, np.array, Sympy Add):
@@ -353,7 +354,8 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
     if cob is None:
         # Use scQubits to get a transformation Matrix
         obj = pi.to_SCqubits(circuit, edges, params=params, sym_cir=True,
-                             initiate_sym_calc=False)
+                             initiate_sym_calc=False,
+                             basis_completion=basis_completion)
 
         # Get symbolic Hamiltonian and add final free mode
         # as a given
@@ -424,11 +426,14 @@ def gen_ham_row_(uid: str, db_file: str):
         # Symmetrize the Hamiltonian
         C = sym.Symbol("C", positive=True, real=True)
         EJ = sym.Symbol("E_{J}", positive=True, real=True)
+        CJ = sym.Symbol("C_{J}", positive=True, real=True)
         L = sym.Symbol("L", positive=True, real=True)
         H_sym = H.copy()
         for s in H.free_symbols:
             if "C_" in str(s) and "J" not in str(s):
                 H_sym = H_sym.subs(s, C)
+            elif "C_" in str(s) and "J" in str(s):
+                H_sym = H_sym.subs(s, CJ)
             elif "L_" in str(s):
                 H_sym = H_sym.subs(s, L)
             elif "E_{J" in str(s):
@@ -489,9 +494,9 @@ def gen_ham_row_(uid: str, db_file: str):
 
 
 # Sometimes it doesn't work and hangs :(
-# 30 Minute Timeout
+# 60 Minute Timeout
 def timed_out_(args):
-    timeout_min = 30
+    timeout_min = 60
     try:
         return func_timeout(60*timeout_min, gen_ham_row_, args)
     except FunctionTimedOut:
@@ -501,7 +506,7 @@ def timed_out_(args):
 
 
 def add_hamiltonians_to_table(db_file: str, n_nodes: int,
-                              n_workers: int = 4):
+                              n_workers: int = 4, resume: bool = False):
     """
     Adds hamiltonians to the specified db file
 
@@ -510,6 +515,9 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
         n_nodes (int): number of nodes to add for
         n_workers (int): parallelize the Hamiltonian generation to this many
                          processes.
+        resume (bool, optional): whether to resume a previously started run.
+                                 this only grabs rows that don't have Hamiltonians
+                                 yet.
 
     Raises:
         ValueError: if multiple circuits with the same unique key exist
@@ -518,30 +526,40 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
         None
     """
 
-    # Add new columns
+    # Add new columns if not resuming
     with sqlite3.connect(db_file) as con:
         cur = con.cursor()
-        new_cols = ["n_periodic", "n_extended", "n_harmonic",
-                    "periodic", "extended", "harmonic"]
-        new_cols += gen_func_combos_(n_nodes-1).keys()
-        new_cols += [x+"_sym" for x in new_cols]
-        new_cols = ["H", "H_sym", "coord_transform",
-                    "H_class", "H_class_sym", "nonlinearity_counts",
-                    "nonlinearity_counts_sym",
-                    "H_group", "H_group_sym"] + new_cols
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-        for col in new_cols:
-            sql_str = f"ALTER TABLE {table_name}\n"
-            if "n_" in col or "cos" in col or "sin" in col:
-                sql_str += f"ADD {col} int DEFAULT 0"
-            else:
-                sql_str += f"ADD {col}"
-            cur.execute(sql_str)
-            con.commit()
-        unique_keys = [x[0] for x in cur.execute(f"SELECT DISTINCT unique_key\
-                                                   FROM {table_name}\
-                                                   WHERE in_non_iso_set LIKE 1\
-                                                   AND has_jj LIKE 1").fetchall()]
+        if not resume:
+            new_cols = ["n_periodic", "n_extended", "n_harmonic",
+                        "periodic", "extended", "harmonic"]
+            new_cols += gen_func_combos_(n_nodes-1).keys()
+            new_cols += [x+"_sym" for x in new_cols]
+            new_cols = ["H", "H_sym", "coord_transform",
+                        "H_class", "H_class_sym", "nonlinearity_counts",
+                        "nonlinearity_counts_sym",
+                        "H_group", "H_group_sym"] + new_cols
+            for col in new_cols:
+                sql_str = f"ALTER TABLE {table_name}\n"
+                if "n_" in col or "cos" in col or "sin" in col:
+                    sql_str += f"ADD {col} int DEFAULT 0"
+                else:
+                    sql_str += f"ADD {col}"
+                cur.execute(sql_str)
+                con.commit()
+
+        sql_query = f"SELECT DISTINCT unique_key\
+                      FROM {table_name}\
+                      WHERE in_non_iso_set LIKE 1\
+                      AND has_jj LIKE 1"
+        unique_keys_all = [x[0] for x in cur.execute(sql_query).fetchall()]
+        n_total = len(unique_keys_all)
+        # If we're resuming filter out those without H_class made
+        if resume:
+            sql_query += " AND H_class is null"
+            unique_keys = [x[0] for x in cur.execute(sql_query).fetchall()]
+        else:
+            unique_keys = unique_keys_all
 
     # Randmize order because difficult ones tend to be near each other
     # This will give more accurate time estimates and spread parallel better
@@ -552,7 +570,7 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
     if n_workers > 1:
         pool = Pool(processes=n_workers)
         for _ in tqdm(pool.imap_unordered(timed_out_, args),
-                          total=sum(1 for _ in args)):
+                          total=n_total, initial=n_total-len(unique_keys)):
             pass
     else:
         for arg_set in tqdm(args):
@@ -689,7 +707,7 @@ def unique_hams_for_count_(args):
 
 
 def assign_H_groups(db_file: str, n_nodes: int,
-                    n_workers: int = 1) -> None:
+                    n_workers: int = 1, resume: bool = False) -> None:
     """
     Assigns Hamiltonians in the database into groups
     based on the functional form of their Hamiltonian
@@ -699,6 +717,15 @@ def assign_H_groups(db_file: str, n_nodes: int,
         n_nodes (int): number of nodes to examine
         n_workers (int, optional): Number of workers to use. Defaults to 1.
     """
+    # Figure out where to start if resumingH_group_started = "H_group" in columns
+    H_group_sym_started = False
+    H_group_sym_started = False
+    if resume:
+        table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
+        columns = utils.list_all_columns(db_file, table_name)
+        H_group_started = "H_group" in columns
+        H_group_sym_started = "H_group_sym" in columns
+
     # Get the unique nonlinearity counts strings
     with sqlite3.connect(db_file) as con:
         cur = con.cursor()
@@ -712,7 +739,16 @@ def assign_H_groups(db_file: str, n_nodes: int,
                         WHERE in_non_iso_set LIKE 1\
                         AND has_jj LIKE 1"
         unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
+        n_nl_str = len(unique_nl_str)
         unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
+        n_nl_str_sym = len(unique_nl_str_sym)
+        if resume:
+            if H_group_sym_started:
+                sql_str_sym += " AND H_group_sym is null"
+                unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
+            elif H_group_started:
+                sql_str += " AND H_group is null"
+                unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
 
     # Filter out none values from circuits that timed out in 
     # quantization
@@ -730,18 +766,18 @@ def assign_H_groups(db_file: str, n_nodes: int,
     # Do non-symmetric first
     # args are db_file, n_nodes, nl_cnt, symmetric, mapping
     n_entries = len(unique_nl_str)
-
-    print("Full Hamiltonians...")
-    args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
-                    unique_nl_str, [False]*n_entries,
-                    [utils.COMBINATION_DICT]*n_entries))
-    if n_workers > 1:
-        for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
-                      total=sum(1 for _ in args)):
-            pass
-    else:
-        for arg_set in args:
-            unique_hams_for_count_(arg_set)
+    if not H_group_sym_started:
+        print("Full Hamiltonians...")
+        args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
+                        unique_nl_str, [False]*n_entries,
+                        [utils.COMBINATION_DICT]*n_entries))
+        if n_workers > 1:
+            for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
+                        total=n_nl_str, initial=n_nl_str-n_entries):
+                pass
+        else:
+            for arg_set in args:
+                unique_hams_for_count_(arg_set)
 
     # Now do symmetric
     print("Symmetric Hamiltonians...")
@@ -751,7 +787,7 @@ def assign_H_groups(db_file: str, n_nodes: int,
                     [utils.COMBINATION_DICT]*n_entries))
     if n_workers > 1:
         for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
-                      total=sum(1 for _ in args)):
+                      total=n_nl_str_sym, initial=n_nl_str_sym-n_entries):
             pass
     else:
         for arg_set in args:
@@ -915,30 +951,51 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
         resume (bool): Resuming a run or not
     """
     
+    # Check if Hamiltonians have started or not
     if resume:
-        determine_progress(db_file)
+        table_name = f'CIRCUITS_{n_nodes}_NODES'
+        columns = utils.list_all_columns(db_file, table_name)
+        H_started = "H_class" in columns
+        H_group_started = "H_group" in columns
+        H_group_sym_started = "H_group_sym" in columns
+        
+        if H_started and not H_group_started:
+            print("---------------------------------------")
+            print("Resuming at Hamiltonian Phase")
+            print("---------------------------------------")
+        elif H_started and H_group_started and not H_group_sym_started:
+            print("---------------------------------------")
+            print("Resuming at Full H Group")
+            print("---------------------------------------")
+        elif H_started and H_group_started and H_group_sym_started:
+            print("---------------------------------------")
+            print("Resuming at Symmetric H Group")
+            print("---------------------------------------")
 
-    print("----------------------------------------")
-    print('Starting generating ' + str(n_nodes) + ' node circuits.')
-    generate_graphs_node(db_file, n_nodes, base)
-    print("Circuits Generated for " +
-          str(n_nodes) + " node circuits.")
-    print("Now Trimming.")
-    # Max 10 workers because this is fast and db conflicts
-    trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base,
-                    n_workers=n_workers)
-    print("Finished trimming " + str(n_nodes) + " node circuits.")
-    print("Appending Hamiltonians to " + str(n_nodes) + " node circuits.")
-    add_hamiltonians_to_table(db_file=db_file, n_nodes=n_nodes,
-                              n_workers=n_workers)
+    # Pre-Hamiltonian Steps are Fast
+    if (not resume) or (not H_started):
+        print("----------------------------------------")
+        print('Starting generating ' + str(n_nodes) + ' node circuits.')
+        generate_graphs_node(db_file, n_nodes, base)
+        print("Circuits Generated for " +
+            str(n_nodes) + " node circuits.")
+        print("Now Trimming.")
+        # Max 10 workers because this is fast and db conflicts
+        trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base,
+                        n_workers=n_workers)
+        print("Finished trimming " + str(n_nodes) + " node circuits.")
+
+    # Hamiltonian is the slow part
+    if (not resume) or (not H_group_started):
+        print("Appending Hamiltonians to " + str(n_nodes) + " node circuits.")
+        add_hamiltonians_to_table(db_file=db_file, n_nodes=n_nodes,
+                                n_workers=n_workers, resume=resume)
+
     print("Categorizing Hamiltonians for " + str(n_nodes) + " node circuits.")
     # Max 10 workers because this is fast and db conflicts
-    assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers)
+    assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
+                    resume=resume)
     return True
-
-
-def determine_progress(db_file):
-    return
 
 
 def generate_all_graphs(db_file: str = "circuits.db",
@@ -962,6 +1019,31 @@ def generate_all_graphs(db_file: str = "circuits.db",
         n_workers (int): The number of workers to use. Default 1.
     """
 
+    print("---------------------------------------")
+    print("---------------------------------------")
+    print("Starting Circuit Enumeration")
+    print("db_file:", db_file)
+    print("n_nodes_start:", n_nodes_start)
+    print("n_nodes_stop:", n_nodes_stop)
+    print("base:", base)
+    print("n_workers:", n_workers)
+    print("resume:", resume)
+    print("---------------------------------------")
+    print("---------------------------------------")
+
+    # Determine number of nodes to start at
+    if resume:
+        tables = utils.list_all_tables(db_file)
+        if f'CIRCUITS_{n_nodes_stop}_NODES' in tables:
+            n_nodes_start = n_nodes_stop
+        else: 
+            for n in range(n_nodes_start, n_nodes_stop+1):
+                if f'CIRCUITS_{n}_NODES' not in tables:
+                    n_nodes_start = n - 1
+        print("---------------------------------------")
+        print("Resuming enumeration at", n_nodes_start, "nodes")
+        print("---------------------------------------")
+
     for n in range(n_nodes_start, n_nodes_stop+1):
         generate_and_trim(n, db_file=db_file, base=base, n_workers=n_workers,
                           resume=resume)
@@ -974,7 +1056,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-f", "--db_file", type=str, default="circuits.db",
                         help="Database file to enumeration to")
-    parser.add_argument("-b", "--base", type=int, default=7,
+    parser.add_argument("-b", "--base", type=int, default=5,
                         help="How many different types of edges to allow")
     parser.add_argument("-s", "--start", type=int, default=2,
                         help="Min number of nodes to generate circuits for")
