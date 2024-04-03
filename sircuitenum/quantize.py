@@ -3,6 +3,9 @@ from sircuitenum import utils
 import sympy as sym
 import numpy as np
 
+import itertools
+import functools
+
 PERIODIC_CHARGE = "n"
 PERIODIC_PHASE = "θ"
 EXTENDED_CHARGE = "q"
@@ -62,6 +65,168 @@ def gen_cap_mat(circuit, edges):
     return cap_mat
 
 
+def num_subs(C, vals_in = {}, symbol="C"):
+    vals = {}
+    for x in C.free_symbols:
+        x_str = str(x)
+        if symbol in x_str.upper() and "J" not in x_str.upper():
+            # Random capacitance 1/(0.1 - 1.1 GHZ)
+            if vals_in == {}:
+                vals[x_str] = 1/(0.1 + np.random.random())
+            else:
+                vals[x_str] = vals_in[x_str]
+        else:
+            # Random capacitance 1/(10 - 20 GHZ)
+            if vals_in == {}:
+                vals[x_str] = 1/(10 + 10*np.random.random())
+            else:
+                vals[x_str] = vals_in[x_str]
+        C = C.subs(x, vals[x_str])
+
+    return C/2 + C.transpose()/2, vals
+
+def diag_cap_transform(C, numerical=False, eps = 1e-10):
+    """
+    Generates a transformation into the
+    basis where the capacitance matrix is diagonal
+
+    C = P^-1 D P -> D = P C P^-1
+
+    If P is constructed as orthonormal, then
+
+    D = P C P^T
+
+    -> Z = P^T
+
+    Args:
+        C (sym.Matrix): capacitance matrix
+
+    Returns:
+        Z transformation where node_vars = Z@new_vars
+    """
+
+    # Plug in random numbers if numerical
+    if numerical:
+        C, C_vals = num_subs(C)
+        
+
+    # Re-order to put zeros last
+    evecs, evals = C.diagonalize()
+    evecs = sym.re(evecs)
+    evals = sym.re(evals.diagonal())
+    nonzero_ind = []
+    zero_ind = []
+    for i, ev in enumerate(evals):
+        if numerical:
+            if ev < eps:
+                zero_ind.append(i)
+            else:
+                nonzero_ind.append(i)
+        else:
+            if ev == 0:
+                zero_ind.append(i)
+            else:
+                nonzero_ind.append(i)
+    if numerical:
+        evecs = np.array(evecs)
+        evecs[np.abs(evecs) < eps] = 0
+        evecs = sym.Matrix(evecs)
+
+    order = nonzero_ind + zero_ind
+
+    evecs = evecs[:, order]
+
+
+    # Make columns unit length
+    P_ortho = sym.zeros(*evecs.shape)
+    for col in range(evecs.shape[1]):
+        P_ortho[:, col] = evecs[:, col]/evecs[:, col].norm()
+
+    if numerical:
+        return P_ortho, C_vals
+    else:
+        return P_ortho
+
+
+def H_hash(circuit, edges, symmetric=True, numerical=False, eps=1e-10):
+    """_summary_
+
+    Args:
+        circuit (_type_): _description_
+        edges (_type_): _description_
+        symmetric (bool, optional): _description_. Defaults to True.
+    """
+
+    n_nodes = utils.get_num_nodes(edges)
+
+    # Generate the transformation that diagonalizes
+    # the capcitance matrix
+    if not symmetric:
+        circuit = utils.add_elem_number(circuit)
+    C = gen_cap_mat(circuit, edges)
+    L = gen_ind_mat(circuit, edges)
+    Z_diag, C_vals = diag_cap_transform(C, numerical=True)
+
+    # Substitute values in for C
+    C, _ = num_subs(C, vals_in=C_vals)
+
+    # Transformed capacitance and inductance matrices
+    C_tilde = Z_diag.transpose()*C*Z_diag
+    L_tilde = Z_diag.transpose()*L*Z_diag
+
+    ## Things for hash
+    # 1) Number of nonzero terms in C
+    nonzero_c = np.sum(np.abs(np.array(C_tilde.diagonal())) > eps)
+
+    # 2) Nonzero entries in L_tilde
+    #  -- pick permutation of rows that produces the
+    #     largest binary number
+    #  -- in case of a tie, sort alphabetically by
+    #     variables present in the junction terms
+    L_tilde_trunc, _ = num_subs(L_tilde[:nonzero_c, :nonzero_c], symbol="L")
+    highest_val = 0
+    highest_perm = None
+    highest_J_str = ""
+    Q_vec, th_vec = gen_variables(n_nodes, cob=Z_diag, periodic=[])
+    for perm in itertools.permutations(range(nonzero_c)):
+        nonzero_L = (np.abs(sym.flatten(L_tilde_trunc[perm, perm])) > eps).astype(int)
+        val = nonzero_L.dot(2**np.arange(nonzero_L.size)[::-1])
+        if val >= highest_val:
+            # Look at 3) Junction terms
+            Z_permed = Z_diag[:, perm + tuple(range(nonzero_c, n_nodes))]
+            terms_present = gen_junc_pot(circuit, edges, th_vec, Z_permed)
+            # terms_present = 0
+            # for edge, elems in zip(edges, circuit):
+            #     if any("J" in e for e in elems):
+            #         # Get a vector that's the argument
+            #         # of the cos, with the first variable positive
+            #         n1, n2 = edge
+            #         node_vec = np.zeros(n_nodes, dtype=int)
+            #         node_vec[n1] = -1
+            #         node_vec[n2] = 1
+            #         terms = np.array(Z_permed.transpose())@node_vec
+            #         terms[np.abs(terms) < eps] = 0
+            #         terms*=np.sign(terms[np.argmax(np.abs(terms))])
+            #         cos_arg = 0
+            #         for i, t in enumerate(terms):
+            #             if t > 0:
+            #                 # J_str += f"p{i}"
+            #                 cos_arg += th_vec[i]
+            #             elif t < 0:
+            #                 # J_str += f"m{i}"
+            #                 cos_arg += -th_vec[i]
+            #         terms_present += sym.cos(cos_arg)
+            J_str = str(sym.simplify(sym.expand_trig(terms_present)))
+            if val > highest_val or J_str < highest_J_str:
+                highest_val = val
+                highest_perm = perm
+                highest_J_str = J_str
+    
+    # return the hash
+    return str(nonzero_c) + "_" + str(highest_val) + "_" + highest_J_str
+
+
+
 def gen_ind_mat(circuit, edges):
     """
     Generates an inductor matrix using Sympy for the given circuit. 
@@ -104,7 +269,7 @@ def gen_ind_mat(circuit, edges):
     return ind_mat
 
 
-def gen_junc_pot(circuit, edges, flux_vars, cob=None):
+def gen_junc_pot(circuit, edges, flux_vars, cob=None, eps=1e-10):
     """
     Generates the junction potential terms, optionally doing a change of
     basis.
@@ -154,6 +319,27 @@ def gen_junc_pot(circuit, edges, flux_vars, cob=None):
     return j_terms
 
 
+def gen_variables(n_nodes, cob, periodic):
+
+    Q_str = ""
+    th_str = ""
+    for n in range(1, n_nodes+1):
+        if cob is None:
+            th_str += "\hat{" + NODE_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + NODE_CHARGE + "}_{"+str(n)+"}, "
+        elif n in periodic:
+            th_str += "\hat{" + PERIODIC_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + PERIODIC_CHARGE + "}_{"+str(n)+"}, "
+        else:
+            th_str += "\hat{" + EXTENDED_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + EXTENDED_CHARGE + "}_{"+str(n)+"}, "
+
+    Q_vec = sym.Matrix(sym.symbols(Q_str[:-1]))
+    th_vec = sym.Matrix(sym.symbols(th_str[:-1]))
+
+    return Q_vec, th_vec
+
+
 def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
                      return_mats=False, return_vars=False,
@@ -201,21 +387,9 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     edges = utils.zero_start_edges(edges)
 
     n_nodes = utils.get_num_nodes(edges)
-    Q_str = ""
-    th_str = ""
-    for n in range(1, n_nodes+1):
-        if cob is None:
-            th_str += "\hat{" + NODE_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + NODE_CHARGE + "}_{"+str(n)+"}, "
-        elif n in periodic:
-            th_str += "\hat{" + PERIODIC_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + PERIODIC_CHARGE + "}_{"+str(n)+"}, "
-        else:
-            th_str += "\hat{" + EXTENDED_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + EXTENDED_CHARGE + "}_{"+str(n)+"}, "
 
-    Q_vec = sym.Matrix(sym.symbols(Q_str[:-1]))
-    th_vec = sym.Matrix(sym.symbols(th_str[:-1]))
+    Q_vec, th_vec = gen_variables(n_nodes, cob, periodic)
+    
 
     C_mat = gen_cap_mat(circuit, edges)
     L_mat = gen_ind_mat(circuit, edges)
