@@ -172,26 +172,40 @@ def to_SQcircuit(circuit: list, edges: list,
     for elems, edge in zip(circuit, edges):
 
         # Record all the loops for this edge
-        loops_pres = []
+        loops_pres_J = []
+        loops_pres_L = []
         for lp in loops:
-            if edge[0] in lp and edge[1] in lp:
-                loops_pres.append(loop_defs[lp])
+            if edge[0] in lp and edge[1] in lp: # if the edge is part of the loop
+                if "J" not in elems or "L" not in elems: # if J and L don't exist in the same branch
+                    loops_pres_J.append(loop_defs[lp])
+                    loops_pres_L.append(loop_defs[lp])
+
+                else: # if J and L exist in the same branch
+                    if len(lp)==2: # if lp is a two-node loop
+                        loops_pres_J.append(loop_defs[lp])
+                        loops_pres_L.append(loop_defs[lp])
+                    else: # # if lp is a multi-node loop
+                        loops_pres_L.append(loop_defs[lp])
 
         # Add all the elements
         circuit_dict[edge] = []
         for elem in elems:
             val, units = params[(edge, elem)]
             units = "GHz"
+
             if elem == "C":
                 id_str = "C_" + "".join([str(x) for x in edge])
                 circuit_dict[edge].append(sq.Capacitor(val, units,
-                                                       id_str=id_str))
+                                                    id_str=id_str))
 
             elif elem == "L":
                 id_str = "L_" + "".join([str(x) for x in edge])
                 circuit_dict[edge].append(sq.Inductor(val, units,
-                                                      id_str=id_str,
-                                                      loops=loops_pres))
+                                                    id_str=id_str,
+                                                    loops=loops_pres_L))
+
+
+
             elif elem == "J":
                 id_str = "J_" + "".join([str(x) for x in edge])
                 if (edge, "CJ") in params:
@@ -199,21 +213,28 @@ def to_SQcircuit(circuit: list, edges: list,
                     if val2 > 0:
                         j_c = sq.Capacitor(val2, units2, id_str="C"+id_str)
                         circuit_dict[edge].append(sq.Junction(val, units,
-                                                              id_str=id_str,
-                                                              loops=loops_pres,
-                                                              cap=j_c))
+                                                            id_str=id_str,
+                                                            loops=loops_pres_J,
+                                                            cap=j_c))
                     else:
                         circuit_dict[edge].append(sq.Junction(val, units,
-                                                              id_str=id_str,
-                                                              loops=loops_pres)
-                                                  )
+                                                            id_str=id_str,
+                                                            loops=loops_pres_J)
+                                                )
                 else:
                     circuit_dict[edge].append(sq.Junction(val, units,
-                                                          id_str=id_str,
-                                                          loops=loops_pres))
+                                                        id_str=id_str,
+                                                        loops=loops_pres_J))
             else:
                 raise ValueError("Unknown circuit compenent present.\
-                                  Must be either C, J, or L")
+                                Must be either C, J, or L")
+
+
+    # print('\nloops', loops)
+    # print('\nloop_defs', loop_defs)
+    # print('\nloops_pres', loops_pres)
+    # print('\nelements', circuit_dict)
+
 
     sqC = sq.Circuit(circuit_dict, flux_dist='junctions')
 
