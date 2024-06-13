@@ -127,10 +127,6 @@ def diag_cap_transform(C, numerical=False, eps = 1e-10):
                 zero_ind.append(i)
             else:
                 nonzero_ind.append(i)
-    if numerical:
-        evecs = np.array(evecs)
-        evecs[np.abs(evecs) < eps] = 0
-        evecs = sym.Matrix(evecs)
 
     order = nonzero_ind + zero_ind
 
@@ -142,6 +138,12 @@ def diag_cap_transform(C, numerical=False, eps = 1e-10):
     for col in range(evecs.shape[1]):
         P_ortho[:, col] = evecs[:, col]/evecs[:, col].norm()
 
+    # clip if numerical
+    if numerical:
+        P_ortho = np.array(P_ortho)
+        P_ortho[np.abs(P_ortho) < eps] = 0
+        P_ortho = sym.Matrix(P_ortho)
+
     if numerical:
         return P_ortho, C_vals
     else:
@@ -149,12 +151,21 @@ def diag_cap_transform(C, numerical=False, eps = 1e-10):
 
 
 def H_hash(circuit, edges, symmetric=True, numerical=False, eps=1e-10):
-    """_summary_
+    """
+    Produces a string that represents in the diagonal charge basis:
+
+    1) a = number of nonzero charge variables
+    2) b = positions of nonzero inductance terms as a binary representation
+    3) c = which variables are present in the nonlinear terms
+
+    hash = a_b_c (ex: 3_511_012)
 
     Args:
         circuit (_type_): _description_
         edges (_type_): _description_
         symmetric (bool, optional): _description_. Defaults to True.
+        numerical (bool, optional):
+        eps (float, optional): 
     """
 
     n_nodes = utils.get_num_nodes(edges)
@@ -186,7 +197,7 @@ def H_hash(circuit, edges, symmetric=True, numerical=False, eps=1e-10):
     L_tilde_trunc, _ = num_subs(L_tilde[:nonzero_c, :nonzero_c], symbol="L")
     highest_val = 0
     highest_perm = None
-    highest_J_str = ""
+    highest_J_str = "99999999999999"
     Q_vec, th_vec = gen_variables(n_nodes, cob=Z_diag, periodic=[])
     for perm in itertools.permutations(range(nonzero_c)):
         nonzero_L = (np.abs(sym.flatten(L_tilde_trunc[perm, perm])) > eps).astype(int)
@@ -194,29 +205,22 @@ def H_hash(circuit, edges, symmetric=True, numerical=False, eps=1e-10):
         if val >= highest_val:
             # Look at 3) Junction terms
             Z_permed = Z_diag[:, perm + tuple(range(nonzero_c, n_nodes))]
-            terms_present = gen_junc_pot(circuit, edges, th_vec, Z_permed)
-            # terms_present = 0
-            # for edge, elems in zip(edges, circuit):
-            #     if any("J" in e for e in elems):
-            #         # Get a vector that's the argument
-            #         # of the cos, with the first variable positive
-            #         n1, n2 = edge
-            #         node_vec = np.zeros(n_nodes, dtype=int)
-            #         node_vec[n1] = -1
-            #         node_vec[n2] = 1
-            #         terms = np.array(Z_permed.transpose())@node_vec
-            #         terms[np.abs(terms) < eps] = 0
-            #         terms*=np.sign(terms[np.argmax(np.abs(terms))])
-            #         cos_arg = 0
-            #         for i, t in enumerate(terms):
-            #             if t > 0:
-            #                 # J_str += f"p{i}"
-            #                 cos_arg += th_vec[i]
-            #             elif t < 0:
-            #                 # J_str += f"m{i}"
-            #                 cos_arg += -th_vec[i]
-            #         terms_present += sym.cos(cos_arg)
-            J_str = str(sym.simplify(sym.expand_trig(terms_present)))
+            # terms_present = gen_junc_pot(circuit, edges, th_vec, Z_permed)
+            terms_present = []
+            for edge, elems in zip(edges, circuit):
+                if any("J" in e for e in elems):
+                    # Get a vector that's the argument of the cos
+                    # truncating any terms less than eps
+                    n1, n2 = edge
+                    node_vec = np.zeros(n_nodes, dtype=int)
+                    node_vec[n1] = -1
+                    node_vec[n2] = 1
+                    terms = np.array(Z_permed.transpose())@node_vec
+                    terms[np.abs(terms) < eps] = 0
+                    for i, t in enumerate(terms):
+                        if abs(t) > 0:
+                            terms_present.append(str(i))
+            J_str = "".join(sorted(np.unique(terms_present)))
             if val > highest_val or J_str < highest_J_str:
                 highest_val = val
                 highest_perm = perm
@@ -344,7 +348,8 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
                      return_mats=False, return_vars=False,
                      return_H_class: bool = False,
-                     return_combos: bool = False):
+                     return_combos: bool = False,
+                     collect_phase: bool = True):
     """
     Performs a symbolic circuit quantization for the given circuit.
 
@@ -380,6 +385,8 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                                         all coefficients removed
         return_combos(bool, optional): optionally return the combination of
                                        variables present
+        collect_phase (bool, optional): for speed, don't collect the phase terms.
+                                        slightly messier, but faster.
 
     Returns:
         Hamiltonian or Hamiltonian, Capacitance Matrix, Inductance Matrix
@@ -458,11 +465,13 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     if cob is None:
         H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="ϕ")
+                                  extended_charge="q", extended_phase="ϕ",
+                                  collect_phase = collect_phase)
     else:
         H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="φ")
+                                  extended_charge="q", extended_phase="φ",
+                                  collect_phase = collect_phase)
 
     to_return = (H,)
 

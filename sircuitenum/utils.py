@@ -885,7 +885,7 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                     periodic_charge="n", periodic_phase="θ",
                     extended_charge="q", extended_phase="φ",
                     ext_charge: str = "ng", ext_flux: str = "_{ext}",
-                    no_coeff: bool = False) -> Add:
+                    no_coeff: bool = False, collect_phase: bool = True) -> Add:
     """
     Groups terms in the Hamiltonian.
 
@@ -910,6 +910,8 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                                    Defaults to "_{ext}"
         no_coef (bool, optional): Remove all the coefficients,
                                   only leaving operators.
+        collect_phase (bool, optional): for speed, don't collect the phase terms.
+                                        slightly messier, but faster.
 
     Returns:
         Add: Hamiltonian with terms grouped
@@ -946,32 +948,34 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
     # Phase
     combos = []
     combos_trig = []
-    for num_terms in range(1, n_modes + 1):
-        # Straight products
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=num_terms)]))
-        # Trig products
-        # Encoding signals cos or sin
-        for encoding in itertools.product([0, 1], repeat=num_terms):
-            # Modes is which num_terms modes are being considered
-            for modes in itertools.combinations(range(n_modes), num_terms):
-                trig_prod = 1
-                for i, term in enumerate(encoding):
-                    if term:
-                        trig_prod *= sym.cos(theta_list[modes[i]])
-                    else:
-                        trig_prod *= sym.sin(theta_list[modes[i]])
-                combos_trig += [trig_prod]
+    if collect_phase:
+        for num_terms in range(1, n_modes + 1):
+            # Straight products
+            combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                                for z in itertools.product(theta_list,
+                                                           repeat=num_terms)]))
+            # Trig products
+            # Encoding signals cos or sin
+            for encoding in itertools.product([0, 1], repeat=num_terms):
+                # Modes is which num_terms modes are being considered
+                for modes in itertools.combinations(range(n_modes), num_terms):
+                    trig_prod = 1
+                    for i, term in enumerate(encoding):
+                        if term:
+                            trig_prod *= sym.cos(theta_list[modes[i]])
+                        else:
+                            trig_prod *= sym.sin(theta_list[modes[i]])
+                    combos_trig += [trig_prod]
 
-    # Explicitly add theta squared terms if only one mode
-    if n_modes == 1:
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=2)]))
+        # Explicitly add theta squared terms if only one mode
+        if n_modes == 1:
+            combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                                for z in itertools.product(theta_list,
+                                                           repeat=2)]))
 
     H = collect(H, list(combosQ.keys()) + combos, func=sym.ratsimp)
-    H = collect(H, combos_trig)
+    if collect_phase:
+        H = collect(H, combos_trig)
 
     if no_coeff:
         H = remove_coeff_(H, list(combosQ.keys()) + combos + combos_trig)
