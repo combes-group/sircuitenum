@@ -16,20 +16,39 @@ import warnings
 
 def get_ngate_anyq(param_sets, *args):
     [row] = args
-    params = gen_param_dict_anyq(row.circuit, row.edges, param_sets)
+    params = gen_param_dict_anyq(row["circuit"], row["edges"], param_sets)
     # try:
     sqc = qpi.to_SQcircuit(row.circuit, row.edges, params=params)
+    for loop in sqc.loops:
+        loop.set_flux(0.25)
+    for mode in range(utils.get_num_nodes(row.edges)-1):
+        try:
+            sqc.set_charge_offset(mode, 0.25)
+        except:
+            continue
     # sqc.description()
-    sqc.diag(3, tol=1.0e-6) # Generate first three states used for lots of stuff
+    # spec = sqc.diag(3, tol=1.0e-6) # Generate first three states used for lots of stuff
+    spec, _ = sqc.diag(3) # Generate first three states used for lots of stuff
     rates = swp.calc_decay_rates(sqc)
     t_1, t_phi, t_2 = swp.decoherence_time(rates)
-    alpha = swp.get_anharmonicity(sqc)
-    gate_time = swp.get_gate_time(alpha, 1/t_1)
+    gate_time = swp.get_gate_time(spec[1]-spec[0], spec[2]-spec[1])
     ngates = t_2/gate_time
+    # breakpoint()
     # except:
     #     ngates = 0
     #     print('tolerance error happens!!!')
     return -ngates
+
+def get_ngate_anyq_mc(param_sets, *args):
+    [row, nevals, amp] = args
+    params = gen_param_dict_anyq(row.circuit, row.edges, param_sets)
+    # Run nevals times, going range on either side of params
+    ngates = np.zeros(nevals)
+    for i in range(nevals):
+        if i == nevals-1:
+            amp = 0
+        ngates[i] = -get_ngate_anyq([x*(1-2*(0.5-np.random.random())*amp) for x in param_sets], *args[0:1])
+    return np.mean(ngates), np.std(ngates)
 
 def gen_param_dict_anyq(circuit, edges, vals):
     param_dict = {}
@@ -42,7 +61,7 @@ def gen_param_dict_anyq(circuit, edges, vals):
             # Junction capacitance
             if elem == "J":
                 key = (edge, "CJ")
-                param_dict[key] = (20.0, 'GHz')
+                param_dict[key] = (3.0, 'GHz')
     return param_dict
 
 def gen_param_range_anyq(circuit):

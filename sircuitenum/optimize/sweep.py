@@ -46,82 +46,37 @@ DECAYS = {  'depolarization':
                      'charge']
              }
 
-
-def func_min(t, alpha, t1):
+def get_gate_time(omega0:float, delta_omega:float, max_power:float=0.100*2*np.pi):
     """
-    Function to minimize for calculating gate time. 
-    Represents the negative of the population that ends in the first excited state.
-    Derived from assuming that the incoming control pulse is Gaussian
-    in time only considering the first three states.
-
-    From Andras homework.
+    Estimates the gate time for a three level system with specified
+    parameters, according to appendix A.
 
     Args:
-        t (float): time to run the gate (units of ns) (independent variable)
-        alpha (flaot): anharmonicity (units of 2pi*GHz)
-        t1 (float): t1 decay time (units of ns)
-        max_power (float): maximum power (units of 2pi*Ghz)
-
-    Returns:
-        negative of fraction of population that could end in the first excited state
-    """
+        omega0 (float): qubit frequency E1 - E0 in GHz
+        delta_omega (float): frequency of the E2 - E1 transition in GHz
+        max_power (float, optional): Maximum drive strength in GHz.
+                                     Defaults to 0.100.
     
-    return -np.exp(-t / t1) / (1 + np.exp(- (alpha* t)**2))
-
-
-def guess_fn(alpha, t1, tmin=-2, tmax=5, numz=100000, max_power=None):
-    """Initial guess function for gate time minimization
-
-    Args:
-        alpha (flaot): anharmonicity (units of 2pi*GHz)
-        t1 (float): t1 decay time (units of ns)
-        tmin (int, optional): Power of 10 to start the sweep at
-        tmax (int, optional): Power of 10 to end the sweep at
-        numz (int, optional): Number of samples. Defaults to 100000.
-        max_power (float, optional): Max drive amplitude (units of GHz)
-
     Returns:
-        The gate length that minimizes func_min over the specified range
+        gate time estimate as half width of Gaussian pulse in s
     """
-    tgrid = np.logspace(tmin, tmax, num=numz)
+
+    # Turn into angular units
+    omega0 = omega0*2*np.pi
+    delta_omega = delta_omega*2*np.pi
+
+    # Direct transitions
+    delta = min(abs(omega0-delta_omega), abs(delta_omega))
+    Vmax = min(max_power, omega0/10)
+    if delta/2 <= Vmax:
+        tau_direct = np.sqrt(2*np.pi)/delta
+    else:
+        tau_direct = np.sqrt(np.sqrt(np.pi/2)/Vmax)
     
-    if not max_power is None:
-        # Get a minimum gate 
-        # time based on maximum power output
-        lam = np.exp(-(tgrid**2)*(alpha**2)/2)
-        t_min = np.pi/(2*np.pi*max_power*np.sqrt(lam**2 + 1))
+    # Raman transition
+    tau_raman = 60*np.sqrt(np.pi/2)/Vmax
 
-        # breakpoint()
-        
-        # Remove from consideration all gates that would be
-        # faster than the minimum time
-        tgrid = tgrid[tgrid > t_min]
-
-
-    tidx = np.argmin(func_min(tgrid, alpha, t1))
-    return tgrid[tidx]  
-
-def get_gate_time(alpha, t1, max_power=1):
-    """Optimized gate time for a given anharmonicity/t1
-
-    Args:
-        alpha (flaot): anharmonicity (units of 2pi*GHz)
-        t1 (float): t1 decay time (units of s)
-        max_power (float): Max drive power (units of GHz)
-    Returns:
-        The gate length that maximizes the population in the first excited state
-    """
-    # Scale to ns
-    t1 = 1e09*t1
-
-
-
-    x0 = guess_fn(alpha, t1, max_power=max_power)
-    # bnds = sp.optimize.Bounds(lb=0, ub=float('inf'))
-    # result = minimize(func_min, x0 = guess_fn(alpha,t1), args = (alpha, t1), tol = 1e-19)
-    # Scale to s to return
-    # return result.x[0]*1e-09
-    return x0*1e-09
+    return min(tau_direct, tau_raman)*1e-09
 
 def sweep_params(circuit_func, params, n_eig=5):
     """General function to perform paramater sweeps on quantum circuits
@@ -177,7 +132,7 @@ def sweep_params(circuit_func, params, n_eig=5):
         spec[idx], _ = cr.diag(n_eig)
 
         # Calculate anharmonicity/rates
-        alpha = get_anharmonicity(cr)
+        alpha = get_anharmonicity(spec[idx])
         rates = calc_decay_rates(cr)
 
         # Save decay rates
@@ -187,7 +142,7 @@ def sweep_params(circuit_func, params, n_eig=5):
 
         # Save anharmoniciry and gate times
         alpha_mat[idx] = alpha
-        gate_time[idx] = get_gate_time(alpha,1/(rates['depolarization']['capacitive']+rates['depolarization']['inductive']))
+        gate_time[idx] = get_gate_time(spec[idx][1]-spec[idx][0], spec[idx][2]-spec[idx][1])
 
 
         # print(idx, param_set, alpha, gate_time[idx])
@@ -226,7 +181,7 @@ def calc_decay_rates(cr, decay_types = DECAYS):
 
 
 def decoherence_time(decay_rates, t_1_channels = ["capacitive", "inductive"],
-                                  t_phi_channels = ["flux", "charge"]):
+                                  t_phi_channels = ["flux", "charge", "cc"]):
     """Turns the dictionary of decay rates into a t1, t_phi, and t2
     given a list of channels for each error type.
 
@@ -262,18 +217,18 @@ def decoherence_time(decay_rates, t_1_channels = ["capacitive", "inductive"],
     return t_1, t_phi, t_2
 
 
-def get_anharmonicity(cr):
+def get_anharmonicity(spec):
     """
     Returns the anharmonicity in units of 2*pi*hbar GHz
     E_12 - E_10 = E_2 - 2*E_1 + E_0
 
     Args:
-        cr (sqcircuit): circuit
+        spec (np.array): energy spectrum in GHz
 
     Returns:
-        Anharmonicity in units of 2pi*GHz
+        Anharmonicity in units of GHz
     """
-    return (cr._efreqs[2] - 2*cr._efreqs[1] + cr._efreqs[0])*1e-9
+    return spec[2] - 2*spec[1] + spec[0]
 
 
 def make_transmon(params, trunc_num=60):
@@ -664,10 +619,13 @@ def rhombus_sweep():
 
 def fluxonium_sweep():
 
+    # el_vec = np.linspace(0.1, 0.3, 200)
+    # ej_vec = np.linspace(9,20, 200)  
     el_vec = np.linspace(0.1, 1, 100)
-    ej_vec = np.linspace(3,20, 100)  
+    ej_vec = np.linspace(2, 20, 100)  
     # phi_vec = np.linspace(0,0.5, 5)
-    phi_vec = [0.25]
+    # phi_vec = [0.25]
+    phi_vec = [0.499]
 
     spec, decays, times, alpha = sweep_params(make_fluxonium, (ej_vec, el_vec, phi_vec))
 
@@ -690,8 +648,8 @@ def fluxonium_sweep():
     # breakpoint()
 
     # make_decay_plots(ej_vec, el_vec, t_1, t_phi, (r"$E_j$", r"$E_l$"))
-    make_decay_plots(ej_vec, el_vec, t_1, t_phi, (r"$E_J$", r"$E_l$"), "fluxonium_decay.svg")
-    make_gate_plots(ej_vec, el_vec, t_2, alpha[:,:,-1], times[:, :, -1],(r"$E_J$", r"$E_l$"), "fluxonium_gates.svg" )
+    make_decay_plots(ej_vec, el_vec, t_1, t_phi, (r"$E_J$", r"$E_l$"), "fluxonium_decay.png")
+    make_gate_plots(ej_vec, el_vec, t_2, alpha[:,:,-1], times[:, :, -1],(r"$E_J$", r"$E_l$"), "fluxonium_gates.png" )
 
 
 
@@ -701,15 +659,16 @@ def transmon_sweep():
 
     Ej_vec = np.linspace(3,20,100)
     Ec_vec = np.linspace(0.1,1,100)  
-    ng_vec = [0.25]
+    # ng_vec = [0.25]
+    ng_vec = [0.499]
 
     spec, decays, times, alpha = sweep_params(make_transmon, (Ec_vec, Ej_vec, ng_vec))
     t_1 = 1/decays['depolarization']['capacitive'][:,:,0]
     t_phi = 1/decays['dephasing']['charge'][:,:,0]
     t_2 = 1/(1/(2*t_1)+1/t_phi)
 
-    make_decay_plots(Ec_vec, Ej_vec, t_1, t_phi, (r"$E_C$", r"$E_J$"), f"transmon_decay_{ng_vec[0]}.svg")
-    make_gate_plots(Ec_vec, Ej_vec, t_2, alpha[:,:,-1], times[:, :, -1],(r"$E_C$", r"$E_J$"), f"transmon_gates_{ng_vec[0]}.svg" )
+    make_decay_plots(Ec_vec, Ej_vec, t_1, t_phi, (r"$E_C$", r"$E_J$"), f"transmon_decay_{ng_vec[0]}.png")
+    make_gate_plots(Ec_vec, Ej_vec, t_2, alpha[:,:,-1], times[:, :, -1],(r"$E_C$", r"$E_J$"), f"transmon_gates_{ng_vec[0]}.png" )
 
     
     
@@ -888,7 +847,7 @@ def make_gate_plots(i_vec, j_vec, t_2, alpha, g_times, labels, savename=""):
 
 
 if __name__ == "__main__":
-    transmon_sweep()
-    # fluxonium_sweep()
+    fluxonium_sweep()
+    # transmon_sweep()
     # rhombus_sweep()
     # induc_shunt_transmon_sweep()

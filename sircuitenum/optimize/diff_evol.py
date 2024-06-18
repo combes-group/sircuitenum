@@ -13,15 +13,14 @@ import sircuitenum.optimize.sweep as swp
 def get_ngates(circuit_func, params):
 
         cr = circuit_func(params)
-        cr.diag(3)
+        spec = cr.diag(3)
 
         # Get decoherence time
         rates = swp.calc_decay_rates(cr)
         t_1, t_phi, t_2 = swp.decoherence_time(rates)
 
         # Calculate anharmonicity/gate time
-        alpha = swp.get_anharmonicity(cr)
-        gate_time = swp.get_gate_time(alpha,1/t_1)
+        gate_time = swp.get_gate_time(spec[1]-spec[0], spec[2]-spec[1])
 
         return t_2/gate_time
 
