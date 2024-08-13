@@ -379,6 +379,14 @@ def test_convert_circuit_to_graph():
     assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
 
 
+def test_circuit_degree():
+    
+    c = [["J"], ["C", "J"], ["C", "L"]]
+    e = [(0, 1), (1, 2), (2, 3)]
+    ans = [1, 3, 4, 2]
+    assert utils.circuit_degree(c, e) == ans
+
+
 def test_circuit_node_representation():
 
     c = [["J"], ["C", "J"], ["C", "L"]]
@@ -766,4 +774,5 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_gen_param_dict()
+    # test_gen_param_dict()
+    test_circuit_degree()

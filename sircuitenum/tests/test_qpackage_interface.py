@@ -122,14 +122,14 @@ def test_find_loops():
     ans = [(2, 3, 4), (2, 4)]
     assert len(loops) == len(ans)
     for loop in ans:
-        assert loop in ans
+        assert loop in loops
 
     edges, circuit = TEST_CIRCUITS[5][0], TEST_CIRCUITS[5][1]
     loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
-    ans = [(0, 1, 2, 3), (0, 1, 4), (0, 3), (0, 3, 4)]
+    ans = [(1, 2, 3, 4), (0, 1, 4), (0, 3), (0, 3, 4)]
     assert len(loops) == len(ans)
     for lp in ans:
-        assert lp in ans
+        assert lp in loops
 
     edges, circuit = TEST_CIRCUITS[6][0], TEST_CIRCUITS[6][1]
     loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
@@ -140,6 +140,64 @@ def test_find_loops():
     circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
     loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
     assert loops == [(0, 1, 2, 3)]
+
+    # non zero numbering
+    circuit = [('C',"J"), ("L", "J"), ('J', "C")]
+    edges = [(1, 2), (1, 3), (2, 3)]
+    loops = pi.find_loops(circuit, edges, ind_elem=["J", "L"])
+    ans = [(1, 2, 3), (1, 3)]
+    assert len(loops) == len(ans)
+    for lp in ans:
+        assert lp in loops
+
+def test_add_explicit_ground_node():
+    
+    elems = {
+            'C': {'default_unit': 'GHz', 'default_value': 0.2},
+            'L': {'default_unit': 'GHz', 'default_value': 1.0},
+            'J': {'default_unit': 'GHz', 'default_value': 15.0},
+            'CJ': {'default_unit': 'GHz', 'default_value': 3.0}
+        }
+
+    # transmon like
+    edges = [(0, 1)]
+    circuit = [("C", "J")]
+    params=utils.gen_param_dict(circuit, edges, elems)
+    ecg = 1000
+    new_circuit, new_edges, new_params = pi.add_explicit_ground_node(circuit, edges, params,
+                                                                     ecg = ecg)
+    assert new_edges == [(1, 2), (0, 1), (0, 2)]
+    assert new_circuit == [("C", "J"), ("C",), ("C",)]
+    for edge, elem in params:
+        assert params[(edge, elem)] == new_params[((edge[0]+1, edge[1]+1), elem)]
+    for n in range(1, utils.get_num_nodes(edges)+1):
+        assert new_params[((0, n), "C")] == (ecg, "GHz")
+
+    # Delta Circuit
+    circuit = [('C',), ('J', 'L'), ('C', 'J')]
+    edges = [(1, 2), (0, 2), (0, 1)]
+    params = utils.gen_param_dict(circuit, edges, elems)
+    new_circuit, new_edges, new_params = pi.add_explicit_ground_node(circuit, edges, params,
+                                                                     ecg = ecg)
+    assert new_circuit == [('C',), ('J', 'L'), ('C', 'J'), ('C',), ('C',), ('C',)]
+    assert new_edges == [(2, 3), (1, 3), (1, 2), (0, 1), (0, 2), (0, 3)]
+    for edge, elem in params:
+        assert params[(edge, elem)] == new_params[((edge[0]+1, edge[1]+1), elem)]
+    for n in range(1, utils.get_num_nodes(edges)+1):
+        assert new_params[((0, n), "C")] == (ecg, "GHz")
+
+
+def test_swap_nodes():
+
+    edges = [(0, 1)]
+    new_edges = pi.swap_nodes(edges, 0, 1)
+    assert new_edges == [(1, 0)]
+
+    
+    edges = [(0, 1), (1, 2), (2, 0)]
+    new_edges = pi.swap_nodes(edges, 2, 1)
+    assert new_edges == [(0, 2), (2, 1), (1, 0)]
+
 
 
 def test_to_SQcircuit():
@@ -155,7 +213,8 @@ def test_to_SQcircuit():
     edges = [(0, 1)]
     circuit = [("C", "J")]
     obj = pi.to_SQcircuit(circuit, edges,
-                          params=utils.gen_param_dict(circuit, edges, elems))
+                          params=utils.gen_param_dict(circuit, edges, elems),
+                          ground_node=0)
     ev, es = obj.diag(3)
     w01 = ev[1] - ev[0]
     w12 = ev[2] - ev[1]
@@ -164,7 +223,6 @@ def test_to_SQcircuit():
     zeta = np.sqrt(2*Ec/Ej)
     good_freq = np.sqrt(8*Ec*Ej) - Ec*(1+9*(2**-2)*zeta)
     good_anharm = Ec*(1+9*(2**-4)*zeta)
-    breakpoint()
     assert abs(1 - abs(w01/good_freq)) <= 0.025
     assert abs(1 - abs(w12 - w01)/good_anharm) <= 0.025
 
@@ -181,7 +239,8 @@ def test_to_SQcircuit():
     circuit = [("C", "J", "L")]
 
     obj = pi.to_SQcircuit(circuit, edges,
-                          params=utils.gen_param_dict(circuit, edges, elems))
+                          params=utils.gen_param_dict(circuit, edges, elems),
+                          ground_node=0)
     obj.loops[0].set_flux(0.5)
     ev, es = obj.diag(3)
     ev = ev - ev[0]
@@ -198,7 +257,8 @@ def test_to_SQcircuit():
     edges = [(0, 1), (1, 3), (2, 3), (0, 2), (0, 3), (1, 2)]
     circuit = [("J",), ("L",), ("J",), ("L",), ("C",), ("C",)]
     obj = pi.to_SQcircuit(circuit, edges, [35, 6],
-                          params=utils.gen_param_dict(circuit, edges, elems))
+                          params=utils.gen_param_dict(circuit, edges, elems),
+                          ground_node=0)
     # breakpoint()
     obj.loops[0].set_flux(0.5)
     ev, es = obj.diag(5)
@@ -295,7 +355,9 @@ def test_to_Qucat():
 
 if __name__ == "__main__":
 
-    test_to_SQcircuit()
-    test_to_SCqubits()
+    # test_to_SQcircuit()
+    # test_to_SCqubits()
     # test_to_CircuitQ()
     # test_to_Qucat()
+    # test_swap_nodes()
+    test_find_loops()

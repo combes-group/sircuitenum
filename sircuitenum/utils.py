@@ -284,7 +284,7 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     return c_dict
 
 
-def gen_param_dict(circuit, edges, vals=ELEM_DICT):
+def gen_param_dict(circuit, edges, vals=ELEM_DICT, rand_amp=0, min_val=1e-06):
     """
     Generates a dictionary of parameters for use with
     the circuit conversion functions. Sets all components
@@ -306,13 +306,13 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT):
     for elems, edge in zip(circuit, edges):
         for elem in elems:
             key = (edge, elem)
-            param_dict[key] = (vals[elem]['default_value'],
+            param_dict[key] = (max(min_val, vals[elem]['default_value']*np.random.normal(1, rand_amp)),
                                vals[elem]['default_unit'])
 
             # Junction capacitance
             key = (edge, "CJ")
             if elem == "J" and "CJ" in vals:
-                param_dict[key] = (vals["CJ"]['default_value'],
+                param_dict[key] = (max(min_val, vals["CJ"]['default_value']*np.random.normal(1, rand_amp)),
                                    vals["CJ"]['default_unit'])
 
     return param_dict
@@ -357,6 +357,23 @@ def convert_circuit_to_graph(circuit: list, edges: list, **kwargs):
                                                value=value)
     return circuit_graph
 
+
+def circuit_degree(circuit: list, edges: list):
+    """
+    Counts the number of elements connected to each node
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+
+    Returns:
+       list of how many elements are connected to each node
+       e.g. [1, 2, 1]
+    """
+    node_repr = circuit_node_representation(circuit, edges)
+    return list(sum([np.array(x) for x in node_repr.values()]))
 
 def circuit_node_representation(circuit: list, edges: list):
     """

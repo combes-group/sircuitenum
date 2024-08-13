@@ -65,11 +65,11 @@ def print_soln(xk, convergence, savefile="history.csv"):
             "phi": phi,
             "ngates": ist_func(xk)}
 
-    df = pd.DataFrame([entry])
-    header = True
-    if os.path.exists("history.csv"):
-        header = False
-    df.to_csv(savefile, mode="a", index=False, header=header)
+    # df = pd.DataFrame([entry])
+    # header = True
+    # if os.path.exists("history.csv"):
+    #     header = False
+    # df.to_csv(savefile, mode="a", index=False, header=header)
 
     print("best soln:", np.round(xk,3))
     # print("ngates:", entry['ngates'])
@@ -80,8 +80,8 @@ if __name__ == "__main__":
 
 
     # res = de(transmon_func, ((3,20), (0.1, 1), (0,1)), workers=5, disp=True)
-    if os.path.exists("history.csv"):
-        raise ValueError("Remove history file or change its name")
+    # if os.path.exists("history.csv"):
+    #     raise ValueError("Remove history file or change its name")
 
     # ranges = ((3,20), (3,20), (3,20),(3,20), (0,1))
     ranges = ((3,20), (0.1,1), (0.1,1.5), (0,1))

@@ -118,6 +118,38 @@ def delete_table(db_file: str, n_nodes: int):
     return
 
 
+def find_unique_ground_placements(circuit: list, edges: list):
+    """
+    Uses component graph isomorphism to determine the unique
+    ground node placements for a given circuit.
+
+    Assumes edges is a continous list from 0 to max number
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+
+    Returns:
+        tuple of integers representing unique ground node
+        placements
+    """
+    unique_nodes = []
+    unique_graphs = []
+    for gnd in range(utils.get_num_nodes(edges)):
+        test = red.convert_circuit_to_component_graph(circuit, edges, ground_nodes=[gnd])
+        isomorphic_in_set = False
+        for ref in unique_graphs:
+            if nx.is_isomorphic(test, ref, node_match=red.colors_match):
+                isomorphic_in_set = True
+                break
+        if not isomorphic_in_set:
+            unique_graphs.append(test)
+            unique_nodes.append(gnd)
+    return tuple(unique_nodes)
+
+
 def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
     """
     Searches the database for circuits that are equivalent

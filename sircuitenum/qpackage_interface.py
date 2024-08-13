@@ -36,7 +36,7 @@ def single_edge_loop_kiting(circuit, edges):
 
     Args:
         circuit (list): a list of element labels for the desired circuit
-                        e.g. [["J"],["L", "J"], ["C"]]
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
 
@@ -86,7 +86,7 @@ def find_loops(circuit, edges, ind_elem=["J", "L"]):
 
     Args:
         circuit (list): a list of element labels for the desired circuit
-                        e.g. [["J"],["L", "J"], ["C"]]
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
         ind_elem (list): symbols that define inductive elements.
@@ -95,8 +95,15 @@ def find_loops(circuit, edges, ind_elem=["J", "L"]):
     Returns:
         loop_lst (list): a list of loops in the circuit
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
     """
+
+    # save min mode number for recovering afterwards
+    min_node = min(min(x) for x in edges)
+
+    # Renumber to start from 0
+    edges = utils.zero_start_edges(edges)
 
     # Expand single edge loops
     max_node_og = utils.get_num_nodes(edges)-1
@@ -110,6 +117,9 @@ def find_loops(circuit, edges, ind_elem=["J", "L"]):
     # And filter out any edges that we added
     loop_lst = [tuple(sorted([x for x in c if x <= max_node_og]))
                 for c in nx.cycle_basis(nx.Graph(G))]
+    
+    # Add min node number to recover the original numbering
+    loop_lst = [tuple([n + min_node for n in nodes]) for nodes in loop_lst]
 
     return loop_lst
 
@@ -129,6 +139,79 @@ def inductive_subgraph(circuit, edges, ind_elem=["J", "L"]):
     return [edges[i] for i in range(len(edges))
             if np.any(np.in1d(circuit[i], ind_elem))]
 
+
+def add_explicit_ground_node(circuit: list, edges: list, params: dict, ecg: float = 20,
+                             rand_amp=0.0):
+    """
+    Takes in a circuit + edges combo and returns a modified
+    version with an explicit ground node added (as node 0)
+
+    If the 0 node was present before, adds 1 to each node
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [("J"),("L", "J"), ("C")]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+        params (dict): dictionary with entries C, L, J, CJ,
+                    which represent the paramaters for the circuit elements.
+                    Additionally entries of C_units, L_units, J_units,
+                    and CJ_units.
+        ecg (float): EC for capacitors coupling to ground in GHz
+    
+    Returns:
+        Modified version of circuit, edges with capacitive coupling
+        to a ground node added
+    """
+    # Get unique node values
+    edges_og = edges[:]
+    edges = utils.zero_start_edges(edges)
+    node_vals = []
+    for n1, n2 in edges:
+        if n1 not in node_vals:
+            node_vals.append(n1)
+        if n2 not in node_vals:
+            node_vals.append(n2)
+    node_vals = sorted(node_vals)
+    n_nodes = len(node_vals)
+    new_circuit = circuit + [("C",)]*n_nodes
+    new_edges = [(e[0] + 1, e[1] + 1) for e in edges] + [(0, n+1) for n in node_vals]
+
+    # Modify params for old elements
+    # to reflect new labeling
+    new_params = {}
+    n_edges_og = len(edges_og)
+    for i in range(n_edges_og):
+        edge_og = edges_og[i]
+        edge = new_edges[i]
+        for elem in circuit[i]:
+            new_params[(edge, elem)] = params[(edge_og, elem)]
+            if elem == "J":
+                new_params[(edge, "CJ")] = params[(edge_og, "CJ")]
+    
+    # Add the capacitive connections to ground
+    for i in range(n_edges_og, n_edges_og + n_nodes):
+        edge = new_edges[i]
+        elem = new_circuit[i][0]
+        new_params[(edge, elem)] = (ecg*np.random.normal(1, rand_amp), "GHz")
+
+    return new_circuit, new_edges, new_params
+
+
+def swap_nodes(edges: list, na: int, nb: int):
+    new_edges = []
+    for (n0, n1) in edges:
+        # Swap na and nb
+        if n0 == nb:
+            n0 = na
+        elif n0 == na:
+            n0 = nb
+        if n1 == nb:
+            n1 = na
+        elif n1 == na:
+            n1 = nb
+        new_edges.append((n0, n1))
+    return new_edges
 
 def to_SQcircuit(circuit: list, edges: list,
                  trunc_num: Union[int, list] = 10, **kwargs):
@@ -150,20 +233,35 @@ def to_SQcircuit(circuit: list, edges: list,
     Returns:
         converted_circuit (SQcircuit.Circuit): returns the input circuit
                                                converted to SQcircuit.
-
-        Charge modes are where cir.omega == 0,
-        harmonic modes are when cir.omega != 0
     """
 
     params = kwargs.get("params", utils.gen_param_dict(circuit, edges,
-                                                       utils.ELEM_DICT))
+                                                       utils.ELEM_DICT,
+                                                       rand_amp=kwargs.get("rand_amp", 0.00)))
+    flux_dist = kwargs.get("flux_dist", "junctions")
+
+    # ground node is node = 0
+    ground_node = kwargs.get("ground_node", None)
+    if ground_node is None:
+        circuit, edges, params = add_explicit_ground_node(circuit, edges, params)
+    elif ground_node != 0:
+        edges = swap_nodes(edges, 0, ground_node)
+        new_params = {}
+        for key in params:
+            edge, elem = key
+            new_edge = swap_nodes([edge], 0, ground_node)[0]
+            new_params[(new_edge, elem)] = params[(edge, elem)]
+        params = new_params
+
+    # print(circuit)
+    # print(edges)
 
     loops = find_loops(circuit, edges)
     loop_defs = {}
-
+    # print(loops)
     # Map inductive cycle basis to loops
     for lp in loops:
-        loop_defs[lp] = sq.Loop()
+        loop_defs[lp] = sq.Loop(id_str=str(lp))
 
     # Build sqcircuit dictionary that maps edges
     # to a list of element objects, which have
@@ -175,17 +273,27 @@ def to_SQcircuit(circuit: list, edges: list,
         loops_pres_J = []
         loops_pres_L = []
         for lp in loops:
-            if edge[0] in lp and edge[1] in lp: # if the edge is part of the loop
-                if "J" not in elems or "L" not in elems: # if J and L don't exist in the same branch
+            # If the edge is part of the loop
+            if edge[0] in lp and edge[1] in lp: 
+                # Either J or L in the branch
+                if "J" in elems and "L" not in elems:
                     loops_pres_J.append(loop_defs[lp])
+                elif "J" not in elems and "L" in elems:
                     loops_pres_L.append(loop_defs[lp])
-
-                else: # if J and L exist in the same branch
-                    if len(lp)==2: # if lp is a two-node loop
+                # Both J and L in the branch
+                else:
+                    # two-node loop -- Flux between J & L
+                    if len(lp)==2:
                         loops_pres_J.append(loop_defs[lp])
                         loops_pres_L.append(loop_defs[lp])
-                    else: # # if lp is a multi-node loop
-                        loops_pres_L.append(loop_defs[lp])
+                    # > 2 node loop -- Assign flux to JJ
+                    else:
+                        loops_pres_J.append(loop_defs[lp])
+                        # loops_pres_L.append(loop_defs[lp])
+        
+        # print("edge:", edge)
+        # print('loops_pres J:', loops_pres_J)
+        # print("loops_pres L:",loops_pres_L)
 
         # Add all the elements
         circuit_dict[edge] = []
@@ -232,11 +340,9 @@ def to_SQcircuit(circuit: list, edges: list,
 
     # print('\nloops', loops)
     # print('\nloop_defs', loop_defs)
-    # print('\nloops_pres', loops_pres)
     # print('\nelements', circuit_dict)
 
-
-    sqC = sq.Circuit(circuit_dict, flux_dist='junctions')
+    sqC = sq.Circuit(circuit_dict, flux_dist=flux_dist)
 
     # Convert truncation num to list
     if not isinstance(trunc_num, list):
@@ -258,7 +364,9 @@ def to_SCqubits(circuit: list, edges: list,
 
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
         trunc_num (int or list): Number of eigenstates to consider for each
                                  mode in a composite circuit.
         https://scqubits.readthedocs.io/en/latest/guide/ipynb/custom_circuit_hd.html
@@ -353,7 +461,9 @@ def to_CircuitQ(circuit: list, edges: list,
     SQcircuit formatted circuit network
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
         trunc_num (int or list):
         params (dict): dictionary with entries C, L, J, CJ,
                     which represent the paramaters for the circuit elements.
@@ -382,7 +492,9 @@ def to_Qucat(circuit: list, edges: list,
     Qucat formatted circuit network
     Args:
         circuit (list): a list of element labels for the desired circuit
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
         trunc_num (int or list):
         params (dict): dictionary with entries C, L, J, CJ,
                     which represent the paramaters for the circuit elements.
@@ -394,3 +506,99 @@ def to_Qucat(circuit: list, edges: list,
     """
     qc
     raise NotImplementedError("Haven't done Qucat yet")
+
+
+
+
+if __name__ == "__main__":
+
+
+    circuit = [("J",), ("C",'J',"L"), ("C","J","L")]
+    edges = [(0, 1), (0, 2), (1, 2)]
+    # print(find_loops(circuit, edges))
+    # to_SQcircuit(circuit, edges, ground_node=None)
+
+    # circuit = [('C', 'J', 'L'), ('C', 'J', 'L'), ('C', 'J', 'L')]
+    # edges = [(0, 1), (0, 2), (1, 2)]
+    circuit = [("J",), ('J', "L"), ("J", "L"), ("L",), ("C",), ("C",)]
+    # circuit = [('C', 'J'), ('C', 'J'), ('C', 'J'), ("C",), ("C",), ("C",)]
+    edges = [(1, 2), (1, 3), (2, 3), (0, 1), (0, 2), (0, 3)]
+    # print(find_loops(circuit, edges))
+    # to_SQcircuit(circuit, edges, ground_node=0)
+    # sq.description()
+    # sq.coord_transform("flux"), sq.coord_transform("charge")
+
+    # circuit = [("J"), ('J'), ("J", "L"), ("C",), ("C",), ("C",)]
+    # circuit = [("J"), ('J',"L"), ("J", "L"), ("L",), ("C",), ("C",)]
+    # circuit = [('C', 'J'), ('C', 'J'), ('C', 'J'), ("C",), ("C",), ("C",)]
+    print(find_loops(circuit, edges))
+
+    # circuit = [("J"), ('J'), ("J", "L")]
+    # edges = [(0, 1), (0, 2), (1, 2)]
+    
+    # circuit = [('J',), ('L',), ('C', 'J', 'L')]
+    circuit = [('J',), ('J',), ('J',)]
+    edges = [(0, 1), (0, 2), (1, 2)]
+
+    # circuit = [('J',), ('C',), ('J',), ("C")]
+    # edges = [(0, 1), (1, 2), (2, 3), (3, 0)]
+
+    # for i in range(1000):
+    # to_SQcircuit(circuit, edges, ground_node=None, flux_dist="junctions", rand_amp=0)
+
+
+    # edges = [(1, 2), (1, 3), (2, 3), (0, 1), (0, 2), (0, 3)]
+    # circuit = [("J"), ('J'), ("J", "L"), ("C",), ("C",), ("C",)]
+    # to_SQcircuit(circuit, edges, ground_node=0)
+
+
+    loop1 = sq.Loop(id_str="loop1")
+    loop2 = sq.Loop(id_str="loop2")
+
+    ec = 0.1
+    ecj = 3
+    ej = 10
+    el = 0.1
+
+    circuit_dict = {}
+    # circuit_dict[(0, 1)] = [sq.Capacitor(ec, "GHz", id_str="C01")]
+    # circuit_dict[(0, 2)] = [sq.Capacitor(ec, "GHz", id_str="C02")]
+    # circuit_dict[(0, 3)] = [sq.Capacitor(ec, "GHz", id_str="C03")]
+    # circuit_dict[(1, 2)] = [sq.Junction(ej, "GHz", id_str="J12", loops=[loop1],
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC12"))]
+    # circuit_dict[(1, 3)] = [sq.Junction(ej, "GHz", id_str="J13", loops=[loop1],
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC13"))]
+    # circuit_dict[(2, 3)] = [sq.Junction(ej, "GHz", id_str="J23", loops=[loop1, loop2],
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC23")),
+    #                                 sq.Inductor(el, "GHz", id_str="J23", loops=[loop2])]
+
+    # circuit = [('C',), ('J', 'L'), ('C', 'J')]
+    # edges = [(1, 2), (0, 2), (0, 1)]
+    # circuit_dict[(1, 2)] = [sq.Capacitor(ec, "GHz", id_str="C12")]
+    # circuit_dict[(0, 2)] = [sq.Inductor(el, "GHz", id_str="L02", loops=[loop1]),
+    #                         sq.Junction(ej, "GHz", id_str="J02", loops=[loop1],
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC02"))]
+    # circuit_dict[(0, 1)] = [sq.Junction(ej, "GHz", id_str="J01",
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC01"))]
+
+    # sq.Circuit(circuit_dict, flux_dist="junctions")
+
+    # params = [7.412802517160099, 4.879383407260387, 0.6606415539313616, 0.2092362500235012, 0.7460265564772862]
+    # ecj = 3
+    # circuit_dict = {}
+    # circuit_dict[(1, 3)] = [sq.Junction(params[0], "GHz", id_str="J13",
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC13"))]
+    # circuit_dict[(2, 3)] = [sq.Junction(params[1], "GHz", id_str="J23",
+    #                                 cap = sq.Capacitor(ecj, "GHz", id_str="JC23")),
+    #                                 sq.Inductor(params[2], "GHz", id_str="L23")]
+    # circuit_dict[(0, 1)] = [sq.Capacitor(20.74202294168071, "GHz", id_str="C01")]
+    # circuit_dict[(0, 2)] = [sq.Capacitor(21.613559736082763, "GHz", id_str="C02")]
+    # circuit_dict[(0, 3)] = [sq.Capacitor(23.132434123842902, "GHz", id_str="C03")]
+
+    # cir = sq.Circuit(circuit_dict, flux_dist="junctions")
+
+    # cir.description()
+
+    circuit = [('C',), ('J', 'L'), ('C', 'J')]
+    edges = [(0, 1), (0, 2), (1, 2)]
+    to_SQcircuit(circuit, edges, ground_node=None, flux_dist="junctions", rand_amp=0).description()

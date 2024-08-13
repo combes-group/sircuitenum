@@ -46,7 +46,8 @@ DECAYS = {  'depolarization':
                      'charge']
              }
 
-def get_gate_time(omega0:float, delta_omega:float, max_power:float=0.100*2*np.pi):
+#0.100*2*np.pi
+def get_gate_time(omega0:float, delta_omega:float, max_power:float=np.sqrt(np.pi/2)):
     """
     Estimates the gate time for a three level system with specified
     parameters, according to appendix A.
@@ -76,7 +77,7 @@ def get_gate_time(omega0:float, delta_omega:float, max_power:float=0.100*2*np.pi
     # Raman transition
     tau_raman = 60*np.sqrt(np.pi/2)/Vmax
 
-    return min(tau_direct, tau_raman)*1e-09
+    return 10*min(tau_direct, tau_raman)*1e-09
 
 def sweep_params(circuit_func, params, n_eig=5):
     """General function to perform paramater sweeps on quantum circuits
@@ -660,7 +661,8 @@ def transmon_sweep():
     Ej_vec = np.linspace(3,20,100)
     Ec_vec = np.linspace(0.1,1,100)  
     # ng_vec = [0.25]
-    ng_vec = [0.499]
+    ng_vec = [0.4999]
+    # ng_vec = [3.4*1e-04]
 
     spec, decays, times, alpha = sweep_params(make_transmon, (Ec_vec, Ej_vec, ng_vec))
     t_1 = 1/decays['depolarization']['capacitive'][:,:,0]
@@ -676,7 +678,6 @@ def transmon_sweep():
 
 def zero_pi_sweep(#img_dir = "/home/eweissler/img/ist_sweep/test"
 img_dir = "/Users/jlac/img"): 
-
     ej_vec = np.linspace(3,20, 8)
     #ec_vec = np.linspace(0.01,1, 8) 
     ec_vec = [0.15] 
@@ -811,15 +812,15 @@ def make_gate_plots(i_vec, j_vec, t_2, alpha, g_times, labels, savename=""):
     ax[0].tick_params(labelsize=14)
     f.colorbar(im, ax=ax[0])
 
-    im = ax[1].pcolormesh(X,Y,g_times, cmap='rainbow', norm=matplotlib.colors.LogNorm())
+    im = ax[1].pcolormesh(X,Y,g_times*1e09, cmap='rainbow', norm=matplotlib.colors.LogNorm())
     ax[1].set_xlabel(labels[1], fontsize=16)
     ax[1].set_ylabel(labels[0], fontsize=16)
-    ax[1].set_title(r"Predicted Gate Time (s)", fontsize=16)
+    ax[1].set_title(r"Predicted Gate Time (ns)", fontsize=16)
     ax[1].tick_params(labelsize=14)
     f.colorbar(im, ax=ax[1])
     n_gates = t_2/g_times
 
-
+    
     im = ax[2].pcolormesh(X,Y,n_gates, cmap='rainbow', norm=matplotlib.colors.LogNorm())
     ax[2].set_xlabel(labels[1], fontsize=16*2)
     ax[2].set_ylabel(labels[0], fontsize=16*2)
@@ -847,7 +848,7 @@ def make_gate_plots(i_vec, j_vec, t_2, alpha, g_times, labels, savename=""):
 
 
 if __name__ == "__main__":
-    fluxonium_sweep()
-    # transmon_sweep()
+    # fluxonium_sweep()
+    transmon_sweep()
     # rhombus_sweep()
     # induc_shunt_transmon_sweep()
