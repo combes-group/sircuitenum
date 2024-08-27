@@ -204,10 +204,8 @@ def calc_decay_rates(cr, decay_types = DECAYS):
     return decay_rates
 
 
-def decoherence_time(decay_rates, t_1_channels = ["capacitive", "inductive"],
+def decoherence_time(decay_rates, t_1_channels = ["capacitive", "inductive", "quasiparticle"],
                                   t_phi_channels = ["flux", "charge", "cc"]):
-# def decoherence_time(decay_rates, t_1_channels = ["capacitive"],
-#                                   t_phi_channels = ["charge"]):
     """Turns the dictionary of decay rates into a t1, t_phi, and t2
     given a list of channels for each error type.
 
