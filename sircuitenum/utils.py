@@ -296,7 +296,7 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT, rand_amp=0, min_val=1e-06):
 
     Args:
         circuit (list): a list of element labels for the desired circuit
-                        e.g. [["J"],["L", "J"], ["C"]]
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
         vals (dict of dicts): Dictionary with entries for each circuit

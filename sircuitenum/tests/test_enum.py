@@ -40,6 +40,10 @@ NON_SERIES_3 += [
 
 TEMP_FILE = "temp.db"
 
+def test():
+    print("Add for new functions")
+    assert False
+
 
 def test_num_possible_circuits():
 

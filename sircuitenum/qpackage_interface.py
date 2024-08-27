@@ -186,7 +186,7 @@ def add_explicit_ground_node(circuit: list, edges: list, params: dict, ecg: floa
         edge = new_edges[i]
         for elem in circuit[i]:
             new_params[(edge, elem)] = params[(edge_og, elem)]
-            if elem == "J":
+            if elem == "J" and (edge_og, "CJ") in params:
                 new_params[(edge, "CJ")] = params[(edge_og, "CJ")]
     
     # Add the capacitive connections to ground
@@ -214,7 +214,7 @@ def swap_nodes(edges: list, na: int, nb: int):
     return new_edges
 
 def to_SQcircuit(circuit: list, edges: list,
-                 trunc_num: Union[int, list] = 10, **kwargs):
+                 trunc_num: Union[int, list] = 50, **kwargs):
     """Converts circuit from list of labels and edges to a
     SQcircuit formatted circuit network
 
@@ -223,7 +223,7 @@ def to_SQcircuit(circuit: list, edges: list,
                         e.g. [["J"],["L", "J"], ["C"]]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
-        trunc_num (int or list):
+        trunc_num (int or list): truncation number for each mode
         params (dict): dictionary with entries C, L, J, CJ,
                     which represent the paramaters for the circuit elements.
                     Additionally entries of C_units, L_units, J_units,
@@ -346,7 +346,13 @@ def to_SQcircuit(circuit: list, edges: list,
 
     # Convert truncation num to list
     if not isinstance(trunc_num, list):
-        trunc_num = [trunc_num]*len(sqC.omega)
+        trunc_num = [trunc_num]*sqC.n
+    
+    if sqC.n > len(trunc_num):
+        # print("Warning, too few trunc nums given, filling in with max value (and adding 10)", max(trunc_num))
+        trunc_num = [x + 10 for x in trunc_num] + [max(trunc_num)+10]*(sqC.n-len(trunc_num))
+    elif sqC.n < len(trunc_num):
+        trunc_num = [max(trunc_num)]*sqC.n
 
     sqC.set_trunc_nums(trunc_num)
 
@@ -354,7 +360,7 @@ def to_SQcircuit(circuit: list, edges: list,
 
 
 def to_SCqubits(circuit: list, edges: list,
-                trunc_num: Union[int, list] = 10,
+                trunc_num: Union[int, list] = 50,
                 cutoff: Union[int, list] = 101,
                 **kwargs):
     """Converts circuit from list of labels and edges to a

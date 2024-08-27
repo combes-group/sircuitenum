@@ -150,6 +150,78 @@ def find_unique_ground_placements(circuit: list, edges: list):
     return tuple(unique_nodes)
 
 
+
+def expand_ground_node(df: pd.DataFrame):
+    """
+    Create new entries in the dataframe
+    for unique placements of ground
+    nodes
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with an entry for each ground
+                      node placement.
+    """
+    new_df = []
+    df["ground_node"] = -1
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[[i]].copy()
+        circuit, edges = row["circuit"].iloc[0], row["edges"].iloc[0]
+        for gnd in find_unique_ground_placements(circuit, edges):
+            new_row = row.copy()
+            new_row["ground_node"] = gnd
+            new_df.append(new_row)
+    return pd.concat(new_df)
+
+
+def remove_dangling_edges(df: pd.DataFrame):
+    """
+    Removes edges that cannot have current flowing
+    through them after placing a ground node
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with all circuits that
+                      have dangling edges removed.
+    """
+    ind_to_keep = []
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[i]
+        circuit, edges = row["circuit"], row["edges"]
+        deg = utils.circuit_degree(circuit, edges)
+        if all(d > 1 for d in deg):
+            ind_to_keep.append(i)
+
+    return df.iloc[ind_to_keep].copy()
+
+
+def remove_parallel_elems(df):
+    """
+    Removes any circuits that have
+    parallel elements on an edge
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with all circuits with
+                      parallel elements removed.
+    """
+
+    ind_to_keep = []
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[i]
+        circuit, edges = row["circuit"], row["edges"]
+        if max(len(x) for x in circuit) == 1:
+            ind_to_keep.append(i)
+
+    return df.iloc[ind_to_keep].copy()
+
+
 def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
     """
     Searches the database for circuits that are equivalent
