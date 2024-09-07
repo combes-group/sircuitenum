@@ -15,12 +15,18 @@ warnings.filterwarnings("ignore", message="differential_evolution")
 warnings.filterwarnings("ignore", message="invalid value encountered in divide")
 warnings.filterwarnings("ignore", message="divide by zero")
 
+from func_timeout import func_timeout, FunctionTimedOut
+
 from sircuitenum import utils
 from sircuitenum import qpackage_interface as qpi
 from sircuitenum import enumerate as enum
 
-epsilon = 1e-8
-INT_OFFSETS = {0: 0.0+epsilon, 1: 0.25+epsilon, 2: 0.5+epsilon, 3: 0.75+epsilon}
+EPS_C = 1e-4
+INT_OFFSETS_CHARGE = {0: 0.0+EPS_C, 1: 0.25+EPS_C, 2: 0.5+EPS_C, 3: 0.75+EPS_C}
+# INT_OFFSETS_CHARGE = {1: 0.25+EPS_C}
+EPS_F = 1e-6
+INT_OFFSETS_FLUX = {0: 0.0+EPS_F, 1: 0.25+EPS_F, 2: 0.5+EPS_F, 3: 0.75+EPS_F}
+# INT_OFFSETS_FLUX = {0: 0.0+EPS_F, 1: 0.5+EPS_F}
 DECAYS = {  'depolarization':
                     ['capacitive',
                      'inductive',
@@ -30,7 +36,7 @@ DECAYS = {  'depolarization':
                      'flux',
                      'charge']
              }
-def get_gate_time(omega0:float, delta_omega:float, max_power:float=np.sqrt(np.pi/2)):
+def get_gate_time(omega0:float, delta_omega:float, max_power:float=0.2*2*np.pi):
     """
     Estimates the gate time for a three level system with specified
     parameters, according to appendix A.
@@ -39,7 +45,7 @@ def get_gate_time(omega0:float, delta_omega:float, max_power:float=np.sqrt(np.pi
         omega0 (float): qubit frequency E1 - E0 in GHz
         delta_omega (float): frequency of the E2 - E1 transition in GHz
         max_power (float, optional): Maximum drive strength in GHz.
-                                     Defaults to 0.100.
+                                     Defaults to 0.200.
     
     Returns:
         gate time estimate as half width of Gaussian pulse in s
@@ -53,14 +59,14 @@ def get_gate_time(omega0:float, delta_omega:float, max_power:float=np.sqrt(np.pi
     delta = min(abs(omega0-delta_omega), abs(delta_omega))
     Vmax = min(max_power, omega0/10)
     if delta/2 <= Vmax:
-        tau_direct = np.sqrt(2*np.pi)/delta
+        tau_direct = np.sqrt(np.pi/2)/(delta/2)
     else:
-        tau_direct = np.sqrt(np.sqrt(np.pi/2)/Vmax)
+        tau_direct = np.sqrt(np.pi/2)/Vmax
     
     # Raman transition
-    tau_raman = 60*np.sqrt(np.pi/2)/Vmax
+    tau_raman = 60*np.sqrt(np.pi/2)/max_power
 
-    return 10*min(tau_direct, tau_raman)*1e-09
+    return 5*min(tau_direct, tau_raman)*1e-09
 
 
 def make_decay_plots(i_vec, j_vec, t_1, t_phi, labels, savename=""):
@@ -294,14 +300,14 @@ def make_sqc(circuit: list, edges: list, param_sets: list, ground_node: int = 0,
     i = nelems
     for loop in sqc.loops:
         if offset_integer:
-            loop.set_flux(INT_OFFSETS[int(param_sets[i])])
+            loop.set_flux(INT_OFFSETS_FLUX[int(param_sets[i])])
         else:
             loop.set_flux(param_sets[i])
         i += 1
     for mode in range(1, utils.get_num_nodes(edges)):
         if is_charge_mode(sqc, mode):
             if offset_integer:
-                sqc.set_charge_offset(mode, INT_OFFSETS[int(param_sets[i])])
+                sqc.set_charge_offset(mode, INT_OFFSETS_CHARGE[int(param_sets[i])])
             else:
                 sqc.set_charge_offset(mode, param_sets[i])
             i += 1
@@ -326,20 +332,25 @@ def get_ngate_mc(param_set: list, *args):
     Returns:
         float: -ngates done by the circuit, or -ngates, std of samples
     """
-    [ntrial, amp_elem, amp_off, return_std] = args[-4:]
+    [ntrial, amp_elem, amp_off, return_std, workers] = args[-5:]
 
     # Run ntrial times, going amp on either side of params
     nelems = sum(utils.count_elems_mapped(args[0]).values())
-    ngates = np.zeros(ntrial)
+    ngates = []
+    swp_args = []
     for i in range(ntrial):
         # Generate random values and evaluate
         new_param_set = [x*np.random.normal(1, amp_elem) for x in param_set[:nelems]]
         new_param_set += [x*np.random.normal(1, amp_off) for x in param_set[nelems:]]
-        swp_args = (tuple(enumerate(new_param_set)),) + (3,) + args[:-4] + ({},)
-        try:
-            ngates[i] = _sweep_helper(swp_args)[1]["ngate"]
-        except:
-            ngates[i] = 0
+        swp_args.append((tuple(enumerate(new_param_set)),) + (3,) + args[:-5] + ({},) + (False,))
+    if workers == 1:
+        for i in range(ntrial):
+            ngates.append(_sweep_helper(swp_args[i])[1]["ngate"])
+    else:
+        pool = Pool(processes=workers)
+        for res in pool.imap_unordered(_sweep_helper, swp_args):
+            ngates.append(res[1]["ngate"])
+
     if return_std:
         return np.mean(ngates), np.std(ngates)
     else:
@@ -380,7 +391,7 @@ def gen_param_dict_anyq(circuit: list, edges: list, param_sets: list,
 
 
 def gen_param_range_anyq(circuit: list, edges: list, ground_node: int, offset_integer: bool = False,
-                         mapping: dict = {'C': (0.1, 1), 'L': (0.1, 1), 'J': (3, 20)}):
+                         mapping: dict = {'C': (0.05, 10.0), 'L': (0.05, 5.0), 'J': (1, 30)}):
     """
     Generates parameter ranges according to mapping,
     for use in bounded optimizations
@@ -407,14 +418,14 @@ def gen_param_range_anyq(circuit: list, edges: list, ground_node: int, offset_in
     # Flux
     for loop in sqc.loops:
         if offset_integer:
-            param_range.append((min(INT_OFFSETS.keys()), max(INT_OFFSETS.keys())))
+            param_range.append((min(INT_OFFSETS_FLUX.keys()), max(INT_OFFSETS_FLUX.keys())))
         else:
             param_range.append((0, 1))
     # Charge
     for mode in range(1, utils.get_num_nodes(edges)):
         if is_charge_mode(sqc, mode):
             if offset_integer:
-                param_range.append((min(INT_OFFSETS.keys()), max(INT_OFFSETS.keys())))
+                param_range.append((min(INT_OFFSETS_CHARGE.keys()), max(INT_OFFSETS_CHARGE.keys())))
             else:
                 param_range.append((0, 1))
     return tuple(param_range)
@@ -436,7 +447,7 @@ def is_charge_mode(sqc: sq.Circuit, mode: int):
 
 
 def pick_truncation(cir: sq.Circuit, thresh: float = 1e-06, neig: int = 5,
-                    default_flux: int = 50, default_charge: int = 20,
+                    default_flux: int = 30, default_charge: int = 10,
                     increment_flux: int = 5, increment_charge: int = 5):
     """
     Picks a truncation number for analyzing the SQcircuit circuit
@@ -445,7 +456,8 @@ def pick_truncation(cir: sq.Circuit, thresh: float = 1e-06, neig: int = 5,
     (defined relative to the original eigenvalues)
 
     Args:
-        cir (sq.Circuit): circuit to get truncation number for
+        cir (sq.Circuit or tuple): circuit to get truncation number for, or
+                                  (circuit, edges, params, ground_node, offset_integer)
         thresh (float, optional): relative threshold for changing eigenvalues.
                                   Defaults to 1e-06.
         neig (int, optional): number of eigenvalues to compute. Defaults to 5.
@@ -457,6 +469,11 @@ def pick_truncation(cir: sq.Circuit, thresh: float = 1e-06, neig: int = 5,
     Returns:
         list: truncation numbers for each mode
     """
+    if isinstance(cir, tuple):
+        params = cir[2]
+        cir = make_sqc(*cir)
+    else:
+        params = None
     
     nmodes = cir.n
     truncs = [default_charge if is_charge_mode(cir, i) else
@@ -469,7 +486,7 @@ def pick_truncation(cir: sq.Circuit, thresh: float = 1e-06, neig: int = 5,
     def update_diff(cir, truncs, diff, i):
         old = cir.efreqs.copy()
         cir.set_trunc_nums(truncs)
-        cir.diag(5)
+        cir.diag(neig)
         diff[i] = np.max(np.abs(cir.efreqs-old)/np.abs(cir.efreqs))
 
     incremented = np.ones(nmodes, dtype=bool)
@@ -483,12 +500,28 @@ def pick_truncation(cir: sq.Circuit, thresh: float = 1e-06, neig: int = 5,
                 update_diff(cir, truncs, diff, i)
                 incremented[i] = True
             truncs[i] -= increments[i]
+    
+    if params is None:
+        return truncs
+    else:
+        return params, truncs
 
-    return truncs
-
+# 5 min timeout to help speed things up
+def _timed_out(*args, **kwargs):
+    timeout_min = 60
+    try:
+        return func_timeout(60*timeout_min, get_ngate_mc, args, kwargs)
+    except FunctionTimedOut:
+        print(f"Could not complete {args[0]} ({timeout_min} min timout)")
+        return 0
+    except KeyboardInterrupt as KI:
+        raise KI
+    except Exception as e:
+        print(e)
+        return 0
 
 def _sweep_helper(args, **kwargs):
-    [vals, n_eig, circuit, edges, ground_node, trunc_num, offset_integer, cj, extras] = args
+    [vals, n_eig, circuit, edges, ground_node, trunc_num, offset_integer, cj, extras, just_spec] = args
 
     idx = tuple([x[0] for x in vals])
     param_set = tuple([x[1] for x in vals])
@@ -496,20 +529,12 @@ def _sweep_helper(args, **kwargs):
     cir = make_sqc(circuit, edges, param_set, ground_node, offset_integer,
                    trunc_num=trunc_num, cj=cj)
     
-    # try:
-    tol = 1e-10
-    # while tol < 1e-06: 
-    #     try:
-    #         cir.diag(n_eig, tol=tol)
-    #     except Exception as e:
-    #         tol *= 10
-    #         if tol > 1e-06:
-    #             raise e
-    try:
-        cir.diag(n_eig, tol)
-    except:
-        cir.diag(n_eig, tol=1e-07)
+    cir.diag(n_eig)
     spec = cir.efreqs
+    to_return = {}
+    to_return["spec"] = spec
+    if just_spec:
+        return idx, to_return
 
     # Calculate anharmonicity/rates
     alpha = get_anharmonicity(spec)
@@ -519,8 +544,6 @@ def _sweep_helper(args, **kwargs):
     # Save anharmoniciry and gate times
     gate_time = get_gate_time(spec[1]-spec[0], spec[2]-spec[1])
 
-    to_return = {}
-    to_return["spec"] = spec
     to_return["alpha"] = alpha
     to_return["rates"] = rates
     to_return["t1"] = t1
@@ -539,7 +562,7 @@ def _sweep_helper(args, **kwargs):
 def sweep_params(circuit: list, edges: list, params: list, 
                  ground_node: int = 0, workers: int = 4, n_eig: int = 5,
                  extras: dict = {}, trunc_num: Union[int, list] = -1,
-                 cj: float = 3.0, quiet: bool = False):
+                 cj: float = 3.0, just_spec: bool = False, quiet: bool = False):
     """General function to perform paramater sweeps on quantum circuits
     using SQcircuit.
 
@@ -561,6 +584,7 @@ def sweep_params(circuit: list, edges: list, params: list,
                                   extras[str] = (dims, func) for non-scalar
         trunc_num (int or list, optional): truncation number for each mode
         cj (float): junction capacitance in GHz. Pass 0 to ignore it.
+        just_spec (bool): Only calculate the energy spectrum to save time.
         quiet (bool): whether to print out messages or not
 
 
@@ -605,7 +629,10 @@ def sweep_params(circuit: list, edges: list, params: list,
             extras[field] = extras[field][1]
         else:
             results[field] = np.zeros(arr_size)
+    if just_spec:
+        fields = ["spec"]
     fields = fields + list(extras.keys())
+
 
     # Estimate truncation number
     if trunc_num == -1:
@@ -627,12 +654,20 @@ def sweep_params(circuit: list, edges: list, params: list,
                     print(" ", elem, (ranges[count][0], ranges[count][-1], ranges[count].size))
                 else:
                     print(" ", elem, ranges[count][0])
+                count += 1
+        print(" offsets:")
+        for i in range(count, len(ranges)):
+            if ranges[i].size > 1:
+                print(" ", (ranges[i][0], ranges[i][-1], ranges[i].size))
+            else:
+                print(" ", ranges[i][0])
         print("----------------------------")               
     
 
     # Parameter values to iterate over
     vals = itertools.product(*[enumerate(x) for x in ranges])
-    vals = [(v,) + (n_eig, circuit, edges, ground_node, trunc_num, False, cj, extras) for v in vals]
+    vals = [(v,) + (n_eig, circuit, edges, ground_node,
+                    trunc_num, False, cj, extras, just_spec) for v in vals]
     if workers > 1:
         pool = Pool(processes=workers)
         for idx, res in tqdm(pool.imap_unordered(_sweep_helper, vals),
@@ -640,25 +675,28 @@ def sweep_params(circuit: list, edges: list, params: list,
             # Save values
             for field in fields:
                 results[field][idx] = res[field]
-            for dec in res["rates"]:
-                for dec_type in results["rates"][dec]:
-                    results["rates"][dec][dec_type][idx] = res["rates"][dec][dec_type]
+            if "rates" in res:
+                for dec in res["rates"]:
+                    for dec_type in results["rates"][dec]:
+                        results["rates"][dec][dec_type][idx] = res["rates"][dec][dec_type]
     else:
         for v in tqdm(vals):
             idx, res = _sweep_helper(v)
             # Save value
             for field in fields:
                 results[field][idx] = res[field]
-            for dec in res["rates"]:
-                for dec_type in results["rates"][dec]:
-                    results["rates"][dec][dec_type][idx] = res["rates"][dec][dec_type]
+            if "rates" in res:
+                for dec in res["rates"]:
+                    for dec_type in results["rates"][dec]:
+                        results["rates"][dec][dec_type][idx] = res["rates"][dec][dec_type]
 
     # Squeeze 1 length dimensions
     for field in fields:
         results[field] = np.squeeze(results[field])
-    for dec in results["rates"]:
-        for dec_type in results["rates"][dec]:
-            results["rates"][dec][dec_type] = np.squeeze(results["rates"][dec][dec_type])
+    if "rates" in res:
+        for dec in results["rates"]:
+            for dec_type in results["rates"][dec]:
+                results["rates"][dec][dec_type] = np.squeeze(results["rates"][dec][dec_type])
 
     return results
 
@@ -671,7 +709,7 @@ def optimize_diff_evol(circuit: list, edges: list, ground_node: int,
                        cj: float = 3.0, quiet: bool = False,
                        **kwargs):
     
-    kwargs = dict({'disp': 'True', 'popsize': None,
+    kwargs = dict({'disp': 'True', 'popsize': 20,
                    "callback": None, "polish": False,
                    "workers": 1, "tol": 0.1, "init": "halton",
                    "maxiter": 1000}, **kwargs)
@@ -680,12 +718,6 @@ def optimize_diff_evol(circuit: list, edges: list, ground_node: int,
     if ranges is None:
         ranges = gen_param_range_anyq(circuit, edges, ground_node, offset_integer)
     kwargs["bounds"] = ranges
-    
-    # Estimate truncation number if none is given
-    if trunc_num == -1:
-        mean_params = [np.mean(x) for x in ranges]
-        cir = make_sqc(circuit, edges, mean_params, ground_node=ground_node)
-        trunc_num = pick_truncation(cir)
 
     # Determine integrality of variables
     integrality = np.zeros(len(ranges), dtype=bool)
@@ -694,10 +726,43 @@ def optimize_diff_evol(circuit: list, edges: list, ground_node: int,
         for i in range(nelems, integrality.size):
             integrality[i] = True
     kwargs["integrality"] = integrality
+
+    # Dictionary with results
+    to_return = {}
     
-    if kwargs["popsize"] is None:
-        kwargs["popsize"] = 20*len(ranges)
-    kwargs["workers"] = min(kwargs["workers"], 2*kwargs["popsize"])
+    # Estimate truncation number if none is given
+    if trunc_num == -1:
+        if kwargs["workers"] > 1:
+            random_params = [[np.exp(np.random.random()*(np.log(ranges[i][1])-np.log(ranges[i][0]))+np.log(ranges[i][0])) 
+                              if not integrality[i] else np.random.randint(*ranges[i]) for i in range(len(ranges))]
+                              for i in range(kwargs["workers"])]
+            args = [(circuit, edges, p, ground_node, offset_integer) for p in random_params]
+            pool = Pool(processes=kwargs["workers"])
+            trunc_vals = []
+            param_vals = []
+            if not quiet:
+                print("Picking Truncation Number with", kwargs["workers"], "randomly chosen points")
+            
+            for p, res in tqdm(pool.imap_unordered(pick_truncation, args)):
+                trunc_vals.append(res)
+                param_vals.append(p)
+            
+            trunc_vals = np.array(trunc_vals)
+            param_vals = np.array(param_vals)
+            to_return["max_trunc"] = list(np.max(trunc_vals, axis=0))
+            trunc_num = np.round(np.percentile(trunc_vals, 90, axis=0)).astype(int)
+            to_return["trunc_num"] = list(trunc_num)
+            if not quiet:
+                print("Maximum Cutoffs:", to_return["max_trunc"])
+                print("Chosen Values (90th Percentile)", trunc_num)
+        else:
+            random_params = [np.random.random()*(x[1]-x[0])+x[0] for x in ranges]
+            cir = make_sqc(circuit, edges, random_params, ground_node=ground_node)
+            trunc_num = pick_truncation(cir)
+            to_return["trunc_num"] = list(trunc_num)
+            if not quiet:
+                print("Picking Truncation Number with Avg Parameter Value")
+                print("Chosen Values", trunc_num)
 
     if not quiet:
         print("----------------------------")
@@ -724,25 +789,31 @@ def optimize_diff_evol(circuit: list, edges: list, ground_node: int,
     # [circuit, edges, ground_node, trunc_num, offset_integer, cj,
     #  ntrial, amp_elem, amp_off, return_std]
     args = [circuit, edges, ground_node, trunc_num, offset_integer, cj,
-            trials[0], amps["elem"][0], amps["offset"][0], False]
-    res = sp.optimize.differential_evolution(get_ngate_mc, args=args, **kwargs)
+            trials[0], amps["elem"][0], amps["offset"][0], False, 1]
+    res = sp.optimize.differential_evolution(_timed_out, args=args, **kwargs)
+    # res = sp.optimize.differential_evolution(get_ngate_mc, args=args, **kwargs)
 
     if not quiet:
         print("Finished optimization\n", res)
         print("----------------------------")      
 
-    # Dictionary with results
-    to_return = {}
     to_return["ngate"] = -res.fun
-    if offset_integer:
-        for i in range(len(res.x)):
-            if integrality[i]:
-                res.x[i] = INT_OFFSETS[res.x[i]]
+    cir = make_sqc(circuit, edges, res.x, ground_node=ground_node)
+    # if offset_integer:
+    #     ii = 0
+    #     for i in range(len(res.x)):
+    #         if integrality[i]:
+    #             if is_charge_mode(cir, ii):
+    #                 res.x[i] = INT_OFFSETS_CHARGE[res.x[i]]
+    #             else:
+    #                 res.x[i] = INT_OFFSETS_FLUX[res.x[i]]
+    #             ii += 1
     to_return["param_best"] = res.x
 
     # Run final evaluation
     args2 = [circuit, edges, ground_node, trunc_num, False, cj,
-             trials[1], amps["elem"][1], amps["offset"][1], True]
+             trials[1], amps["elem"][1], amps["offset"][1], True,
+             kwargs["workers"]]
     to_return["ngate_mean"] , to_return["ngate_std"] = get_ngate_mc(res.x, *args2)
 
     if not quiet:

@@ -304,7 +304,8 @@ def to_SQcircuit(circuit: list, edges: list,
             if elem == "C":
                 id_str = "C_" + "".join([str(x) for x in edge])
                 circuit_dict[edge].append(sq.Capacitor(val, units,
-                                                    id_str=id_str))
+                                                    id_str=id_str,
+                                                    ))
 
             elif elem == "L":
                 id_str = "L_" + "".join([str(x) for x in edge])
@@ -345,16 +346,16 @@ def to_SQcircuit(circuit: list, edges: list,
     sqC = sq.Circuit(circuit_dict, flux_dist=flux_dist)
 
     # Convert truncation num to list
-    if not isinstance(trunc_num, list):
+    if isinstance(trunc_num, int):
         trunc_num = [trunc_num]*sqC.n
     
     if sqC.n > len(trunc_num):
         # print("Warning, too few trunc nums given, filling in with max value (and adding 10)", max(trunc_num))
-        trunc_num = [x + 10 for x in trunc_num] + [max(trunc_num)+10]*(sqC.n-len(trunc_num))
+        trunc_num = [x for x in trunc_num] + [np.max(trunc_num)]*(sqC.n-len(trunc_num))
     elif sqC.n < len(trunc_num):
-        trunc_num = [max(trunc_num)]*sqC.n
+        trunc_num = [np.max(trunc_num)]*sqC.n
 
-    sqC.set_trunc_nums(trunc_num)
+    sqC.set_trunc_nums([x for x in trunc_num])
 
     return sqC
 
