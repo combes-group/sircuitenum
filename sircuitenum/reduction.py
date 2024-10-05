@@ -304,7 +304,7 @@ def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):
                                 Defaults to considering all.
 
     Returns:
-        Nothing, fills in the 'in_non_iso' and 'equiv_circuit'
+        Nothing, fills in the 'in_non_iso_set' and 'equiv_circuit'
         columns of df
     """
     to_consider = kwargs.get("to_consider", np.ones(df.shape[0], dtype=bool))

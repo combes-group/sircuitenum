@@ -154,11 +154,33 @@ def gen_junc_pot(circuit, edges, flux_vars, cob=None):
     return j_terms
 
 
+def gen_variables(n_nodes, cob, periodic):
+
+    Q_str = ""
+    th_str = ""
+    for n in range(1, n_nodes+1):
+        if cob is None:
+            th_str += "\hat{" + NODE_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + NODE_CHARGE + "}_{"+str(n)+"}, "
+        elif n in periodic:
+            th_str += "\hat{" + PERIODIC_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + PERIODIC_CHARGE + "}_{"+str(n)+"}, "
+        else:
+            th_str += "\hat{" + EXTENDED_PHASE + "}_{"+str(n)+"}, "
+            Q_str += "\hat{" + EXTENDED_CHARGE + "}_{"+str(n)+"}, "
+
+    Q_vec = sym.Matrix(sym.symbols(Q_str[:-1]))
+    th_vec = sym.Matrix(sym.symbols(th_str[:-1]))
+
+    return Q_vec, th_vec
+
+
 def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
-                     return_mats=False, return_vars=False,
+                     sigma = [], return_mats=False, return_vars=False,
                      return_H_class: bool = False,
-                     return_combos: bool = False):
+                     return_combos: bool = False,
+                     collect_phase: bool = True):
     """
     Performs a symbolic circuit quantization for the given circuit.
 
@@ -194,6 +216,8 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                                         all coefficients removed
         return_combos(bool, optional): optionally return the combination of
                                        variables present
+        collect_phase (bool, optional): for speed, don't collect the phase terms.
+                                        slightly messier, but faster.
 
     Returns:
         Hamiltonian or Hamiltonian, Capacitance Matrix, Inductance Matrix
@@ -201,21 +225,9 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     edges = utils.zero_start_edges(edges)
 
     n_nodes = utils.get_num_nodes(edges)
-    Q_str = ""
-    th_str = ""
-    for n in range(1, n_nodes+1):
-        if cob is None:
-            th_str += "\hat{" + NODE_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + NODE_CHARGE + "}_{"+str(n)+"}, "
-        elif n in periodic:
-            th_str += "\hat{" + PERIODIC_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + PERIODIC_CHARGE + "}_{"+str(n)+"}, "
-        else:
-            th_str += "\hat{" + EXTENDED_PHASE + "}_{"+str(n)+"}, "
-            Q_str += "\hat{" + EXTENDED_CHARGE + "}_{"+str(n)+"}, "
 
-    Q_vec = sym.Matrix(sym.symbols(Q_str[:-1]))
-    th_vec = sym.Matrix(sym.symbols(th_str[:-1]))
+    Q_vec, th_vec = gen_variables(n_nodes, cob, periodic)
+    
 
     C_mat = gen_cap_mat(circuit, edges)
     L_mat = gen_ind_mat(circuit, edges)
@@ -241,7 +253,7 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     C_mat_full = C_mat.copy()
     L_mat_full = L_mat.copy()
     # All modes to remove
-    remove_modes = free + frozen
+    remove_modes = free + frozen + sigma
     if remove_modes:
         # Go in order to make the indexing
         # post deletion straightforward
@@ -284,11 +296,13 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     if cob is None:
         H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="ϕ")
+                                  extended_charge="q", extended_phase="ϕ",
+                                  collect_phase = collect_phase)
     else:
         H, combos, combosQ = utils.collect_H_terms(H, zero_ext=False,
                                   periodic_charge="n", periodic_phase="θ",
-                                  extended_charge="q", extended_phase="φ")
+                                  extended_charge="q", extended_phase="φ",
+                                  collect_phase = collect_phase)
 
     to_return = (H,)
 

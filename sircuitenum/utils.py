@@ -98,13 +98,14 @@ def graph_index_to_edges(graph_index: int, n_nodes: int):
     return list(get_basegraphs(n_nodes)[graph_index].edges)
 
 
-def edges_to_graph_index(edges: list):
+def edges_to_graph_index(edges: list, return_mapping: bool = False):
     """
     Matches a set of edges to a basegraph that's isomorphic to it
 
     Args:
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
+        return_mapping (bool): return the mapping from edges to the basegraph
     """
     # Graph object to use in comparison
     G1 = nx.Graph()
@@ -115,7 +116,10 @@ def edges_to_graph_index(edges: list):
     possible_graphs = get_basegraphs(n_nodes)
     for i, G2 in enumerate(possible_graphs):
         if G2.number_of_edges() == n_edges:
-            if nx.is_isomorphic(G1, G2):
+            GM = nx.isomorphism.GraphMatcher(G1, G2)
+            if GM.is_isomorphic():
+                if return_mapping:
+                    return i, GM.mapping
                 return i
 
     raise ValueError("Error: No Isomorphic Graph Found")
@@ -803,9 +807,22 @@ def find_circuit_in_db(db_file: str, circuit: list, edges: list):
                         e.g. [(0,1), (0,2), (1,2)]
     """
 
-    encoding = components_to_encoding(circuit)
     n_nodes = get_num_nodes(edges)
-    graph_index = edges_to_graph_index(edges)
+    graph_index, mapping = edges_to_graph_index(edges, return_mapping=True)
+    # Re-order circuit to match basegraph edges
+    new_edge_order = graph_index_to_edges(graph_index, n_nodes)
+    circuit_in_order = [None]*len(circuit)
+    for i in range(len(edges)):
+        try:
+            n0, n1 = edges[i]
+            if (mapping[n0], mapping[n1]) in new_edge_order:
+                new_i = new_edge_order.index((mapping[n0], mapping[n1]))
+            else:
+                new_i = new_edge_order.index((mapping[n1], mapping[n0]))
+        except:
+            print(new_edge_order, edges, mapping, graph_index)
+        circuit_in_order[new_i] = circuit[i]
+    encoding = components_to_encoding(circuit_in_order)
     filters = f"WHERE circuit LIKE '{encoding}' AND\
                 graph_index = '{graph_index}'"
     return get_circuit_data_batch(db_file, n_nodes, filter_str=filters)
@@ -870,7 +887,7 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                     periodic_charge="n", periodic_phase="θ",
                     extended_charge="q", extended_phase="φ",
                     ext_charge: str = "ng", ext_flux: str = "_{ext}",
-                    no_coeff: bool = False) -> Add:
+                    no_coeff: bool = False, collect_phase: bool = True) -> Add:
     """
     Groups terms in the Hamiltonian.
 
@@ -895,6 +912,8 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
                                    Defaults to "_{ext}"
         no_coef (bool, optional): Remove all the coefficients,
                                   only leaving operators.
+        collect_phase (bool, optional): for speed, don't collect the phase terms.
+                                        slightly messier, but faster.
 
     Returns:
         Add: Hamiltonian with terms grouped
@@ -931,32 +950,34 @@ def collect_H_terms(H: Add, zero_ext: bool = True,
     # Phase
     combos = []
     combos_trig = []
-    for num_terms in range(1, n_modes + 1):
-        # Straight products
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=num_terms)]))
-        # Trig products
-        # Encoding signals cos or sin
-        for encoding in itertools.product([0, 1], repeat=num_terms):
-            # Modes is which num_terms modes are being considered
-            for modes in itertools.combinations(range(n_modes), num_terms):
-                trig_prod = 1
-                for i, term in enumerate(encoding):
-                    if term:
-                        trig_prod *= sym.cos(theta_list[modes[i]])
-                    else:
-                        trig_prod *= sym.sin(theta_list[modes[i]])
-                combos_trig += [trig_prod]
+    if collect_phase:
+        for num_terms in range(1, n_modes + 1):
+            # Straight products
+            combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                                for z in itertools.product(theta_list,
+                                                           repeat=num_terms)]))
+            # Trig products
+            # Encoding signals cos or sin
+            for encoding in itertools.product([0, 1], repeat=num_terms):
+                # Modes is which num_terms modes are being considered
+                for modes in itertools.combinations(range(n_modes), num_terms):
+                    trig_prod = 1
+                    for i, term in enumerate(encoding):
+                        if term:
+                            trig_prod *= sym.cos(theta_list[modes[i]])
+                        else:
+                            trig_prod *= sym.sin(theta_list[modes[i]])
+                    combos_trig += [trig_prod]
 
-    # Explicitly add theta squared terms if only one mode
-    if n_modes == 1:
-        combos += list(set([functools.reduce(lambda x, y: x*y, z)
-                            for z in itertools.product(theta_list,
-                                                       repeat=2)]))
+        # Explicitly add theta squared terms if only one mode
+        if n_modes == 1:
+            combos += list(set([functools.reduce(lambda x, y: x*y, z)
+                                for z in itertools.product(theta_list,
+                                                           repeat=2)]))
 
     H = collect(H, list(combosQ.keys()) + combos, func=sym.ratsimp)
-    H = collect(H, combos_trig)
+    if collect_phase:
+        H = collect(H, combos_trig)
 
     if no_coeff:
         H = remove_coeff_(H, list(combosQ.keys()) + combos + combos_trig)

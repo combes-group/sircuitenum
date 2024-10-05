@@ -683,30 +683,21 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
 
 # Find the unique set of hamiltonian classes,
 # and assign each entry an "H_group"
-def unique_hams_for_count_(args):
 
-    db_file, n_nodes, nl_cnt, symmetric, mapping = args
-
-    if symmetric:
-        col_name = "nonlinearity_counts_sym"
-    else:
-        col_name = "nonlinearity_counts"
-
-    filter_str = f"WHERE {col_name} LIKE '{nl_cnt}'"
-    df = utils.get_circuit_data_batch(db_file, n_nodes,
-                                      elem_mapping=mapping,
-                                      filter_str=filter_str)
+def unique_hams_in_df(df, symmetric, normalize_sign=True):
 
     # Catch the obviously same ones, i.e.
     # the H_str is the exact same
     if symmetric:
         l_str_vec = df["H_class_sym"].values
-        assert len(df["nonlinearity_counts_sym"].unique()) == 1
         nl_cnt = df["nonlinearity_counts_sym"].iloc[0]
     else:
         l_str_vec = df["H_class"].values
-        assert len(df["nonlinearity_counts"].unique()) == 1
         nl_cnt = df["nonlinearity_counts"].iloc[0]
+
+    
+    if normalize_sign:
+        l_str_vec = [x.replace("-", "+") for x in l_str_vec]
 
     unique_str, index, inv = np.unique(l_str_vec, return_index=True,
                                        return_inverse=True)
@@ -801,6 +792,27 @@ def unique_hams_for_count_(args):
     else:
         group_col_name = "H_group"
         df[group_col_name] = group_col
+
+    return group_col_name
+
+
+def unique_hams_for_count_(args):
+
+    db_file, n_nodes, nl_cnt, symmetric, mapping = args
+
+    if symmetric:
+        col_name = "nonlinearity_counts_sym"
+    else:
+        col_name = "nonlinearity_counts"
+
+    filter_str = f"WHERE {col_name} LIKE '{nl_cnt}'"
+    
+
+    df = utils.get_circuit_data_batch(db_file, n_nodes,
+                                      elem_mapping=mapping,
+                                      filter_str=filter_str)
+    group_col_name = unique_hams_in_df(df, symmetric)
+    
 
     utils.update_db_from_df(db_file, df,
                             to_update=[group_col_name],
@@ -1098,7 +1110,7 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     print("Categorizing Hamiltonians for " + str(n_nodes) + " node circuits.")
     # Max 10 workers because this is fast and db conflicts
     assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
-                    resume=resume)
+                    resume=False)
     return True
 
 

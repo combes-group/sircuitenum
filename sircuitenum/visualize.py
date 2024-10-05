@@ -7,12 +7,14 @@ __status__ = "Development"
 # Import Statements
 # -------------------------------------------------------------------
 
+import matplotlib.transforms
 import numpy as np
 import networkx as nx
 import matplotlib
 import matplotlib.pyplot as plt
 
 from pathlib import Path
+import schemdraw.elements
 from tqdm import tqdm
 from scipy.spatial.distance import pdist
 
@@ -22,16 +24,26 @@ import schemdraw.elements as elm
 from sircuitenum import utils
 from sircuitenum import reduction as red
 from sircuitenum import visualize as viz
-
+G_POS_BG = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
+                1: np.array([0., 0.])}],
+         3: [{0: np.array([0., 0.]),
+              1: np.array([0.5, np.sqrt(3)/2]),
+              2: np.array([-0.5, np.sqrt(3)/2])}]*2,
+         4: [{0: np.array([0., 0.]),
+                1: np.array([1., 1.])/np.sqrt(2),
+                2: np.array([1., 0.])/np.sqrt(2),
+                3: np.array([0., 1.])/np.sqrt(2)}]*6,
+         5:   [{0: np.array([0, 1]),
+                1: np.array([np.sin(2*2*np.pi/5), np.cos(2*2*np.pi/5)]),
+                2: np.array([np.sin(4*2*np.pi/5), np.cos(4*2*np.pi/5)]),
+                3: np.array([np.sin(1*2*np.pi/5), np.cos(1*2*np.pi/5)]),
+                4: np.array([np.sin(3*2*np.pi/5), np.cos(3*2*np.pi/5)])}]*21}
 
 G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                 1: np.array([0., 0.])}],
-         3: [{0: np.array([-1/np.sqrt(2), 1/np.sqrt(2)]),
-                1: np.array([1/np.sqrt(2), -1/np.sqrt(2)]),
-                2: np.array([0., 0.])},
-               {0: np.array([0., 0.]),
-                1: np.array([0.5, np.sqrt(3)/2]),
-                2: np.array([-0.5, np.sqrt(3)/2])}],
+         3: [{0: np.array([0., 0.]),
+              1: np.array([0.5, np.sqrt(3)/2]),
+              2: np.array([-0.5, np.sqrt(3)/2])}]*2,
          4: [{0: np.array([np.sqrt(3)/2, -0.5]),
                 1: np.array([0., 1.]),
                 2: np.array([-np.sqrt(3)/2, -0.5]),
@@ -45,9 +57,9 @@ G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                 2: np.array([0.5, np.sqrt(3)/2]),
                 3: np.array([0., 0.])},
                {0: np.array([0., 0.]),
-                1: np.array([1., 0.]),
+                1: np.array([1., -1.]),
                 2: np.array([0., -1.]),
-                3: np.array([1., -1.])},
+                3: np.array([1., 0.])},
                {0: np.array([-0.5, np.sqrt(3)/2]),
                 1: np.array([1., 0.]),
                 2: np.array([0.5, np.sqrt(3)/2]),
@@ -161,7 +173,6 @@ G_POS = {2: [{0: np.array([-1/np.sqrt(2), -1/np.sqrt(2)]),
                 2: np.array([np.sin(4*2*np.pi/5), np.cos(4*2*np.pi/5)]),
                 3: np.array([np.sin(1*2*np.pi/5), np.cos(1*2*np.pi/5)]),
                 4: np.array([np.sin(3*2*np.pi/5), np.cos(3*2*np.pi/5)])}]}
-
 
 def black_or_white_text(color: tuple):
     """
@@ -319,8 +330,8 @@ def draw_basegraph(G: nx.Graph, title: str = "",
     edges = [x for x in G.edges()]
     n_nodes = G.number_of_nodes()
     graph_index = utils.edges_to_graph_index(edges)
-    if n_nodes in G_POS:
-        def_pos = G_POS[n_nodes][graph_index]
+    if n_nodes in G_POS_BG:
+        def_pos = G_POS_BG[n_nodes][graph_index]
     else:
         if nx.is_planar(G):
             def_pos = nx.planar_layout(G)
@@ -328,18 +339,25 @@ def draw_basegraph(G: nx.Graph, title: str = "",
             def_pos = nx.spring_layout(G)
     pos = kwargs.get("pos", def_pos)
 
-    f = plt.figure()
-    nx.draw_networkx(G, pos=pos)
-    plt.title(title)
+    f = plt.figure(figsize=(3, 3))
+    plt.tight_layout()
+    nx.draw_networkx(G, pos=pos, node_color="#FFFFFF", linewidths=1, width=2, edgecolors="#000000",
+                     with_labels=False, node_size=800)
+    plt.gca().set_axis_off()
     plt.gca().set_aspect('equal')
+    plt.tight_layout()
     if savename is not None:
-        plt.savefig(savename)
+        plt.savefig(savename, bbox_inches = "tight")
     return f, pos
 
 
 def draw_all_qubits(file: str, n_nodes: int, out_dir: str,
                     layout: str = 'fixed', format: str = ".svg"):
 
+    if n_nodes < 5:
+        scale = 4.0
+    else:
+        scale = 4.0 + n_nodes - 3
     # So plots don't pop up
     matplotlib.use('agg')
     df = utils.get_unique_qubits(file, n_nodes)
@@ -349,7 +367,8 @@ def draw_all_qubits(file: str, n_nodes: int, out_dir: str,
         graph_index = row.graph_index
         viz.draw_circuit_diagram(circuit, edges,
                                  out=Path(out_dir, f"{uid}{format}"),
-                                 layout=layout, graph_index=graph_index)
+                                 layout=layout, graph_index=graph_index,
+                                 scale=scale)
         plt.close()
 
 
@@ -432,7 +451,7 @@ def draw_circuit_diagram(circuit: list, edges: list,
     # Define the circuit elements
     elem_bank = {
         'C': lambda: elm.Capacitor(),
-        'L': lambda: elm.Inductor(),
+        'L': lambda: elm.Inductor2(),
         'J': lambda: elm.Josephson()
     }
 
@@ -443,7 +462,13 @@ def draw_circuit_diagram(circuit: list, edges: list,
     with schemdraw.Drawing() as d:
         for n0 in G.nodes():
             # Draw a dot at every node
-            d.add(elm.Dot().at(scaled_pos[n0]))
+            d.add(DotCustom(radius=0.1, fill="#FFFFFF", color="#000000",
+                            lw=1).at(scaled_pos[n0]))
+            # d.add(schemdraw.segments.SegmentCircle(scaled_pos[n0],
+            #                                        radius=0.2,
+            #                                        color="#000000",
+            #                                        fill="#FFFFFF",
+            #                                        lw=0.01))
             for n1 in G.nodes():
                 if n0 != n1 and n0 < n1 and G.has_edge(n0, n1):
                     edgesBetweenNodes = G[n0][n1]
@@ -485,8 +510,10 @@ def draw_circuit_diagram(circuit: list, edges: list,
                         # For even number of edges do 1/2 integer steps
                         if nEdges % 2 == 0:
                             maxSpread = (perp_step*(nEdges/2-1/2))
-                            d.add(elm.Wire().at(a0+maxSpread).to(a0-maxSpread))
-                            d.add(elm.Wire().at(a1+maxSpread).to(a1-maxSpread))
+                            d.add(elm.Wire().at(a0).to(a0-maxSpread))
+                            d.add(elm.Wire().at(a0).to(a0+maxSpread))
+                            d.add(elm.Wire().at(a1).to(a1-maxSpread))
+                            d.add(elm.Wire().at(a1).to(a1+maxSpread))
                             for edgeNum in range(int(nEdges/2)):
                                 edge1 = edgesBetweenNodes[edgeNum]
                                 edge2 = edgesBetweenNodes[nEdges-1-edgeNum]
@@ -498,8 +525,10 @@ def draw_circuit_diagram(circuit: list, edges: list,
                                     a1-perp_step*(edgeNum+1/2)))
                         else:
                             maxSpread = (perp_step*(nEdges-1)/2)
-                            d.add(elm.Wire().at(a0+maxSpread).to(a0-maxSpread))
-                            d.add(elm.Wire().at(a1+maxSpread).to(a1-maxSpread))
+                            d.add(elm.Wire().at(a0).to(a0-maxSpread))
+                            d.add(elm.Wire().at(a0).to(a0+maxSpread))
+                            d.add(elm.Wire().at(a1).to(a1-maxSpread))
+                            d.add(elm.Wire().at(a1).to(a1+maxSpread))
                             # 0th one straight across
                             d.add(elem_bank[edgesBetweenNodes[0]
                                   ['element']]().endpoints(a0, a1))
@@ -512,8 +541,8 @@ def draw_circuit_diagram(circuit: list, edges: list,
                                     a0+perp_step*edgeNum,
                                     a1+perp_step*edgeNum))
                                 d.add(elem_bank[edge2['element']]().endpoints(
-                                    a0-perp_step*edgeNum,
-                                    a1-perp_step*edgeNum))
+                                    a1-perp_step*edgeNum,
+                                    a0-perp_step*edgeNum))
         if out != "":
             d.save(out)
     if out != "":
@@ -522,16 +551,45 @@ def draw_circuit_diagram(circuit: list, edges: list,
         plt.show()
 
 
+class DotCustom(schemdraw.elements.Element):
+    ''' Connection Dot
+
+        Keyword Args:
+            radius: Radius of dot [default: 0.075]
+            open: Draw as an open circle [default: False]
+    '''
+    _element_defaults = {
+        'radius': 0.075,
+        'open': False}
+    def __init__(self, *,
+                 radius,
+                 fill,
+                 **kwargs):
+        super().__init__(**kwargs)
+        fill = fill
+        self.anchors['start'] = (0, 0)
+        self.anchors['center'] = (0, 0)
+        self.anchors['end'] = (0, 0)
+        self.elmparams['drop'] = (0, 0)
+        self.elmparams['theta'] = 0
+        self.elmparams['zorder'] = 4
+        self.elmparams['fill'] = fill
+        self.segments.append(schemdraw.segments.SegmentCircle((0, 0),
+                                                              self.params['radius'],
+                                                              **kwargs))
+
+
+
 if __name__ == "__main__":
 
     # Basegraphs
-    base = '/home/eweissler/img/basegraphs'
-    draw_all_basegraphs(base,n_start=5, n_end=5)
+    # base = '/home/eweissler/img/basegraphs'
+    # draw_all_basegraphs(base,n_start=2, n_end=5)
 
     # # Actual Circuits
-    # base = "/home/eweissler/img/fixed_layout"
-    # toLoad = "/home/eweissler/scratch/circuits.db"
-    # for n_nodes in range(2, 5):
-    #     out_dir = Path(base, f'{n_nodes}_node_circuits')
-    #     out_dir.mkdir(parents=True, exist_ok=True)
-    #     draw_all_qubits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')
+    base = "/home/eweissler/img/fixed_layout"
+    toLoad = "/home/eweissler/src/research_scratch/paper/circuits_4_nodes_7_elems.db"
+    for n_nodes in range(2, 3):
+        out_dir = Path(base, f'{n_nodes}_node_circuits')
+        out_dir.mkdir(parents=True, exist_ok=True)
+        draw_all_qubits(toLoad, n_nodes, out_dir=out_dir, layout='fixed')

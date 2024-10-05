@@ -25,7 +25,8 @@ EPS_C = 1e-4
 INT_OFFSETS_CHARGE = {0: 0.0+EPS_C, 1: 0.25+EPS_C, 2: 0.5+EPS_C, 3: 0.75+EPS_C}
 # INT_OFFSETS_CHARGE = {1: 0.25+EPS_C}
 EPS_F = 1e-6
-INT_OFFSETS_FLUX = {0: 0.0+EPS_F, 1: 0.25+EPS_F, 2: 0.5+EPS_F, 3: 0.75+EPS_F}
+# INT_OFFSETS_FLUX = {0: 0.0+EPS_F, 1: 0.25+EPS_F, 2: 0.5+EPS_F, 3: 0.75+EPS_F}
+INT_OFFSETS_FLUX = {0: 0.0+EPS_F}
 # INT_OFFSETS_FLUX = {0: 0.0+EPS_F, 1: 0.5+EPS_F}
 DECAYS = {  'depolarization':
                     ['capacitive',
@@ -314,7 +315,7 @@ def make_sqc(circuit: list, edges: list, param_sets: list, ground_node: int = 0,
     return sqc
 
 
-def get_ngate_mc(param_set: list, *args):
+def get_ngate_mc(param_set: list, *args, **kwargs):
     """
     Objective function to be minimized for optimization.
     Returns -ngates performed by the circuit.
@@ -327,12 +328,15 @@ def get_ngate_mc(param_set: list, *args):
         param_set (list): list of parameter values in GHz. Values
                            are given in the order they appear in circuit.
         args (list): extra arguments [circuit, edges, ground_node, trunc_num,
-                                      offset_integer, ntrial, amp, return_std]
+                                      offset_integer, cj, ntrial, amp_param, 
+                                      amp_offset, return_std, workers]
 
     Returns:
         float: -ngates done by the circuit, or -ngates, std of samples
     """
     [ntrial, amp_elem, amp_off, return_std, workers] = args[-5:]
+
+    return_median = kwargs.get("return_median", False)
 
     # Run ntrial times, going amp on either side of params
     nelems = sum(utils.count_elems_mapped(args[0]).values())
@@ -345,16 +349,23 @@ def get_ngate_mc(param_set: list, *args):
         swp_args.append((tuple(enumerate(new_param_set)),) + (3,) + args[:-5] + ({},) + (False,))
     if workers == 1:
         for i in range(ntrial):
-            ngates.append(_sweep_helper(swp_args[i])[1]["ngate"])
+            res = _sweep_helper(swp_args[i])[1]
+            ngates.append(res["ngate"])
     else:
         pool = Pool(processes=workers)
         for res in pool.imap_unordered(_sweep_helper, swp_args):
             ngates.append(res[1]["ngate"])
 
-    if return_std:
-        return np.mean(ngates), np.std(ngates)
-    else:
+    if not (return_std or return_median):
         return -np.mean(ngates)
+    else:
+        to_return = (np.mean(ngates),)
+        if return_median:
+            to_return = to_return + (np.median(ngates),)
+        if return_std:
+            to_return = to_return + (np.std(ngates),)
+        return to_return
+        
 
 
 def gen_param_dict_anyq(circuit: list, edges: list, param_sets: list,
@@ -516,8 +527,7 @@ def _timed_out(*args, **kwargs):
         return 0
     except KeyboardInterrupt as KI:
         raise KI
-    except Exception as e:
-        print(e)
+    except:
         return 0
 
 def _sweep_helper(args, **kwargs):
@@ -526,10 +536,14 @@ def _sweep_helper(args, **kwargs):
     idx = tuple([x[0] for x in vals])
     param_set = tuple([x[1] for x in vals])
 
-    cir = make_sqc(circuit, edges, param_set, ground_node, offset_integer,
+    try:
+        cir = make_sqc(circuit, edges, param_set, ground_node, offset_integer,
                    trunc_num=trunc_num, cj=cj)
+    except:
+        return idx, {"ngate": 0}
     
     cir.diag(n_eig)
+
     spec = cir.efreqs
     to_return = {}
     to_return["spec"] = spec
@@ -657,7 +671,7 @@ def sweep_params(circuit: list, edges: list, params: list,
                 count += 1
         print(" offsets:")
         for i in range(count, len(ranges)):
-            if ranges[i].size > 1:
+            if len(ranges[i]) > 1:
                 print(" ", (ranges[i][0], ranges[i][-1], ranges[i].size))
             else:
                 print(" ", ranges[i][0])
@@ -736,14 +750,14 @@ def optimize_diff_evol(circuit: list, edges: list, ground_node: int,
             random_params = [[np.exp(np.random.random()*(np.log(ranges[i][1])-np.log(ranges[i][0]))+np.log(ranges[i][0])) 
                               if not integrality[i] else np.random.randint(*ranges[i]) for i in range(len(ranges))]
                               for i in range(kwargs["workers"])]
-            args = [(circuit, edges, p, ground_node, offset_integer) for p in random_params]
+            args = [(circuit, edges, p, ground_node, offset_integer, 10, cj) for p in random_params]
             pool = Pool(processes=kwargs["workers"])
             trunc_vals = []
             param_vals = []
             if not quiet:
                 print("Picking Truncation Number with", kwargs["workers"], "randomly chosen points")
             
-            for p, res in tqdm(pool.imap_unordered(pick_truncation, args)):
+            for p, res in tqdm(pool.imap_unordered(pick_truncation, args), total=len(args)):
                 trunc_vals.append(res)
                 param_vals.append(p)
             

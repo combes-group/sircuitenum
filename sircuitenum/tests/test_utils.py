@@ -108,8 +108,8 @@ def test_edges_to_graph_index():
     gi = utils.edges_to_graph_index(edges)
     assert gi == 0
     edges = [(1, 0)]
-    gi = utils.edges_to_graph_index(edges)
-    assert gi == 0
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 0, gi[1] == {0:1, 1:0}
 
     # 3 Nodes
     edges = [(0, 2), (2, 1)]
@@ -130,8 +130,11 @@ def test_edges_to_graph_index():
     gi = utils.edges_to_graph_index(edges)
     assert gi == 2
     edges = [(0, 1), (1, 3), (2, 3), (0, 2)]
-    gi = utils.edges_to_graph_index(edges)
-    assert gi == 3
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 3
+    edges = [(0, 3), (1, 3), (2, 1), (0, 2)]
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 3, gi[1] == {0:0, 1:3, 2:2, 3:1}
     edges = [(0, 1), (1, 2), (2, 0), (1, 3), (2, 3)]
     gi = utils.edges_to_graph_index(edges)
     assert gi == 4

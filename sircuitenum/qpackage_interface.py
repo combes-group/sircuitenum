@@ -395,16 +395,31 @@ def to_SCqubits(circuit: list, edges: list,
     sym_cir = kwargs.get("sym_cir", False)
     initiate_sym_calc = kwargs.get("initiate_sym_calc", True)
 
-    # Add ground node by setting node = 0 in the yaml
+    # ground node is node = 0
     ground_node = kwargs.get("ground_node", None)
+    if ground_node is None:
+        edges = utils.zero_start_edges(edges)
+        edges = [(n1 + 1, n2 + 1) for (n1, n2) in edges]
+        new_params = {}
+        for key in params:
+            edge, elem = key
+            new_edge = (edge[0] + 1, edge[1] + 1)
+            new_params[(new_edge, elem)] = params[(edge, elem)]
+        params = new_params
+    elif ground_node != 0:
+        edges = swap_nodes(edges, 0, ground_node)
+        for key in params:
+            edge, elem = key
+            new_edge = swap_nodes([edge], 0, ground_node)[0]
+            new_params[(new_edge, elem)] = params[(edge, elem)]
+        params = new_params
 
     basis_completion = kwargs.get("basis_completion", "heuristic")
 
     # Build scqubits circuit yaml string
     circuit_yaml = "branches:"
     for elems, edge in zip(circuit, edges):
-        edge_str = "_".join([str(x+1) if x != ground_node
-                             else "0" for x in edge])
+        edge_str = "_".join([str(x) for x in edge])
         # Add all the elements
         for elem in elems:
             val = f"{elem}_{edge_str} = "
@@ -424,7 +439,7 @@ def to_SCqubits(circuit: list, edges: list,
                 val += f"{params[(edge), elem][0]}"
 
             circuit_yaml += "\n"
-            circuit_yaml += f'- ["{e_str}", {edge[0]+1}, {edge[1]+1}, {val}]'
+            circuit_yaml += f'- ["{e_str}", {edge[0]}, {edge[1]}, {val}]'
     # print(circuit_yaml)
     if sym_cir:
         return scq.SymbolicCircuit.from_yaml(circuit_yaml, from_file=False,
