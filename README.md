@@ -28,12 +28,10 @@ pip install sircuitenum
 Library Philosophy
 ------------------
 
-The core philosophy of `sircuitenum` is to separate:
+The core philosophy of `sircuitenum` is to be:
 
-* Experiment design and or generation
-* Data collection
-* Data analysis
-* Data visualisation
+* Interoperable with different circuit quantization packages
+* Separate data generation, data analysis, data visualisation
 
  
 
