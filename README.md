@@ -4,6 +4,8 @@ Superconducting cIRCUIT-ENUMeration
 
 A library for enumerating superconducting circuits.
 
+At the moment this package requires a modified version of [SQcircuit](https://github.com/stanfordLINQS/SQcircuit/) to function. Hopefully, by January 2025, we will have the package working on the current versions of [SQcircuit](https://github.com/stanfordLINQS/SQcircuit/) and [scqubits](https://github.com/scqubits/scqubits).
+
 Installation
 ------------
 
