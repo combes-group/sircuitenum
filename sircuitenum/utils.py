@@ -28,36 +28,49 @@ COMBINATION_LIST = """
 # 4 : 4 = Inductor  | Josephson Junction
 # 5 : 5 = Capacitor | Josephson Junction
 # 6 : 6 = Capacitor | Inductor  | Josephson Junction
-# Extended Classical(Base = 15):            //  NOT IMPLEMENTED
-# 7 : 7 = Resistor
-# 8 : 8 = Capacitor | R = Resistor
-# 9 : 9 = Inductor  | R = Resistor
-# 10 : A = Josephson Junction | R = Resistor
-# 11 : B = Capacitor | Inductor | R = Resistor
-# 12 : C = Capacitor | Josephson Junction | R = Resistor
-# 13 : D = Inductor  | Josephson Junction | R = Resistor
-# 14 : E = Capacitor | Inductor  | Josephson Junction | R = Resistor
 """
 
+
+# COMBINATION_DICT = {
+#     '0': ('C',),
+#     '1': ('J',),
+#     '2': ('L',),
+#     '3': ('C', 'L'),
+#     '4': ('J', 'L'),
+#     '5': ('C', 'J'),
+#     '6': ('C', 'J', 'L'),
+# }
+
+# EDGE_COLOR_DICT = {
+#     'C': 0,
+#     'J': 1,
+#     'L': 2,
+#     'CL': 3,
+#     'CJ': 4,
+#     'JL': 5,
+#     'CJL': 6,
+# }
 
 COMBINATION_DICT = {
     '0': ('C',),
     '1': ('J',),
     '2': ('L',),
-    '3': ('C', 'L'),
-    '4': ('J', 'L'),
-    '5': ('C', 'J'),
-    '6': ('C', 'J', 'L'),
+    '3': ('Q',),
+    '4': ('C', 'L'),
+    '5': ('J', 'L'),
+    '6': ('C', 'Q'),
+    '7': ('J', 'Q')
 }
 
 EDGE_COLOR_DICT = {
     'C': 0,
     'J': 1,
     'L': 2,
-    'CL': 3,
-    'CJ': 4,
+    'Q': 3,
+    'CL': 4,
     'JL': 5,
-    'CJL': 6,
+    'CQ': 6,
+    'JQ': 7
 }
 
 COMBINATION_TO_CHAR = {}

@@ -243,6 +243,8 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
 
     # What does it look like with series elems removed
     c2, e2 = red.remove_series_elems(circuit, edges)
+    if c2 == [('C', 'J', 'L')]:
+        breakpoint()
     equiv = utils.find_circuit_in_db(db_file, c2, e2)
     if equiv.empty:
         return "not found"
@@ -1096,7 +1098,6 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
         print("Circuits Generated for " +
             str(n_nodes) + " node circuits.")
         print("Now Trimming.")
-        # Max 10 workers because this is fast and db conflicts
         trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base,
                         n_workers=n_workers)
         print("Finished trimming " + str(n_nodes) + " node circuits.")
