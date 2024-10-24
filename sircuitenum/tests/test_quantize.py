@@ -103,6 +103,19 @@ def test_quantize_circuit():
     assert sym.latex(H, order="grlex") == ans
 
 
+def test_H_hash():
+
+    circuit = [("J",),("J",), ("L",), ("L",), ("C",), ("C",)]
+    edges = [(0, 1), (2, 3), (0, 3), (1, 2), (0, 2), (1, 3)]
+
+    # Check for correctness and consistency
+    for i in range(10):
+        assert quantize.H_hash(circuit, edges) == '3_272_02'
+        assert quantize.H_hash(circuit, edges, symmetric=False) == '3_511_012'
+
+
+
+
 if __name__ == "__main__":
 
     from sircuitenum import enum

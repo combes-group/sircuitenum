@@ -487,7 +487,8 @@ def gen_hamiltonian(circuit: list, edges: list, symmetric: bool = False,
                                                        cob=sym.Matrix(cob),
                                                        **var_class,
                                                        return_H_class=True,
-                                                       return_combos=True)
+                                                       return_combos=True,
+                                                       collect_phase=False)
     to_return = (H, cob, H_class)
     if return_combos:
         to_return = to_return + (all_combos,)
@@ -561,12 +562,23 @@ def gen_ham_row_(uid: str, db_file: str):
 
     # Set values
     to_update = ["H", "H_sym", "coord_transform", "H_class", "H_class_sym",
-                 "nonlinearity_counts", "nonlinearity_counts_sym"]
+                 "nonlinearity_counts", "nonlinearity_counts_sym",
+                 "H_group", "H_group_sym"]
     df.at[uid, "H"] = H_str
     df.at[uid, "H_sym"] = H_sym_str
     df.at[uid, "coord_transform"] = str(trans)
     df.at[uid, "H_class"] = refine_latex(sym.latex(H_class))
     df.at[uid, "H_class_sym"] = refine_latex(sym.latex(H_class_sym))
+    try:
+        h_hash = quantize.H_hash(df.at[uid, "circuit"], df.at[uid, "edges"], symmetric=False, numerical=True)
+        df.at[uid, "H_group"] =  f"{info['n_periodic']}{info['n_extended'] + info['n_harmonic']}_" + h_hash
+    except RuntimeError as e:
+        df.at[uid, "H_group"] = "undef"
+    try:
+        h_hash = quantize.H_hash(df.at[uid, "circuit"], df.at[uid, "edges"], symmetric=True, numerical=True)
+        df.at[uid, "H_group_sym"] =  f"{info['n_periodic']}{info['n_extended'] + info['n_harmonic']}_" + h_hash
+    except RuntimeError as e:
+        df.at[uid, "H_group_sym"] = "undef"
     for col in info:
         if col in df.columns:
             df.at[uid, col] = info[col]
@@ -596,7 +608,8 @@ def gen_ham_row_(uid: str, db_file: str):
                                       "harmonic_sym",
                                       "H_class", "H_class_sym",
                                       "nonlinearity_counts",
-                                      "nonlinearity_counts_sym"])
+                                      "nonlinearity_counts_sym",
+                                      "H_group", "H_group_sym"])
 
 
 # Sometimes it doesn't work and hangs :(
@@ -685,7 +698,6 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
 
 # Find the unique set of hamiltonian classes,
 # and assign each entry an "H_group"
-
 def unique_hams_in_df(df, symmetric, normalize_sign=True):
 
     # Catch the obviously same ones, i.e.
@@ -788,9 +800,10 @@ def unique_hams_in_df(df, symmetric, normalize_sign=True):
     # Assign groups to the whole dataframe
     groups = np.array(groups)
     group_col = groups[inv]
+
     if symmetric:
         group_col_name = "H_group_sym"
-        df[group_col_name] = group_col
+        df[group_col_name] = groups
     else:
         group_col_name = "H_group"
         df[group_col_name] = group_col
@@ -815,7 +828,6 @@ def unique_hams_for_count_(args):
                                       filter_str=filter_str)
     group_col_name = unique_hams_in_df(df, symmetric)
     
-
     utils.update_db_from_df(db_file, df,
                             to_update=[group_col_name],
                             str_cols=[group_col_name]
@@ -828,7 +840,8 @@ def assign_H_groups(db_file: str, n_nodes: int,
                     n_workers: int = 1, resume: bool = False) -> None:
     """
     Assigns Hamiltonians in the database into groups
-    based on the functional form of their Hamiltonian
+    based on the functional form of the linear part of their hamiltonian
+    and which flux variables are present in their nonlinear portion
 
     Args:
         db_file (str): path to database file
@@ -837,45 +850,44 @@ def assign_H_groups(db_file: str, n_nodes: int,
     """
     # Figure out where to start if resumingH_group_started = "H_group" in columns
     H_group_sym_started = False
-    H_group_sym_started = False
-    if resume:
-        table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-        columns = utils.list_all_columns(db_file, table_name)
-        H_group_started = "H_group" in columns
-        H_group_sym_started = "H_group_sym" in columns
+    H_group_started = False
+    # if resume:
+    #     table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
+    #     columns = utils.list_all_columns(db_file, table_name)
+    #     H_group_started = "H_group" in columns
+    #     H_group_sym_started = "H_group_sym" in columns
 
     # Get the unique nonlinearity counts strings
     with sqlite3.connect(db_file) as con:
         cur = con.cursor()
         table_name = 'CIRCUITS_' + str(n_nodes) + '_NODES'
-        sql_str = f"SELECT DISTINCT nonlinearity_counts\
+        sql_str = f"SELECT DISTINCT n_periodic, n_extended, n_harmonic \
                     FROM {table_name}\
                     WHERE in_non_iso_set LIKE 1\
                     AND has_jj LIKE 1"
-        sql_str_sym = f"SELECT DISTINCT nonlinearity_counts_sym\
-                        FROM {table_name}\
-                        WHERE in_non_iso_set LIKE 1\
-                        AND has_jj LIKE 1"
-        unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
-        n_nl_str = len(unique_nl_str)
-        unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
-        n_nl_str_sym = len(unique_nl_str_sym)
+        unique_counts = [x for x in cur.execute(sql_str).fetchall()]
+        n_counts = len(unique_counts)
+        unique_counts_sym = unique_counts
+        n_counts_sym = len(unique_counts_sym)
         if resume:
             if H_group_sym_started:
+                sql_str_sym = sql_str[:]
                 sql_str_sym += " AND H_group_sym is null"
-                unique_nl_str_sym = [x[0] for x in cur.execute(sql_str_sym).fetchall()]
+                unique_counts_sym = [x for x in cur.execute(sql_str_sym).fetchall()]
             elif H_group_started:
                 sql_str += " AND H_group is null"
-                unique_nl_str = [x[0] for x in cur.execute(sql_str).fetchall()]
+                unique_counts = [x for x in cur.execute(sql_str).fetchall()]
+    
+    print("Total Groups:", n_counts)
 
     # Filter out none values from circuits that timed out in 
     # quantization
-    unique_nl_str = [x for x in unique_nl_str if x is not None]
-    unique_nl_str_sym = [x for x in unique_nl_str_sym if x is not None]
+    unique_counts = [x for x in unique_counts if x is not None]
+    unique_counts_sym = [x for x in unique_counts_sym if x is not None]
 
     # Shuffle for accurate runtime estimates
-    np.random.shuffle(unique_nl_str)
-    np.random.shuffle(unique_nl_str_sym)
+    np.random.shuffle(unique_counts)
+    np.random.shuffle(unique_counts_sym)
 
     # Make the pool if we're parallel
     if n_workers > 1:
@@ -883,15 +895,15 @@ def assign_H_groups(db_file: str, n_nodes: int,
 
     # Do non-symmetric first
     # args are db_file, n_nodes, nl_cnt, symmetric, mapping
-    n_entries = len(unique_nl_str)
+    n_entries = len(unique_counts)
     if not H_group_sym_started:
         print("Full Hamiltonians...")
         args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
-                        unique_nl_str, [False]*n_entries,
+                        unique_counts, [False]*n_entries,
                         [utils.COMBINATION_DICT]*n_entries))
         if n_workers > 1:
             for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
-                        total=n_nl_str, initial=n_nl_str-n_entries):
+                        total=n_counts, initial=n_counts-n_entries):
                 pass
         else:
             for arg_set in args:
@@ -899,13 +911,13 @@ def assign_H_groups(db_file: str, n_nodes: int,
 
     # Now do symmetric
     print("Symmetric Hamiltonians...")
-    n_entries = len(unique_nl_str_sym)
+    n_entries = len(unique_counts_sym)
     args = list(zip([db_file]*n_entries, [n_nodes]*n_entries,
-                    unique_nl_str_sym, [True]*n_entries,
+                    unique_counts_sym, [True]*n_entries,
                     [utils.COMBINATION_DICT]*n_entries))
     if n_workers > 1:
         for _ in tqdm(pool.imap_unordered(unique_hams_for_count_, args),
-                      total=n_nl_str_sym, initial=n_nl_str_sym-n_entries):
+                      total=n_counts_sym, initial=n_counts_sym-n_entries):
             pass
     else:
         for arg_set in args:
@@ -1108,7 +1120,11 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
         add_hamiltonians_to_table(db_file=db_file, n_nodes=n_nodes,
                                 n_workers=n_workers, resume=resume)
 
-    print("Categorizing Hamiltonians for " + str(n_nodes) + " node circuits.")
+    # print("Categorizing Linear Portion of Hamiltonians for " + str(n_nodes) + " node circuits.")
+    # assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
+    #                 resume=resume)
+    
+    # print("Categorizing Non-Linear Portion of Hamiltonians for " + str(n_nodes) + " node circuits.")
     # Max 10 workers because this is fast and db conflicts
     assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
                     resume=False)

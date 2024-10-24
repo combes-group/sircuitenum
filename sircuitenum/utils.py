@@ -244,6 +244,38 @@ def count_elems_mapped(circuit: list, **kwargs):
     return counts
 
 
+def add_elem_number(circuit: list, **kwargs):
+    """
+    Counts the total number of each mapped circuit
+    element in the circuit
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        possible_elems (list): list of possible elements, default
+                               is the unique set in COMBINATION_DICT
+
+    Returns:
+        dict: each entry is element -> number, i.e. "J" -> 2
+    """
+    default_elems = np.unique(np.concatenate(list(COMBINATION_DICT.values())))
+    possible_elems = kwargs.get("possible_elems", default_elems)
+    circuit_new = []
+
+    counts = {}
+    for elem in possible_elems:
+        counts[elem] = 0
+
+    for elems in circuit:
+        elems_new = []
+        for elem in elems:
+            counts[elem] += 1
+            elems_new.append(elem+"_"+str(counts[elem]))
+        circuit_new.append(tuple(elems_new))
+
+    return circuit_new
+
+
 def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
                        circuit_num: int, base: int):
     """Creates a dictionary that can serve as a row of a dataframe of
