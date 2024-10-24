@@ -346,7 +346,7 @@ def gen_variables(n_nodes, cob, periodic):
 
 def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
                      periodic=[], extended=[], free=[], frozen=[],
-                     return_mats=False, return_vars=False,
+                     sigma = [], return_mats=False, return_vars=False,
                      return_H_class: bool = False,
                      return_combos: bool = False,
                      collect_phase: bool = True):
@@ -422,7 +422,7 @@ def quantize_circuit(circuit, edges, Cv=None, V=None, cob=None,
     C_mat_full = C_mat.copy()
     L_mat_full = L_mat.copy()
     # All modes to remove
-    remove_modes = free + frozen
+    remove_modes = free + frozen + sigma
     if remove_modes:
         # Go in order to make the indexing
         # post deletion straightforward

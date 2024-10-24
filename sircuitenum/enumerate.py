@@ -118,6 +118,110 @@ def delete_table(db_file: str, n_nodes: int):
     return
 
 
+def find_unique_ground_placements(circuit: list, edges: list):
+    """
+    Uses component graph isomorphism to determine the unique
+    ground node placements for a given circuit.
+
+    Assumes edges is a continous list from 0 to max number
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+
+    Returns:
+        tuple of integers representing unique ground node
+        placements
+    """
+    unique_nodes = []
+    unique_graphs = []
+    for gnd in range(utils.get_num_nodes(edges)):
+        test = red.convert_circuit_to_component_graph(circuit, edges, ground_nodes=[gnd])
+        isomorphic_in_set = False
+        for ref in unique_graphs:
+            if nx.is_isomorphic(test, ref, node_match=red.colors_match):
+                isomorphic_in_set = True
+                break
+        if not isomorphic_in_set:
+            unique_graphs.append(test)
+            unique_nodes.append(gnd)
+    return tuple(unique_nodes)
+
+
+
+def expand_ground_node(df: pd.DataFrame):
+    """
+    Create new entries in the dataframe
+    for unique placements of ground
+    nodes
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with an entry for each ground
+                      node placement.
+    """
+    new_df = []
+    df["ground_node"] = -1
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[[i]].copy()
+        circuit, edges = row["circuit"].iloc[0], row["edges"].iloc[0]
+        for gnd in find_unique_ground_placements(circuit, edges):
+            new_row = row.copy()
+            new_row["ground_node"] = gnd
+            new_df.append(new_row)
+    return pd.concat(new_df)
+
+
+def remove_dangling_edges(df: pd.DataFrame):
+    """
+    Removes edges that cannot have current flowing
+    through them after placing a ground node
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with all circuits that
+                      have dangling edges removed.
+    """
+    ind_to_keep = []
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[i]
+        circuit, edges = row["circuit"], row["edges"]
+        deg = utils.circuit_degree(circuit, edges)
+        if all(d > 1 for d in deg):
+            ind_to_keep.append(i)
+
+    return df.iloc[ind_to_keep].copy()
+
+
+def remove_parallel_elems(df):
+    """
+    Removes any circuits that have
+    parallel elements on an edge
+
+    Args:
+        df (pd.DataFrame): circuit dataframe
+
+    Returns:
+        pd.DataFrame: dataframe with all circuits with
+                      parallel elements removed.
+    """
+
+    ind_to_keep = []
+    for i in tqdm(range(df.shape[0])):
+        row = df.iloc[i]
+        circuit, edges = row["circuit"], row["edges"]
+        if max(len(x) for x in circuit) == 1:
+            ind_to_keep.append(i)
+
+    return df.iloc[ind_to_keep].copy()
+
+
 def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
     """
     Searches the database for circuits that are equivalent
@@ -139,6 +243,8 @@ def find_equiv_cir_series(db_file: str, circuit: list, edges: list):
 
     # What does it look like with series elems removed
     c2, e2 = red.remove_series_elems(circuit, edges)
+    if c2 == [('C', 'J', 'L')]:
+        breakpoint()
     equiv = utils.find_circuit_in_db(db_file, c2, e2)
     if equiv.empty:
         return "not found"
@@ -592,32 +698,135 @@ def add_hamiltonians_to_table(db_file: str, n_nodes: int,
 
 # Find the unique set of hamiltonian classes,
 # and assign each entry an "H_group"
-def unique_hams_for_count_(args):
+def unique_hams_in_df(df, symmetric, normalize_sign=True):
 
-    db_file, n_nodes, counts, symmetric, mapping = args
+    # Catch the obviously same ones, i.e.
+    # the H_str is the exact same
+    if symmetric:
+        l_str_vec = df["H_class_sym"].values
+        nl_cnt = df["nonlinearity_counts_sym"].iloc[0]
+    else:
+        l_str_vec = df["H_class"].values
+        nl_cnt = df["nonlinearity_counts"].iloc[0]
 
-    col_names = ["n_periodic", "n_extended", "n_harmonic"]
-
-    filter_str = "WHERE " + " AND ".join([f"{x[0]} LIKE {x[1]}" for x in zip(col_names, counts)])
-    df = utils.get_circuit_data_batch(db_file, n_nodes,
-                                      elem_mapping=mapping,
-                                      filter_str=filter_str)
     
-    groups = df["H_group"].values.copy()
-    i = 0
-    for _, row in df.iterrows():
-        try:
-            groups[i] = "".join([str(x) for x in counts]) + "_" + quantize.H_hash(row.circuit, row.edges, symmetric, numerical=True)
-        except RuntimeError as e:
-            groups[i] = "undef"
-        i += 1
+    if normalize_sign:
+        l_str_vec = [x.replace("-", "+") for x in l_str_vec]
+
+    unique_str, index, inv = np.unique(l_str_vec, return_index=True,
+                                       return_inverse=True)
+
+    reduced = []
+    groups = []
+    # Examine every row in the set
+    group_n = 1
+    for l_str in unique_str:
+
+        is_dup = False
+
+        # Make the string parsable by sympy
+        l_str = l_str.replace("\\hat{" + quantize.EXTENDED_CHARGE + "}", "Q")
+        l_str = l_str.replace("\\hat{" + quantize.PERIODIC_CHARGE + "}", "n")
+        l_str = l_str.replace("\\hat{" + quantize.EXTENDED_PHASE + "}", "F")
+        l_str = l_str.replace("\\hat{" + quantize.PERIODIC_PHASE + "}", "p")
+        
+        H_base = parse_latex(l_str)
+
+        # Get the Phase and Charge terms
+        q_list = [q for q in H_base.free_symbols if "Q" in str(q)]
+        n_list = [q for q in H_base.free_symbols if "n" in str(q)]
+        f_list = [q for q in H_base.free_symbols if "F" in str(q)]
+        p_list = [q for q in H_base.free_symbols if "p" in str(q)]
+
+        # Alternative A, B, C terms
+        q_list_alt = np.array([sym.Symbol(f"Q_{chr(ord('A') + int(n))}")
+                               for n in range(len(q_list))])
+        n_list_alt = np.array([sym.Symbol(f"n_{chr(ord('A') + int(n))}")
+                               for n in range(len(n_list))])
+        f_list_alt = np.array([sym.Symbol(f"F_{chr(ord('A') + int(n))}")
+                               for n in range(len(f_list))])
+        p_list_alt = np.array([sym.Symbol(f"p_{chr(ord('A') + int(n))}")
+                               for n in range(len(p_list))])
+
+        # Possible assignments of 1, 2, 3 -> A, B, C
+        q_ass = itertools.permutations(range(len(q_list)), len(q_list))
+        n_ass = itertools.permutations(range(len(n_list)), len(n_list))
+        f_ass = itertools.permutations(range(len(f_list)), len(f_list))
+        p_ass = itertools.permutations(range(len(p_list)), len(p_list))
+
+        # Try every permutation of A, B, C -> 1, 2, 3
+        for combo in itertools.product(q_ass, n_ass, f_ass, p_ass):
+
+            # Make it a list for indexing
+            combo = [list(x) for x in combo]
+
+            # Test out the specific permutation
+            H_test = H_base.copy()
+
+            # Replace 1, 2, 3 with A, B, C
+            if combo[0]:
+                for x1, x2 in zip(q_list, q_list_alt[combo[0]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[1]:
+                for x1, x2 in zip(n_list, n_list_alt[combo[1]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[2]:
+                for x1, x2 in zip(f_list, f_list_alt[combo[2]]):
+                    H_test = H_test.subs(x1, x2)
+            if combo[3]:
+                for x1, x2 in zip(p_list, p_list_alt[combo[3]]):
+                    H_test = H_test.subs(x1, x2)
+
+            # Check if this permutation is in the reduced set already
+            for i, H_ref in enumerate(reduced):
+
+                if H_ref is None:
+                    continue
+
+                if H_test - H_ref == 0:
+                    is_dup = True
+                    dup_group = groups[i]
+                    break
+            if is_dup:
+                break
+        if is_dup:
+            reduced.append(None)
+            groups.append(dup_group)
+        if not is_dup:
+            reduced.append(H_test)
+            groups.append(nl_cnt + f"_{group_n}")
+            group_n += 1
+
+    # Assign groups to the whole dataframe
+    groups = np.array(groups)
+    group_col = groups[inv]
 
     if symmetric:
         group_col_name = "H_group_sym"
         df[group_col_name] = groups
     else:
         group_col_name = "H_group"
-        df[group_col_name] = groups
+        df[group_col_name] = group_col
+
+    return group_col_name
+
+
+def unique_hams_for_count_(args):
+
+    db_file, n_nodes, nl_cnt, symmetric, mapping = args
+
+    if symmetric:
+        col_name = "nonlinearity_counts_sym"
+    else:
+        col_name = "nonlinearity_counts"
+
+    filter_str = f"WHERE {col_name} LIKE '{nl_cnt}'"
+    
+
+    df = utils.get_circuit_data_batch(db_file, n_nodes,
+                                      elem_mapping=mapping,
+                                      filter_str=filter_str)
+    group_col_name = unique_hams_in_df(df, symmetric)
     
     utils.update_db_from_df(db_file, df,
                             to_update=[group_col_name],
@@ -901,7 +1110,6 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
         print("Circuits Generated for " +
             str(n_nodes) + " node circuits.")
         print("Now Trimming.")
-        # Max 10 workers because this is fast and db conflicts
         trim_graph_node(db_file=db_file, n_nodes=n_nodes, base=base,
                         n_workers=n_workers)
         print("Finished trimming " + str(n_nodes) + " node circuits.")
@@ -918,8 +1126,8 @@ def generate_and_trim(n_nodes: int, db_file: str = "circuits.db",
     
     # print("Categorizing Non-Linear Portion of Hamiltonians for " + str(n_nodes) + " node circuits.")
     # Max 10 workers because this is fast and db conflicts
-    # assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
-    #                 resume=resume)
+    assign_H_groups(db_file=db_file, n_nodes=n_nodes, n_workers=n_workers,
+                    resume=False)
     return True
 
 

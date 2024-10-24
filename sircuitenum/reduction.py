@@ -304,7 +304,7 @@ def mark_non_isomorphic_set(df: pd.DataFrame, **kwargs):
                                 Defaults to considering all.
 
     Returns:
-        Nothing, fills in the 'in_non_iso' and 'equiv_circuit'
+        Nothing, fills in the 'in_non_iso_set' and 'equiv_circuit'
         columns of df
     """
     to_consider = kwargs.get("to_consider", np.ones(df.shape[0], dtype=bool))
@@ -442,7 +442,7 @@ def remove_series_elems(circuit: list, edges: list,
     return circuit, edges
 
 
-def jj_present(circuit: list):
+def jj_present(circuit: list, linear_elems: list[str] = ["L", "C"]):
     """
     Simple function that returns true if there
     is at least one JJ in the circuit and false if there isn't
@@ -450,11 +450,13 @@ def jj_present(circuit: list):
     Args:
         circuit (list): a list of element labels for the desired circuit
                         e.g. [["J"],["L", "J"], ["C"]]
+        linear_elems (list[str]): a list of the linear devices.
+                                Defaults to linear elements ['L','C']
     """
 
     for edge in circuit:
         for device in edge:
-            if device == "J":
+            if device not in linear_elems:
                 return True
     return False
 

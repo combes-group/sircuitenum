@@ -40,6 +40,10 @@ NON_SERIES_3 += [
 
 TEMP_FILE = "temp.db"
 
+def test():
+    print("Add for new functions")
+    assert False
+
 
 def test_num_possible_circuits():
 
@@ -110,6 +114,34 @@ def test_delete_table():
     assert len(t2) == 0
 
     os.remove(TEMP_FILE)
+
+
+def test_find_uniuqe_ground_placements():
+    
+    edges = [(0, 1)]
+    circuit = [("L",)]
+    gnds = enum.find_unique_ground_placements(circuit, edges)
+    assert gnds == (0,)
+
+    edges = [(0, 2), (2, 1), (0, 1)]
+    circuit = [("L",), ("L",), ("L",)]
+    gnds = enum.find_unique_ground_placements(circuit, edges)
+    assert gnds == (0,)
+
+    edges = [(0, 2), (2, 1), (0, 1)]
+    circuit = [("L",), ("J",), ("J",)]
+    gnds = enum.find_unique_ground_placements(circuit, edges)
+    assert gnds == (0, 1)
+
+    edges = [(0, 2), (2, 1), (0, 1)]
+    circuit = [("L",), ("J",), ("C",)]
+    gnds = enum.find_unique_ground_placements(circuit, edges)
+    assert gnds == (0, 1, 2)
+
+    edges = [(0, 1), (1, 2)]
+    circuit = [("L",), ("J",)]
+    gnds = enum.find_unique_ground_placements(circuit, edges)
+    assert gnds == (0, 1, 2)
 
 
 def test_find_equiv_cir_series():
@@ -449,7 +481,8 @@ def test_group_hamiltonian():
 if __name__ == "__main__":
     # test_generate_graphs_node()
     # test_generate_all_graphs()
-    test_gen_hamiltonian()
+    # test_gen_hamiltonian()
     # test_categorize_hamiltonian()
     # test_find_equiv_cir_series()
     # test_group_hamiltonian()
+    test_find_uniuqe_ground_placements()

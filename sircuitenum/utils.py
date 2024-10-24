@@ -28,15 +28,6 @@ COMBINATION_LIST = """
 # 4 : 4 = Inductor  | Josephson Junction
 # 5 : 5 = Capacitor | Josephson Junction
 # 6 : 6 = Capacitor | Inductor  | Josephson Junction
-# Extended Classical(Base = 15):            //  NOT IMPLEMENTED
-# 7 : 7 = Resistor
-# 8 : 8 = Capacitor | R = Resistor
-# 9 : 9 = Inductor  | R = Resistor
-# 10 : A = Josephson Junction | R = Resistor
-# 11 : B = Capacitor | Inductor | R = Resistor
-# 12 : C = Capacitor | Josephson Junction | R = Resistor
-# 13 : D = Inductor  | Josephson Junction | R = Resistor
-# 14 : E = Capacitor | Inductor  | Josephson Junction | R = Resistor
 """
 
 
@@ -98,13 +89,14 @@ def graph_index_to_edges(graph_index: int, n_nodes: int):
     return list(get_basegraphs(n_nodes)[graph_index].edges)
 
 
-def edges_to_graph_index(edges: list):
+def edges_to_graph_index(edges: list, return_mapping: bool = False):
     """
     Matches a set of edges to a basegraph that's isomorphic to it
 
     Args:
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
+        return_mapping (bool): return the mapping from edges to the basegraph
     """
     # Graph object to use in comparison
     G1 = nx.Graph()
@@ -115,7 +107,10 @@ def edges_to_graph_index(edges: list):
     possible_graphs = get_basegraphs(n_nodes)
     for i, G2 in enumerate(possible_graphs):
         if G2.number_of_edges() == n_edges:
-            if nx.is_isomorphic(G1, G2):
+            GM = nx.isomorphism.GraphMatcher(G1, G2)
+            if GM.is_isomorphic():
+                if return_mapping:
+                    return i, GM.mapping
                 return i
 
     raise ValueError("Error: No Isomorphic Graph Found")
@@ -316,7 +311,7 @@ def circuit_entry_dict(circuit: list, graph_index: int, n_nodes: int,
     return c_dict
 
 
-def gen_param_dict(circuit, edges, vals=ELEM_DICT):
+def gen_param_dict(circuit, edges, vals=ELEM_DICT, rand_amp=0, min_val=1e-06):
     """
     Generates a dictionary of parameters for use with
     the circuit conversion functions. Sets all components
@@ -328,7 +323,7 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT):
 
     Args:
         circuit (list): a list of element labels for the desired circuit
-                        e.g. [["J"],["L", "J"], ["C"]]
+                        e.g. [("J",),("L", "J"), ("C",)]
         edges (list): a list of edge connections for the desired circuit
                         e.g. [(0,1), (0,2), (1,2)]
         vals (dict of dicts): Dictionary with entries for each circuit
@@ -338,13 +333,13 @@ def gen_param_dict(circuit, edges, vals=ELEM_DICT):
     for elems, edge in zip(circuit, edges):
         for elem in elems:
             key = (edge, elem)
-            param_dict[key] = (vals[elem]['default_value'],
+            param_dict[key] = (max(min_val, vals[elem]['default_value']*np.random.normal(1, rand_amp)),
                                vals[elem]['default_unit'])
 
             # Junction capacitance
             key = (edge, "CJ")
             if elem == "J" and "CJ" in vals:
-                param_dict[key] = (vals["CJ"]['default_value'],
+                param_dict[key] = (max(min_val, vals["CJ"]['default_value']*np.random.normal(1, rand_amp)),
                                    vals["CJ"]['default_unit'])
 
     return param_dict
@@ -389,6 +384,23 @@ def convert_circuit_to_graph(circuit: list, edges: list, **kwargs):
                                                value=value)
     return circuit_graph
 
+
+def circuit_degree(circuit: list, edges: list):
+    """
+    Counts the number of elements connected to each node
+
+    Args:
+        circuit (list): a list of element labels for the desired circuit
+                        e.g. [["J"],["L", "J"], ["C"]]
+        edges (list): a list of edge connections for the desired circuit
+                        e.g. [(0,1), (0,2), (1,2)]
+
+    Returns:
+       list of how many elements are connected to each node
+       e.g. [1, 2, 1]
+    """
+    node_repr = circuit_node_representation(circuit, edges)
+    return list(sum([np.array(x) for x in node_repr.values()]))
 
 def circuit_node_representation(circuit: list, edges: list):
     """
@@ -818,9 +830,22 @@ def find_circuit_in_db(db_file: str, circuit: list, edges: list):
                         e.g. [(0,1), (0,2), (1,2)]
     """
 
-    encoding = components_to_encoding(circuit)
     n_nodes = get_num_nodes(edges)
-    graph_index = edges_to_graph_index(edges)
+    graph_index, mapping = edges_to_graph_index(edges, return_mapping=True)
+    # Re-order circuit to match basegraph edges
+    new_edge_order = graph_index_to_edges(graph_index, n_nodes)
+    circuit_in_order = [None]*len(circuit)
+    for i in range(len(edges)):
+        try:
+            n0, n1 = edges[i]
+            if (mapping[n0], mapping[n1]) in new_edge_order:
+                new_i = new_edge_order.index((mapping[n0], mapping[n1]))
+            else:
+                new_i = new_edge_order.index((mapping[n1], mapping[n0]))
+        except:
+            print(new_edge_order, edges, mapping, graph_index)
+        circuit_in_order[new_i] = circuit[i]
+    encoding = components_to_encoding(circuit_in_order)
     filters = f"WHERE circuit LIKE '{encoding}' AND\
                 graph_index = '{graph_index}'"
     return get_circuit_data_batch(db_file, n_nodes, filter_str=filters)

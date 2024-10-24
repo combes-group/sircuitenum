@@ -108,8 +108,8 @@ def test_edges_to_graph_index():
     gi = utils.edges_to_graph_index(edges)
     assert gi == 0
     edges = [(1, 0)]
-    gi = utils.edges_to_graph_index(edges)
-    assert gi == 0
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 0, gi[1] == {0:1, 1:0}
 
     # 3 Nodes
     edges = [(0, 2), (2, 1)]
@@ -130,8 +130,11 @@ def test_edges_to_graph_index():
     gi = utils.edges_to_graph_index(edges)
     assert gi == 2
     edges = [(0, 1), (1, 3), (2, 3), (0, 2)]
-    gi = utils.edges_to_graph_index(edges)
-    assert gi == 3
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 3
+    edges = [(0, 3), (1, 3), (2, 1), (0, 2)]
+    gi = utils.edges_to_graph_index(edges, mapping=True)
+    assert gi[0] == 3, gi[1] == {0:0, 1:3, 2:2, 3:1}
     edges = [(0, 1), (1, 2), (2, 0), (1, 3), (2, 3)]
     gi = utils.edges_to_graph_index(edges)
     assert gi == 4
@@ -377,6 +380,14 @@ def test_convert_circuit_to_graph():
     e = [(0, 1)]
     params = utils.gen_param_dict(c, e, vals)
     assert utils.convert_circuit_to_graph(c, e, params=params).edges == G.edges
+
+
+def test_circuit_degree():
+    
+    c = [["J"], ["C", "J"], ["C", "L"]]
+    e = [(0, 1), (1, 2), (2, 3)]
+    ans = [1, 3, 4, 2]
+    assert utils.circuit_degree(c, e) == ans
 
 
 def test_circuit_node_representation():
@@ -766,4 +777,5 @@ def write_test_df(fname: str = TEMP_FILE, overwrite: bool = False):
 
 
 if __name__ == "__main__":
-    test_gen_param_dict()
+    # test_gen_param_dict()
+    test_circuit_degree()
